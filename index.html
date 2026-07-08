@@ -268,6 +268,13 @@ function reset() {
   paused = false;
   tickAccum = 0;
   scoreEl.textContent = 0;
+  // Clear effects
+  particles.length = 0;
+  deathSegments.length = 0;
+  trailPoints.length = 0;
+  screenShake = 0; shakeX = 0; shakeY = 0;
+  deathFlash = 0;
+  foodScale = 1; foodScaleTarget = 1;
   placeFood();
 }
 
@@ -293,6 +300,126 @@ let prevFood = null;
 let foodPulse = 0;
 let deathFlash = 0;
 let fpsFrames = 0, fpsLast = performance.now(), fpsDisplay = 0;
+let foodScale = 1, foodScaleTarget = 1;
+let screenShake = 0, shakeX = 0, shakeY = 0;
+
+// --- Particle System (from game-engine: object pooling for perf) ---
+const particles = [];
+const MAX_PARTICLES = 200;
+
+function spawnParticles(x, y, count, color, speedMul, lifeMul) {
+  for (let i = 0; i < count; i++) {
+    if (particles.length >= MAX_PARTICLES) {
+      // Reuse oldest dead particle
+      const dead = particles.findIndex(p => p.life <= 0);
+      if (dead === -1) break;
+      particles.splice(dead, 1);
+    }
+    const angle = Math.random() * Math.PI * 2;
+    const speed = (1 + Math.random() * 3) * speedMul;
+    const life = (0.3 + Math.random() * 0.5) * lifeMul;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life, maxLife: life,
+      color,
+      size: 2 + Math.random() * 3
+    });
+  }
+}
+
+function updateParticles(dt) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vx *= 0.96; // drag
+    p.vy *= 0.96;
+    p.life -= dt / 1000;
+    if (p.life <= 0) {
+      particles.splice(i, 1);
+    }
+  }
+}
+
+function drawParticles() {
+  for (const p of particles) {
+    const alpha = Math.max(0, p.life / p.maxLife);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// --- Death explosion: scatter snake segments ---
+let deathSegments = [];
+
+function spawnDeathExplosion() {
+  deathSegments = [];
+  for (let i = 0; i < snake.length; i++) {
+    const seg = snake[i];
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 2 + Math.random() * 4;
+    const ratio = i / Math.max(snake.length, 1);
+    const r = Math.round(40 + 38 * (1 - ratio));
+    const g = Math.round(204 - 80 * ratio);
+    const b = Math.round(150 - 50 * ratio);
+    deathSegments.push({
+      x: seg.x * CELL + CELL / 2,
+      y: seg.y * CELL + CELL / 2,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      size: i === 0 ? CELL * 0.8 : CELL * 0.6,
+      color: `rgb(${r},${g},${b})`,
+      life: 1.0,
+      rotation: Math.random() * Math.PI * 2,
+      rotSpeed: (Math.random() - 0.5) * 0.3
+    });
+  }
+  // Also spawn particles from each segment
+  for (const seg of snake) {
+    spawnParticles(
+      seg.x * CELL + CELL / 2,
+      seg.y * CELL + CELL / 2,
+      3, '#4ecca3', 1.5, 0.8
+    );
+  }
+}
+
+function updateDeathSegments(dt) {
+  for (let i = deathSegments.length - 1; i >= 0; i--) {
+    const s = deathSegments[i];
+    s.x += s.vx;
+    s.y += s.vy;
+    s.vx *= 0.95;
+    s.vy *= 0.95;
+    s.rotation += s.rotSpeed;
+    s.life -= dt / 1000;
+    if (s.life <= 0) deathSegments.splice(i, 1);
+  }
+}
+
+function drawDeathSegments() {
+  for (const s of deathSegments) {
+    const alpha = Math.max(0, s.life);
+    ctx.save();
+    ctx.translate(s.x, s.y);
+    ctx.rotate(s.rotation);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = s.color;
+    ctx.fillRect(-s.size / 2, -s.size / 2, s.size, s.size);
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// --- Snake trail (fading afterimage) ---
+let trailPoints = [];
+const MAX_TRAIL = 12;
 
 function lerp(a, b, t) { return a + (b - a) * t; }
 
@@ -315,7 +442,20 @@ function draw(interp) {
   const drawSnake = prevSnake && prevSnake.length === snake.length && interp < 1;
   const t = drawSnake ? Math.min(interp, 1) : 1;
 
-  // Snake body with gradient
+  // --- Snake trail (fading afterimage) ---
+  for (let i = 0; i < trailPoints.length; i++) {
+    const tr = trailPoints[i];
+    const alpha = tr.alpha * 0.6;
+    if (alpha < 0.02) continue;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#4ecca3';
+    ctx.beginPath();
+    ctx.arc(tr.x, tr.y, CELL / 2 - 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // Snake body with gradient + glow on head
   for (let i = snake.length - 1; i >= 0; i--) {
     const seg = snake[i];
     const prev = drawSnake && prevSnake[i] ? prevSnake[i] : seg;
@@ -326,11 +466,18 @@ function draw(interp) {
     const r = Math.round(40 + 38 * (1 - ratio));
     const g = Math.round(204 - 80 * ratio);
     const b = Math.round(150 - 50 * ratio);
+
+    // Head glow
+    if (i === 0) {
+      ctx.shadowColor = '#4ecca3';
+      ctx.shadowBlur = 12 + Math.sin(foodPulse * 2) * 3;
+    }
     ctx.fillStyle = `rgb(${r},${g},${b})`;
 
     const pad = i === 0 ? 1 : 2;
     const radius = i === 0 ? 6 : 3;
     roundRect(px + pad, py + pad, CELL - pad * 2, CELL - pad * 2, radius);
+    ctx.shadowBlur = 0;
   }
 
   // Eyes on head
@@ -344,16 +491,23 @@ function draw(interp) {
   ctx.beginPath(); ctx.arc(hx + eyeOff1.x, hy + eyeOff1.y, 2.5, 0, Math.PI * 2); ctx.fill();
   ctx.beginPath(); ctx.arc(hx + eyeOff2.x, hy + eyeOff2.y, 2.5, 0, Math.PI * 2); ctx.fill();
 
-  // Food with pulsing glow (smooth at 120fps)
+  // Food with pulsing glow + scale punch
   foodPulse += 0.05;
+  foodScale = lerp(foodScale, foodScaleTarget, 0.2);
+  if (Math.abs(foodScale - foodScaleTarget) < 0.01) foodScaleTarget = 1;
   const glow = 8 + Math.sin(foodPulse) * 4;
+  const foodR = (CELL / 2 - 2) * foodScale;
   ctx.shadowColor = '#ff6b6b';
   ctx.shadowBlur = glow;
   ctx.fillStyle = '#ff6b6b';
   ctx.beginPath();
-  ctx.arc(food.x * CELL + CELL/2, food.y * CELL + CELL/2, CELL/2 - 2, 0, Math.PI * 2);
+  ctx.arc(food.x * CELL + CELL/2, food.y * CELL + CELL/2, foodR, 0, Math.PI * 2);
   ctx.fill();
   ctx.shadowBlur = 0;
+
+  // --- Particles & death segments ---
+  drawParticles();
+  drawDeathSegments();
 
   // Death flash
   if (deathFlash > 0) {
@@ -393,6 +547,14 @@ function gameTick() {
   if (!alive || paused) return;
   dir = nextDir;
   prevSnake = snake.map(s => ({...s}));
+
+  // Record trail point at head position before moving
+  const oldHead = snake[0];
+  trailPoints.unshift({ x: oldHead.x * CELL + CELL / 2, y: oldHead.y * CELL + CELL / 2, alpha: 1 });
+  if (trailPoints.length > MAX_TRAIL) trailPoints.pop();
+  // Fade all trail points
+  for (const tr of trailPoints) tr.alpha *= 0.7;
+
   const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
 
   // Wall wrap disabled — die on wall
@@ -407,6 +569,21 @@ function gameTick() {
     haptic('eat');
     AudioEngine.sfxEat();
     AudioEngine.updateTempo(snake.length);
+    // Particle burst on eat
+    spawnParticles(
+      food.x * CELL + CELL / 2,
+      food.y * CELL + CELL / 2,
+      12, '#ff6b6b', 2, 1
+    );
+    // Also spawn accent particles
+    spawnParticles(
+      food.x * CELL + CELL / 2,
+      food.y * CELL + CELL / 2,
+      6, '#ffaa44', 1.5, 0.7
+    );
+    // Food scale punch
+    foodScaleTarget = 1.6;
+    foodScale = 0.3;
     if (score > best) { best = score; bestEl.textContent = best; localStorage.setItem('snakeBest120', best); }
     placeFood();
     speed = Math.max(MIN_INTERVAL, BASE_INTERVAL - score * 2);
@@ -418,16 +595,25 @@ function gameTick() {
 function die() {
   alive = false;
   deathFlash = 0.5;
+  screenShake = 15; // frames of shake
   haptic('die');
   AudioEngine.sfxDie();
   AudioEngine.stop();
+  // Death explosion: scatter segments + particles
+  spawnDeathExplosion();
+  spawnParticles(
+    snake[0].x * CELL + CELL / 2,
+    snake[0].y * CELL + CELL / 2,
+    30, '#ff3333', 3, 1.5
+  );
+  trailPoints = []; // clear trail
   setTimeout(() => {
     overlayTitle.textContent = '💀 Game Over';
     overlayMsg.textContent = `Score: ${score}`;
     startBtn.textContent = 'Play Again';
     shareBtn.style.display = 'block';
     overlay.classList.remove('hidden');
-  }, 400);
+  }, 600);
 }
 
 function startGame() {
@@ -447,7 +633,8 @@ function setDir(x, y) {
 
 // --- Main loop — requestAnimationFrame for 120Hz ProMotion ---
 function loop(now) {
-  if (!alive && deathFlash <= 0) return;
+  const hasEffects = deathFlash > 0 || deathSegments.length > 0 || particles.length > 0;
+  if (!alive && !hasEffects) return;
   const dt = now - lastTick;
   lastTick = now;
 
@@ -460,8 +647,29 @@ function loop(now) {
     }
   }
 
+  // Update effects
+  updateParticles(dt);
+  updateDeathSegments(dt);
+
+  // Screen shake
+  if (screenShake > 0) {
+    shakeX = (Math.random() - 0.5) * screenShake * 1.2;
+    shakeY = (Math.random() - 0.5) * screenShake * 1.2;
+    screenShake *= 0.85;
+    if (screenShake < 0.5) { screenShake = 0; shakeX = 0; shakeY = 0; }
+  }
+
   const interp = alive && !paused ? tickAccum / speed : 1;
+
+  // Apply screen shake transform
+  if (screenShake > 0) {
+    ctx.save();
+    ctx.translate(shakeX, shakeY);
+  }
   draw(interp);
+  if (screenShake > 0) {
+    ctx.restore();
+  }
 
   // FPS counter
   fpsFrames++;
