@@ -48,6 +48,20 @@
   }
   #score-bar .label { color: #888; }
   #score-bar .val { color: #4ecca3; font-variant-numeric: tabular-nums; }
+  #pause-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    color: #4ecca3;
+    font-size: 1.1rem;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+    line-height: 1;
+  }
+  #pause-btn:active { background: rgba(78,204,163,0.15); transform: scale(0.9); }
+  #pause-btn.paused { background: rgba(78,204,163,0.15); border-color: rgba(78,204,163,0.3); }
   canvas {
     display: block;
     image-rendering: pixelated;
@@ -187,6 +201,7 @@
 
 <div id="score-bar">
   <div><span class="label">SCORE </span><span class="val" id="score">0</span></div>
+  <button id="pause-btn" title="Pause (P)">⏸</button>
   <div><span class="label">BEST </span><span class="val" id="best">0</span></div>
 </div>
 
@@ -275,6 +290,10 @@ function reset() {
   screenShake = 0; shakeX = 0; shakeY = 0;
   deathFlash = 0;
   foodScale = 1; foodScaleTarget = 1;
+  // Reset pause button
+  const pauseBtn = document.getElementById('pause-btn');
+  pauseBtn.textContent = '⏸';
+  pauseBtn.classList.remove('paused');
   placeFood();
 }
 
@@ -692,10 +711,21 @@ document.addEventListener('keydown', e => {
     case 'ArrowLeft':  case 'a': case 'A': e.preventDefault(); setDir(-1, 0); break;
     case 'ArrowRight': case 'd': case 'D': e.preventDefault(); setDir(1, 0);  break;
     case 'p': case 'P':
-      if (alive) { paused = !paused; paused ? AudioEngine.pause() : AudioEngine.resume(); }
+      togglePause();
       break;
   }
 });
+
+// --- Pause toggle ---
+function togglePause() {
+  if (!alive) return;
+  paused = !paused;
+  const btn = document.getElementById('pause-btn');
+  btn.textContent = paused ? '▶' : '⏸';
+  btn.classList.toggle('paused', paused);
+  paused ? AudioEngine.pause() : AudioEngine.resume();
+}
+document.getElementById('pause-btn').addEventListener('click', togglePause);
 
 // --- Touch swipe (full canvas) ---
 let touchStart = null;
