@@ -513,6 +513,80 @@
     box-shadow: 0 0 20px var(--accent-glow);
   }
   #dpad.edit-mode .drag-handle { display: none; }
+
+  /* Turn Controls (2-button) */
+  #turn-controls {
+    position: fixed;
+    bottom: max(env(safe-area-inset-bottom), 24px);
+    right: max(env(safe-area-inset-right), 16px);
+    display: none;
+    flex-direction: row;
+    gap: 16px;
+    z-index: 15;
+    opacity: 0.3;
+    transition: opacity 0.3s;
+  }
+  #turn-controls.active { opacity: 0.9; }
+  #turn-controls .turn-btn {
+    width: 72px;
+    height: 72px;
+    background: rgba(255,255,255,0.06);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition: background 0.08s, transform 0.08s, box-shadow 0.08s;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  #turn-controls .turn-btn svg {
+    width: 32px;
+    height: 32px;
+    fill: none;
+    stroke: rgba(255,255,255,0.45);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  #turn-controls .turn-btn:active, #turn-controls .turn-btn.pressed {
+    background: var(--accent-glow-mid);
+    border-color: var(--accent-glow);
+    box-shadow: 0 0 20px var(--accent-glow), inset 0 0 10px var(--accent-glow-soft);
+    transform: scale(0.9);
+  }
+  #turn-controls .turn-btn:active svg, #turn-controls .turn-btn.pressed svg {
+    stroke: var(--accent);
+  }
+  .control-mode-toggle {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .control-mode-btn {
+    background: none;
+    border: 1.5px solid rgba(255,255,255,0.1);
+    color: var(--accent-dim);
+    font-family: inherit;
+    font-size: 0.75rem;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .control-mode-btn.active {
+    background: var(--accent-glow-mid);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
 </style>
 </head>
 <body>
@@ -539,6 +613,10 @@
   <button id="lbBtn"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="vertical-align:middle;margin-right:4px"><path d="M2 14h3V6H2v8zm4.5 0h3V2h-3v12zm4.5 0h3V9H11v5z"/></svg>Leaderboard</button>
   <button id="mute-btn" title="Toggle music"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="1" y="3" width="2" height="4"/><rect x="3" y="2" width="2" height="6"/><rect x="5" y="1" width="1" height="8"/><rect x="7" y="3" width="1" height="4"/><rect x="9" y="2" width="1" height="6"/></svg> Music</button>
   <button id="options-btn" title="Themes"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="1" y="1" width="2" height="2"/><rect x="7" y="1" width="2" height="2"/><rect x="4" y="3" width="2" height="2"/><rect x="1" y="5" width="2" height="2"/><rect x="7" y="5" width="2" height="2"/><rect x="4" y="7" width="2" height="2"/></svg> Themes</button>
+  <div class="control-mode-toggle">
+    <button class="control-mode-btn active" data-mode="dpad">D-Pad</button>
+    <button class="control-mode-btn" data-mode="turn">Turn</button>
+  </div>
   <button id="controls-btn" title="Customize Controls"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="3" y="0" width="4" height="2"/><rect x="1" y="2" width="2" height="2"/><rect x="7" y="2" width="2" height="2"/><rect x="3" y="2" width="4" height="2"/><rect x="3" y="4" width="4" height="2"/><rect x="1" y="6" width="2" height="2"/><rect x="7" y="6" width="2" height="2"/><rect x="3" y="6" width="4" height="2"/><rect x="3" y="8" width="4" height="2"/></svg> Controls</button>
   </div>
 </div>
@@ -581,6 +659,11 @@
     <span class="edit-hint">Drag each <span class="accent">button</span></span>
     <button id="controls-done-btn">Done</button>
   </div>
+</div>
+
+<div id="turn-controls">
+  <div class="turn-btn" data-turn="ccw" title="Turn Counter-Clockwise"><svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" fill="none" stroke="inherit"/><polyline points="8 14 4 18 8 22" transform="translate(0,-7)"/></svg></div>
+  <div class="turn-btn" data-turn="cw" title="Turn Clockwise"><svg viewBox="0 0 24 24"><path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z" fill="none" stroke="inherit"/><polyline points="16 14 20 18 16 22" transform="translate(0,-7)"/></svg></div>
 </div>
 
 <script>
@@ -921,6 +1004,8 @@ const THEMES = {
 };
 
 let currentTheme = localStorage.getItem('snakeTheme') || 'default';
+let controlMode = localStorage.getItem('snake_control_mode') || 'dpad'; // 'dpad' or 'turn'
+const TURN_ORDER = ['up','right','down','left']; // clockwise
 
 function applyTheme(id) {
   currentTheme = id;
@@ -1505,6 +1590,22 @@ function setDir(x, y) {
   nextDir = {x, y};
 }
 
+function turnClockwise() {
+  const dirMap = {up:[0,-1], right:[1,0], down:[0,1], left:[-1,0]};
+  let curDirName = Object.keys(dirMap).find(k => dirMap[k][0] === dir.x && dirMap[k][1] === dir.y) || 'right';
+  let idx = TURN_ORDER.indexOf(curDirName);
+  let next = TURN_ORDER[(idx + 1) % 4];
+  setDir(...dirMap[next]);
+}
+
+function turnCounterClockwise() {
+  const dirMap = {up:[0,-1], right:[1,0], down:[0,1], left:[-1,0]};
+  let curDirName = Object.keys(dirMap).find(k => dirMap[k][0] === dir.x && dirMap[k][1] === dir.y) || 'right';
+  let idx = TURN_ORDER.indexOf(curDirName);
+  let next = TURN_ORDER[(idx + 3) % 4]; // -1 mod 4 = 3
+  setDir(...dirMap[next]);
+}
+
 // --- Main loop — requestAnimationFrame for 120Hz ProMotion ---
 function loop(now) {
   const hasEffects = deathFlash > 0 || deathSegments.length > 0 || particles.length > 0;
@@ -1563,10 +1664,23 @@ document.addEventListener('keydown', e => {
   // Don't hijack keys when user is typing in an input
   if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
   switch (e.key) {
-    case 'ArrowUp':    case 'w': case 'W': e.preventDefault(); setDir(0, -1); break;
-    case 'ArrowDown':  case 's': case 'S': e.preventDefault(); setDir(0, 1);  break;
-    case 'ArrowLeft':  case 'a': case 'A': e.preventDefault(); setDir(-1, 0); break;
-    case 'ArrowRight': case 'd': case 'D': e.preventDefault(); setDir(1, 0);  break;
+
+    case 'ArrowRight': case 'd': case 'D':
+      e.preventDefault();
+      if (controlMode === 'turn') { turnClockwise(); } else { setDir(1, 0); }
+      break;
+    case 'ArrowLeft': case 'a': case 'A':
+      e.preventDefault();
+      if (controlMode === 'turn') { turnCounterClockwise(); } else { setDir(-1, 0); }
+      break;
+    case 'ArrowUp': case 'w': case 'W':
+      e.preventDefault();
+      if (controlMode !== 'turn') setDir(0, -1);
+      break;
+    case 'ArrowDown': case 's': case 'S':
+      e.preventDefault();
+      if (controlMode !== 'turn') setDir(0, 1);
+      break;
     case 'p': case 'P':
       togglePause();
       break;
@@ -1804,6 +1918,51 @@ const AudioEngine = (() => {
 // --- Mute button ---
 // --- D-pad controls ---
 const dpad = document.getElementById('dpad');
+const turnControls = document.getElementById('turn-controls');
+
+function applyControlMode(mode) {
+  controlMode = mode;
+  localStorage.setItem('snake_control_mode', mode);
+  if (mode === 'turn') {
+    dpad.style.display = 'none';
+    turnControls.style.display = 'flex';
+  } else {
+    dpad.style.display = '';
+    turnControls.style.display = 'none';
+  }
+  document.querySelectorAll('.control-mode-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+}
+applyControlMode(controlMode);
+
+document.querySelectorAll('.control-mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => applyControlMode(btn.dataset.mode));
+});
+
+// Turn controls touch/pointer handling
+const turnDirs = { cw: turnClockwise, ccw: turnCounterClockwise };
+let turnTimeout;
+document.querySelectorAll('#turn-controls .turn-btn').forEach(btn => {
+  const action = turnDirs[btn.dataset.turn];
+  const doTurn = e => {
+    e.preventDefault(); e.stopPropagation();
+    if (paused && alive) togglePause();
+    action(); btn.classList.add('pressed');
+    turnControls.classList.add('active');
+    clearTimeout(turnTimeout);
+  };
+  const unTurn = () => {
+    btn.classList.remove('pressed');
+    turnTimeout = setTimeout(() => turnControls.classList.remove('active'), 600);
+  };
+  btn.addEventListener('touchstart', doTurn, {passive: false});
+  btn.addEventListener('touchend', unTurn, {passive: false});
+  btn.addEventListener('touchcancel', unTurn, {passive: false});
+  btn.addEventListener('mousedown', doTurn);
+  btn.addEventListener('mouseup', unTurn);
+  btn.addEventListener('mouseleave', unTurn);
+});
 
 // --- D-pad position (localStorage) ---
 const DPAD_BTNS = ['up', 'down', 'left', 'right'];
