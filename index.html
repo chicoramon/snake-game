@@ -514,6 +514,23 @@
   }
   #dpad.edit-mode .drag-handle { display: none; }
 
+  /* Turn Controls edit-mode */
+  #turn-controls.edit-mode { pointer-events: auto; opacity: 1 !important; z-index: 50 !important; }
+  #turn-controls.edit-mode .turn-btn {
+    pointer-events: auto;
+    opacity: 0.85;
+    background: rgba(78,204,163,0.12);
+    border: 2px dashed var(--accent);
+    cursor: grab;
+    z-index: 50;
+  }
+  #turn-controls.edit-mode .turn-btn:active { cursor: grabbing; }
+  #turn-controls.edit-mode .turn-btn.dragging {
+    opacity: 1;
+    background: rgba(78,204,163,0.25);
+    box-shadow: 0 0 20px var(--accent-glow);
+  }
+
   /* Turn Controls (2-button) */
   #turn-controls {
     position: fixed;
@@ -568,24 +585,29 @@
     gap: 6px;
     margin-top: 8px;
   }
-  .control-mode-btn {
-    background: none;
+  #overlay .control-mode-btn {
+    background: rgba(255,255,255,0.05);
     border: 1.5px solid rgba(255,255,255,0.1);
-    color: var(--accent-dim);
+    color: rgba(255,255,255,0.35);
     font-family: inherit;
     font-size: 0.75rem;
-    padding: 5px 10px;
+    padding: 5px 14px;
     cursor: pointer;
     border-radius: 8px;
     text-transform: uppercase;
     letter-spacing: 1px;
-    transition: all 0.15s;
+    transition: all 0.2s;
     -webkit-tap-highlight-color: transparent;
+    box-shadow: none;
+    text-shadow: none;
   }
-  .control-mode-btn.active {
-    background: var(--accent-glow-mid);
+  #overlay .control-mode-btn.active {
+    background: var(--accent);
     border-color: var(--accent);
-    color: var(--accent);
+    color: #000;
+    font-weight: 700;
+    box-shadow: 0 0 14px var(--accent-glow);
+    text-shadow: none;
   }
 </style>
 </head>
@@ -1946,6 +1968,7 @@ let turnTimeout;
 document.querySelectorAll('#turn-controls .turn-btn').forEach(btn => {
   const action = turnDirs[btn.dataset.turn];
   const doTurn = e => {
+    if (turnControls.classList.contains('edit-mode')) return;
     e.preventDefault(); e.stopPropagation();
     if (paused && alive) togglePause();
     action(); btn.classList.add('pressed');
@@ -2103,25 +2126,73 @@ function getViewportBounds() {
   };
 }
 
+// --- Turn Controls position (localStorage) ---
+const TURN_BTNS = ['ccw', 'cw'];
+
+function loadTurnBtnPos(id) {
+  try {
+    const saved = JSON.parse(localStorage.getItem('snake_turn_' + id));
+    if (saved && typeof saved.x === 'number' && typeof saved.y === 'number') return saved;
+  } catch(e) {}
+  return null;
+}
+function saveTurnBtnPos(id, pos) {
+  localStorage.setItem('snake_turn_' + id, JSON.stringify(pos));
+}
+function applyTurnBtnPos(id, pos) {
+  const btn = turnControls.querySelector('.turn-btn[data-turn="' + id + '"]');
+  if (!btn) return;
+  btn.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+  btn._offsetX = pos.x;
+  btn._offsetY = pos.y;
+}
+function resetTurnBtnPos(id) {
+  const btn = turnControls.querySelector('.turn-btn[data-turn="' + id + '"]');
+  if (!btn) return;
+  btn.style.transform = '';
+  btn._offsetX = 0;
+  btn._offsetY = 0;
+  localStorage.removeItem('snake_turn_' + id);
+}
+
+// Load saved turn positions
+TURN_BTNS.forEach(id => {
+  const saved = loadTurnBtnPos(id);
+  if (saved) applyTurnBtnPos(id, saved);
+});
+
 function startControlsEdit() {
-  dpad.classList.add('edit-mode');
   controlsOverlay.classList.add('visible');
   overlay.style.display = 'none';
+  if (controlMode === 'turn') {
+    turnControls.classList.add('edit-mode');
+    document.querySelector('#controls-edit-bar .edit-hint').innerHTML = 'Drag each <span class="accent">button</span>';
+  } else {
+    dpad.classList.add('edit-mode');
+    document.querySelector('#controls-edit-bar .edit-hint').innerHTML = 'Drag each <span class="accent">button</span>';
+  }
 }
 
 function stopControlsEdit() {
   dpad.classList.remove('edit-mode');
+  turnControls.classList.remove('edit-mode');
   controlsOverlay.classList.remove('visible');
   overlay.style.display = '';
-  // Save all button offsets
+  // Save dpad offsets
   DPAD_BTNS.forEach(dir => {
     const btn = dpad.querySelector('.btn.' + dir);
     if (!btn) return;
     const ox = btn._offsetX || 0;
     const oy = btn._offsetY || 0;
-    if (ox !== 0 || oy !== 0) {
-      saveBtnPos(dir, { x: ox, y: oy });
-    }
+    if (ox !== 0 || oy !== 0) saveBtnPos(dir, { x: ox, y: oy });
+  });
+  // Save turn offsets
+  TURN_BTNS.forEach(id => {
+    const btn = turnControls.querySelector('.turn-btn[data-turn="' + id + '"]');
+    if (!btn) return;
+    const ox = btn._offsetX || 0;
+    const oy = btn._offsetY || 0;
+    if (ox !== 0 || oy !== 0) saveTurnBtnPos(id, { x: ox, y: oy });
   });
 }
 
@@ -2129,11 +2200,16 @@ controlsBtn.addEventListener('click', startControlsEdit);
 controlsDoneBtn.addEventListener('click', stopControlsEdit);
 
 controlsResetBtn.addEventListener('click', () => {
-  DPAD_BTNS.forEach(dir => resetBtnPos(dir));
+  if (controlMode === 'turn') {
+    TURN_BTNS.forEach(id => resetTurnBtnPos(id));
+  } else {
+    DPAD_BTNS.forEach(dir => resetBtnPos(dir));
+  }
 });
 
 function onBtnDragStart(e) {
-  if (!dpad.classList.contains('edit-mode')) return;
+  const parent = e.currentTarget.closest('#dpad, #turn-controls');
+  if (!parent || !parent.classList.contains('edit-mode')) return;
   e.preventDefault();
   e.stopPropagation();
   draggingBtn = e.currentTarget;
@@ -2141,12 +2217,10 @@ function onBtnDragStart(e) {
   const touch = e.touches ? e.touches[0] : e;
   dragStartX = touch.clientX;
   dragStartY = touch.clientY;
-  // Get the dpad's actual position to compute offset
-  const dpadRect = dpad.getBoundingClientRect();
+  const parentRect = parent.getBoundingClientRect();
   const btnRect = draggingBtn.getBoundingClientRect();
-  // Store the button's center offset from the dpad's center at drag start
-  dragStartBtnOffsetX = (btnRect.left + btnRect.width / 2) - (dpadRect.left + dpadRect.width / 2);
-  dragStartBtnOffsetY = (btnRect.top + btnRect.height / 2) - (dpadRect.top + dpadRect.height / 2);
+  dragStartBtnOffsetX = (btnRect.left + btnRect.width / 2) - (parentRect.left + parentRect.width / 2);
+  dragStartBtnOffsetY = (btnRect.top + btnRect.height / 2) - (parentRect.top + parentRect.height / 2);
 }
 
 function onBtnDragMove(e) {
@@ -2157,11 +2231,11 @@ function onBtnDragMove(e) {
   const dy = touch.clientY - dragStartY;
   let newOffsetX = dragStartBtnOffsetX + dx;
   let newOffsetY = dragStartBtnOffsetY + dy;
-  // Clamp so button stays on screen
-  const dpadRect = dpad.getBoundingClientRect();
+  const parent = draggingBtn.closest('#dpad, #turn-controls');
+  const parentRect = parent.getBoundingClientRect();
   const bounds = getViewportBounds();
-  const btnCenterX = dpadRect.left + dpadRect.width / 2 + newOffsetX;
-  const btnCenterY = dpadRect.top + dpadRect.height / 2 + newOffsetY;
+  const btnCenterX = parentRect.left + parentRect.width / 2 + newOffsetX;
+  const btnCenterY = parentRect.top + parentRect.height / 2 + newOffsetY;
   if (btnCenterX < 28) newOffsetX -= btnCenterX - 28;
   if (btnCenterX > bounds.w - 28) newOffsetX -= btnCenterX - (bounds.w - 28);
   if (btnCenterY < 28) newOffsetY -= btnCenterY - 28;
@@ -2177,7 +2251,13 @@ function onBtnDragEnd() {
   draggingBtn = null;
 }
 
+// Attach drag to dpad buttons
 document.querySelectorAll('#dpad .btn').forEach(btn => {
+  btn.addEventListener('touchstart', onBtnDragStart, { passive: false });
+  btn.addEventListener('mousedown', onBtnDragStart);
+});
+// Attach drag to turn buttons
+document.querySelectorAll('#turn-controls .turn-btn').forEach(btn => {
   btn.addEventListener('touchstart', onBtnDragStart, { passive: false });
   btn.addEventListener('mousedown', onBtnDragStart);
 });
