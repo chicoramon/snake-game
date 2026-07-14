@@ -60,6 +60,14 @@
   }
   #score-bar .label { color: #888; }
   #score-bar .val { color: var(--accent); font-variant-numeric: tabular-nums; }
+  #timer-block { display: none; }
+  #timer-block.visible { display: block; }
+  #timer.urgent {
+    color: #ff5a5a;
+    animation: timer-pulse 0.6s steps(2, end) infinite;
+  }
+  @keyframes timer-pulse { 50% { opacity: 0.45; } }
+  @media (prefers-reduced-motion: reduce) { #timer.urgent { animation: none; } }
   #pause-btn {
     background: rgba(255,255,255,0.06);
     border: 1.5px solid rgba(255,255,255,0.1);
@@ -126,6 +134,43 @@
     transition: transform 0.1s;
   }
   #overlay button:active { transform: scale(0.95); }
+  .game-mode-toggle {
+    display: flex;
+    gap: 8px;
+    margin: 0 0 14px;
+  }
+  #overlay .game-mode-btn {
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid rgba(255,255,255,0.14);
+    color: #aaa;
+    font-family: inherit;
+    font-size: 0.78rem;
+    padding: 7px 14px;
+    border-radius: 8px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    box-shadow: none;
+  }
+  #overlay .game-mode-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+    box-shadow: 0 0 14px var(--accent-glow);
+  }
+  #countdownDisplay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 15;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    font-size: clamp(5rem, 25vw, 9rem);
+    font-weight: 900;
+    text-shadow: 0 0 28px var(--accent-glow);
+    pointer-events: none;
+  }
+  #countdownDisplay.visible { display: flex; }
   #shareBtn, #lbBtn {
     display: none;
     background: transparent;
@@ -153,6 +198,14 @@
     font-size: 0.85rem;
     letter-spacing: 2px;
   }
+  #scoreMethodLabel {
+    color: var(--accent-dim);
+    font-size: 0.68rem;
+    letter-spacing: 1px;
+    text-align: center;
+    text-transform: uppercase;
+  }
+  #scoreMethodLabel.unranked { color: #ff8b8b; }
   #nameInput {
     background: rgba(255,255,255,0.06);
     border: 2px solid var(--accent-dim);
@@ -190,7 +243,7 @@
     display: none;
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.94);
+    background: #000;
     z-index: 100;
     flex-direction: column;
     align-items: center;
@@ -206,17 +259,31 @@
     text-transform: uppercase;
     margin-bottom: 14px;
   }
+  .lb-filter-group {
+    width: 100%;
+    max-width: 520px;
+    margin-bottom: 12px;
+  }
+  .lb-filter-label {
+    display: block;
+    color: #aaa;
+    font-size: 0.62rem;
+    letter-spacing: 2px;
+    text-align: center;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
   .lb-filters {
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
     justify-content: center;
-    margin-bottom: 16px;
+    margin-bottom: 0;
   }
   .lb-filter {
     background: none;
     border: 1.5px solid rgba(255,255,255,0.1);
-    color: var(--accent-dim);
+    color: #aaa;
     font-family: inherit;
     font-size: 0.75rem;
     padding: 5px 10px;
@@ -229,7 +296,7 @@
   .lb-filter.active {
     background: var(--accent-glow-mid);
     border-color: var(--accent);
-    color: var(--accent);
+    color: #fff;
   }
   .lb-table {
     width: 100%;
@@ -237,7 +304,7 @@
     border-collapse: collapse;
   }
   .lb-table th {
-    color: var(--accent-dim);
+    color: #aaa;
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -254,10 +321,47 @@
   .lb-table tr.top1 td { color: #ffd700; font-weight: 700; }
   .lb-table tr.top2 td { color: #c0c0c0; font-weight: 700; }
   .lb-table tr.top3 td { color: #cd7f32; font-weight: 700; }
-  .lb-table .lb-rank { width: 32px; text-align: center; color: var(--accent-dim); }
+  .lb-table .lb-rank { width: 32px; text-align: center; color: #aaa; }
   .lb-table .lb-score { text-align: right; font-variant-numeric: tabular-nums; }
-  .lb-table .lb-theme-col { color: rgba(255,255,255,0.25); font-size: 0.7rem; }
+  .lb-table .lb-theme-col { color: #999; font-size: 0.7rem; }
+  .lb-method-tag {
+    display: inline-block;
+    margin-left: 7px;
+    color: #aaa;
+    font-size: 0.58rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    vertical-align: 1px;
+  }
   .lb-table tr.you td { background: var(--accent-glow-soft); }
+  .lb-pagination {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    width: 100%;
+    max-width: 420px;
+    margin-top: 16px;
+  }
+  .lb-page-btn {
+    min-width: 76px;
+    background: transparent;
+    border: 1.5px solid var(--accent-dim);
+    border-radius: 8px;
+    color: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.72rem;
+    padding: 7px 10px;
+    text-transform: uppercase;
+  }
+  .lb-page-btn:disabled { opacity: 0.3; cursor: default; }
+  #lbPageInfo {
+    color: #aaa;
+    font-size: 0.7rem;
+    min-width: 100px;
+    text-align: center;
+  }
   #lbBack {
     margin-top: 18px;
     background: transparent;
@@ -274,12 +378,12 @@
   #lbBack:hover { background: var(--accent-glow-mid); }
   #lbBack:active { transform: scale(0.95); }
   #lbLoading {
-    color: var(--accent-dim);
+    color: #aaa;
     font-size: 0.9rem;
     margin: 30px 0;
   }
   #lbEmpty {
-    color: var(--accent-dim);
+    color: #aaa;
     font-size: 0.9rem;
     margin: 30px 0;
     display: none;
@@ -628,20 +732,27 @@
 
 <div id="score-bar">
   <div><span class="label">SCORE </span><span class="val" id="score">0</span></div>
+  <div id="timer-block"><span class="label">TIME </span><span class="val" id="timer">1:00</span></div>
   <button id="pause-btn" title="Pause (P)" aria-label="Pause game"><svg width="18" height="18" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="2" y="1" width="2" height="8"/><rect x="6" y="1" width="2" height="8"/></svg></button>
   <div><span class="label">BEST </span><span class="val" id="best">0</span></div>
 </div>
 
 <canvas id="game" role="img" aria-label="Snake game board"></canvas>
+<div id="countdownDisplay" aria-live="assertive"></div>
 
 <div id="overlay">
   <div class="ov-content">
   <h2 id="overlayTitle"><svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="#4ecca3"><rect x="3" y="0" width="2" height="2"/><rect x="5" y="0" width="2" height="2"/><rect x="1" y="2" width="2" height="2"/><rect x="3" y="2" width="2" height="2"/><rect x="1" y="4" width="2" height="2"/><rect x="3" y="4" width="2" height="2"/><rect x="5" y="4" width="2" height="2"/><rect x="7" y="4" width="2" height="2"/><rect x="3" y="6" width="2" height="2"/><rect x="5" y="6" width="2" height="2"/><rect x="7" y="6" width="2" height="2"/><rect x="1" y="8" width="2" height="2"/><rect x="3" y="8" width="2" height="2"/><rect x="5" y="8" width="2" height="2"/><rect x="7" y="8" width="2" height="2"/><rect x="3" y="2" width="2" height="2" fill="#0aff00"/><rect x="5" y="2" width="2" height="2" fill="#6b4226"/></svg> Snake</h2>
   <div id="themeLabel" class="theme-label">Default Theme</div>
   <p id="overlayMsg">Ready to play?</p>
+  <div class="game-mode-toggle" aria-label="Game mode">
+    <button class="game-mode-btn active" data-game-mode="classic" type="button">Classic</button>
+    <button class="game-mode-btn" data-game-mode="sprint" type="button">Sprint 60</button>
+  </div>
   <button id="startBtn">Play</button>
   <div id="namePrompt">
     <span class="np-label">Enter your initials</span>
+    <span id="scoreMethodLabel"></span>
     <input id="nameInput" type="text" maxlength="3" placeholder="___" autocomplete="off" />
     <button id="submitScoreBtn" disabled>Submit</button>
   </div>
@@ -659,10 +770,26 @@
 
 <div id="leaderboardOverlay">
   <h2><svg width="18" height="18" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="#ffd700"><rect x="4" y="0" width="2" height="2"/><rect x="2" y="2" width="6" height="2"/><rect x="3" y="4" width="4" height="1"/><rect x="3" y="5" width="1" height="3"/><rect x="6" y="5" width="1" height="3"/><rect x="4" y="5" width="2" height="4"/></svg> Leaderboard</h2>
-  <div class="lb-filters" id="lbFilters"></div>
+  <div class="lb-filter-group">
+    <span class="lb-filter-label">Mode</span>
+    <div class="lb-filters" id="lbGameModeFilters"></div>
+  </div>
+  <div class="lb-filter-group">
+    <span class="lb-filter-label">Control</span>
+    <div class="lb-filters" id="lbControlFilters"></div>
+  </div>
+  <div class="lb-filter-group">
+    <span class="lb-filter-label">Theme</span>
+    <div class="lb-filters" id="lbThemeFilters"></div>
+  </div>
   <div id="lbLoading">Loading...</div>
   <div id="lbEmpty">No scores yet. Be the first!</div>
   <table class="lb-table" id="lbTable"><thead><tr><th class="lb-rank">#</th><th>Name</th><th class="lb-theme-col">Theme</th><th class="lb-score">Score</th></tr></thead><tbody id="lbBody"></tbody></table>
+  <div class="lb-pagination" id="lbPagination">
+    <button class="lb-page-btn" id="lbPrev" type="button">Prev</button>
+    <span id="lbPageInfo" aria-live="polite">Page 1 of 1</span>
+    <button class="lb-page-btn" id="lbNext" type="button">Next</button>
+  </div>
   <button id="lbBack">Back</button>
 </div>
 
@@ -713,18 +840,28 @@ const lbBtn = document.getElementById('lbBtn');
 const namePrompt = document.getElementById('namePrompt');
 const nameInput = document.getElementById('nameInput');
 const submitScoreBtn = document.getElementById('submitScoreBtn');
+const scoreMethodLabel = document.getElementById('scoreMethodLabel');
 const leaderboardOverlay = document.getElementById('leaderboardOverlay');
-const lbFilters = document.getElementById('lbFilters');
+const lbGameModeFilters = document.getElementById('lbGameModeFilters');
+const lbControlFilters = document.getElementById('lbControlFilters');
+const lbThemeFilters = document.getElementById('lbThemeFilters');
 const lbBody = document.getElementById('lbBody');
 const lbLoading = document.getElementById('lbLoading');
 const lbEmpty = document.getElementById('lbEmpty');
 const lbTable = document.getElementById('lbTable');
+const lbPagination = document.getElementById('lbPagination');
+const lbPrev = document.getElementById('lbPrev');
+const lbNext = document.getElementById('lbNext');
+const lbPageInfo = document.getElementById('lbPageInfo');
 const lbBack = document.getElementById('lbBack');
 const overlayTitle = document.getElementById('overlayTitle');
 const themeLabel = document.getElementById('themeLabel');
 const overlayMsg = document.getElementById('overlayMsg');
 const scoreEl = document.getElementById('score');
 const bestEl = document.getElementById('best');
+const timerBlock = document.getElementById('timer-block');
+const timerEl = document.getElementById('timer');
+const countdownDisplay = document.getElementById('countdownDisplay');
 
 // --- Responsive canvas ---
 const CELL = 20;
@@ -778,13 +915,30 @@ if (window.visualViewport) {
 
 // --- State ---
 let snake, dir, nextDir, food, score, best, speed, alive, paused;
+let runControlMethod = null;
+let runUsesMixedControls = false;
 let lastTick = 0, tickAccum = 0;
+let animationFrameId = null;
+let gameMode = localStorage.getItem('snake_game_mode') || 'classic';
+if (!['classic', 'sprint'].includes(gameMode)) gameMode = 'classic';
+let runGameMode = gameMode;
+let countdownActive = false;
+let countdownRemainingMs = 0;
+let sprintRemainingMs = 60000;
+let lastTimerSecond = 60;
 
-best = parseInt(localStorage.getItem('snakeBest120')) || 0;
+const BEST_KEYS = { classic: 'snakeBest120', sprint: 'snakeBest120_sprint' };
+const bestScores = {
+  classic: parseInt(localStorage.getItem(BEST_KEYS.classic)) || 0,
+  sprint: parseInt(localStorage.getItem(BEST_KEYS.sprint)) || 0
+};
+best = bestScores[gameMode];
 bestEl.textContent = best;
 
 const BASE_INTERVAL = 110;  // ms per game step
 const MIN_INTERVAL = 55;
+const SPRINT_DURATION_MS = 60000;
+const SPRINT_COUNTDOWN_MS = 3000;
 
 // ============================================================
 // THEME SYSTEM
@@ -1047,6 +1201,13 @@ const THEMES = {
 let currentTheme = localStorage.getItem('snakeTheme') || 'default';
 let controlMode = localStorage.getItem('snake_control_mode') || 'dpad'; // 'dpad' or 'turn'
 const TURN_ORDER = ['up','right','down','left']; // clockwise
+const CONTROL_LABELS = { dpad: 'D-PAD', turn: 'TURN', keyboard: 'KEYBOARD', legacy: 'LEGACY' };
+
+function registerControlMethod(method) {
+  if (!alive || countdownActive) return;
+  if (!runControlMethod) runControlMethod = method;
+  else if (runControlMethod !== method) runUsesMixedControls = true;
+}
 
 function applyTheme(id) {
   currentTheme = id;
@@ -1076,7 +1237,37 @@ function applyTheme(id) {
 // Initialize theme
 applyTheme(currentTheme);
 
-function reset() {
+function formatSprintTime(ms) {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, '0')}`;
+}
+
+function updateSprintTimer(force = false) {
+  const second = Math.max(0, Math.ceil(sprintRemainingMs / 1000));
+  if (!force && second === lastTimerSecond) return;
+  lastTimerSecond = second;
+  timerEl.textContent = formatSprintTime(sprintRemainingMs);
+  timerEl.classList.toggle('urgent', second > 0 && second <= 10);
+}
+
+function applyGameMode(mode) {
+  gameMode = mode;
+  localStorage.setItem('snake_game_mode', mode);
+  best = bestScores[mode];
+  bestEl.textContent = best;
+  document.querySelectorAll('.game-mode-btn').forEach(btn => {
+    const selected = btn.dataset.gameMode === mode;
+    btn.classList.toggle('active', selected);
+    btn.setAttribute('aria-pressed', String(selected));
+  });
+}
+
+document.querySelectorAll('.game-mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => applyGameMode(btn.dataset.gameMode));
+});
+applyGameMode(gameMode);
+
+function reset(startingRun = false) {
   const cx = Math.floor(COLS / 2);
   const cy = Math.floor(ROWS / 2);
   snake = [{x: cx, y: cy}, {x: cx-1, y: cy}, {x: cx-2, y: cy}];
@@ -1084,9 +1275,17 @@ function reset() {
   nextDir = {x: 1, y: 0};
   score = 0;
   speed = BASE_INTERVAL;
-  alive = true;
+  alive = startingRun;
   paused = false;
   tickAccum = 0;
+  sprintRemainingMs = SPRINT_DURATION_MS;
+  lastTimerSecond = 60;
+  countdownActive = startingRun && runGameMode === 'sprint';
+  countdownRemainingMs = countdownActive ? SPRINT_COUNTDOWN_MS : 0;
+  countdownDisplay.textContent = countdownActive ? '3' : '';
+  countdownDisplay.classList.toggle('visible', countdownActive);
+  timerBlock.classList.toggle('visible', startingRun && runGameMode === 'sprint');
+  updateSprintTimer(true);
   scoreEl.textContent = 0;
   // Clear effects
   particles.length = 0;
@@ -1581,7 +1780,12 @@ function gameTick() {
     // Food scale punch
     foodScaleTarget = 1.6;
     foodScale = 0.3;
-    if (score > best) { best = score; bestEl.textContent = best; localStorage.setItem('snakeBest120', best); }
+    if (score > best) {
+      best = score;
+      bestScores[runGameMode] = best;
+      bestEl.textContent = best;
+      localStorage.setItem(BEST_KEYS[runGameMode], best);
+    }
     placeFood();
     speed = Math.max(MIN_INTERVAL, BASE_INTERVAL - score * 2);
   } else {
@@ -1589,49 +1793,80 @@ function gameTick() {
   }
 }
 
-function die() {
+function showRunResult(reason) {
+  const isSprint = runGameMode === 'sprint';
+  overlayTitle.innerHTML = reason === 'time'
+    ? 'TIME UP!'
+    : '<svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="#ff003c"><rect x="2" y="1" width="6" height="2"/><rect x="1" y="3" width="8" height="2"/><rect x="1" y="5" width="2" height="2"/><rect x="7" y="5" width="2" height="2"/><rect x="3" y="5" width="4" height="2" fill="rgba(0,0,0,0.3)"/><rect x="2" y="7" width="2" height="2"/><rect x="6" y="7" width="2" height="2"/><rect x="3" y="9" width="4" height="1"/></svg> Game Over';
+  overlayMsg.textContent = `${isSprint ? 'Sprint ' : ''}Score: ${score}`;
+  startBtn.textContent = 'Play Again';
+  shareBtn.style.display = 'block';
+  lbBtn.style.display = 'block';
+  namePrompt.style.setProperty('display', 'flex', 'important');
+  nameInput.value = '';
+  const scoreMethod = runControlMethod || controlMode;
+  scoreMethodLabel.textContent = runUsesMixedControls
+    ? 'Mixed controls — this run is unranked'
+    : `${runGameMode === 'sprint' ? 'SPRINT' : 'CLASSIC'} • ${CONTROL_LABELS[scoreMethod]} leaderboard`;
+  scoreMethodLabel.classList.toggle('unranked', runUsesMixedControls);
+  submitScoreBtn.textContent = runUsesMixedControls ? 'Unranked' : 'Submit';
+  submitScoreBtn.disabled = true;
+  nameInput.disabled = runUsesMixedControls;
+  overlay.classList.remove('hidden');
+}
+
+function finishRun(reason) {
+  if (!alive) return;
   alive = false;
-  deathFlash = 0.5;
-  screenShake = 15; // frames of shake
+  countdownActive = false;
+  countdownDisplay.classList.remove('visible');
   haptic('die');
-  AudioEngine.sfxDie();
   AudioEngine.stop();
-  // Death explosion: scatter segments + particles
-  spawnDeathExplosion();
-  spawnParticles(
-    snake[0].x * CELL + CELL / 2,
-    snake[0].y * CELL + CELL / 2,
-    30, THEMES[currentTheme].deathParticle, 3, 1.5
-  );
-  trailPoints = []; // clear trail
-  setTimeout(() => {
-    overlayTitle.innerHTML = '<svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="#ff003c"><rect x="2" y="1" width="6" height="2"/><rect x="1" y="3" width="8" height="2"/><rect x="1" y="5" width="2" height="2"/><rect x="7" y="5" width="2" height="2"/><rect x="3" y="5" width="4" height="2" fill="rgba(0,0,0,0.3)"/><rect x="2" y="7" width="2" height="2"/><rect x="6" y="7" width="2" height="2"/><rect x="3" y="9" width="4" height="1"/></svg> Game Over';
-    overlayMsg.textContent = `Score: ${score}`;
-    startBtn.textContent = 'Play Again';
-    shareBtn.style.display = 'block';
-    lbBtn.style.display = 'block';
-    // Show name prompt
-    namePrompt.style.setProperty('display', 'flex', 'important');
-    nameInput.value = '';
-    submitScoreBtn.disabled = true;
-    overlay.classList.remove('hidden');
-  }, 600);
+  if (reason === 'collision') {
+    deathFlash = 0.5;
+    screenShake = 15;
+    AudioEngine.sfxDie();
+    spawnDeathExplosion();
+    spawnParticles(
+      snake[0].x * CELL + CELL / 2,
+      snake[0].y * CELL + CELL / 2,
+      30, THEMES[currentTheme].deathParticle, 3, 1.5
+    );
+    trailPoints = [];
+  } else {
+    sprintRemainingMs = 0;
+    updateSprintTimer(true);
+  }
+  setTimeout(() => showRunResult(reason), reason === 'collision' ? 600 : 250);
+}
+
+function die() {
+  finishRun('collision');
 }
 
 function startGame() {
+  if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
   overlay.classList.add('hidden');
   shareBtn.style.display = 'none';
   lbBtn.style.display = 'none';
   namePrompt.style.display = 'none';
   submittedThisRound = false;
-  reset();
+  runControlMethod = null;
+  runUsesMixedControls = false;
+  nameInput.disabled = false;
+  scoreMethodLabel.classList.remove('unranked');
+  runGameMode = gameMode;
+  best = bestScores[runGameMode];
+  bestEl.textContent = best;
+  reset(true);
   AudioEngine.start();
   prevSnake = null;
   lastTick = performance.now();
-  requestAnimationFrame(loop);
+  animationFrameId = requestAnimationFrame(loop);
 }
 
 function setDir(x, y) {
+  if (countdownActive) return;
   if (dir.x === -x && dir.y === -y) return;
   nextDir = {x, y};
 }
@@ -1655,17 +1890,42 @@ function turnCounterClockwise() {
 // --- Main loop — requestAnimationFrame for 120Hz ProMotion ---
 function loop(now) {
   const hasEffects = deathFlash > 0 || deathSegments.length > 0 || particles.length > 0;
-  if (!alive && !hasEffects) return;
+  if (!alive && !hasEffects) {
+    animationFrameId = null;
+    return;
+  }
   // Avoid catch-up bursts after throttled/backgrounded animation frames.
-  const dt = Math.min(now - lastTick, 100);
+  const rawDt = Math.max(0, now - lastTick);
+  const dt = Math.min(rawDt, 100);
   lastTick = now;
 
   if (alive && !paused) {
-    tickAccum += dt;
-    while (tickAccum >= speed) {
-      prevSnake = snake.map(s => ({...s}));
-      gameTick();
-      tickAccum -= speed;
+    if (countdownActive) {
+      countdownRemainingMs -= rawDt;
+      if (countdownRemainingMs <= 0) {
+        countdownActive = false;
+        countdownRemainingMs = 0;
+        countdownDisplay.textContent = 'GO!';
+        tickAccum = 0;
+        setTimeout(() => countdownDisplay.classList.remove('visible'), 350);
+      } else {
+        const countdownLabel = String(Math.ceil(countdownRemainingMs / 1000));
+        if (countdownDisplay.textContent !== countdownLabel) countdownDisplay.textContent = countdownLabel;
+      }
+    } else {
+      if (runGameMode === 'sprint') {
+        sprintRemainingMs -= rawDt;
+        updateSprintTimer();
+        if (sprintRemainingMs <= 0) finishRun('time');
+      }
+      if (alive) {
+        tickAccum += dt;
+        while (alive && tickAccum >= speed) {
+          prevSnake = snake.map(s => ({...s}));
+          gameTick();
+          tickAccum -= speed;
+        }
+      }
     }
   }
 
@@ -1703,7 +1963,7 @@ function loop(now) {
     document.getElementById('fps-counter').textContent = fpsDisplay + ' FPS';
   }
 
-  requestAnimationFrame(loop);
+  animationFrameId = requestAnimationFrame(loop);
 }
 
 // --- Keyboard ---
@@ -1714,19 +1974,21 @@ document.addEventListener('keydown', e => {
 
     case 'ArrowRight': case 'd': case 'D':
       e.preventDefault();
+      registerControlMethod('keyboard');
       if (controlMode === 'turn') { turnClockwise(); } else { setDir(1, 0); }
       break;
     case 'ArrowLeft': case 'a': case 'A':
       e.preventDefault();
+      registerControlMethod('keyboard');
       if (controlMode === 'turn') { turnCounterClockwise(); } else { setDir(-1, 0); }
       break;
     case 'ArrowUp': case 'w': case 'W':
       e.preventDefault();
-      if (controlMode !== 'turn') setDir(0, -1);
+      if (controlMode !== 'turn') { registerControlMethod('keyboard'); setDir(0, -1); }
       break;
     case 'ArrowDown': case 's': case 'S':
       e.preventDefault();
-      if (controlMode !== 'turn') setDir(0, 1);
+      if (controlMode !== 'turn') { registerControlMethod('keyboard'); setDir(0, 1); }
       break;
     case 'p': case 'P':
       togglePause();
@@ -1747,6 +2009,9 @@ function setPaused(value) {
   btn.setAttribute('aria-label', paused ? 'Resume game' : 'Pause game');
   btn.title = paused ? 'Resume (P)' : 'Pause (P)';
   paused ? AudioEngine.pause() : AudioEngine.resume();
+  if (countdownActive) {
+    countdownDisplay.textContent = paused ? 'PAUSED' : String(Math.max(1, Math.ceil(countdownRemainingMs / 1000)));
+  }
   if (paused) draw(1);
 }
 function togglePause() { setPaused(!paused); }
@@ -1774,13 +2039,17 @@ canvas.addEventListener('touchend', e => {
   const dx = e.changedTouches[0].clientX - touchStart.x;
   const dy = e.changedTouches[0].clientY - touchStart.y;
   const minSwipe = 15;
-  if (Math.abs(dx) < minSwipe && Math.abs(dy) < minSwipe) return;
-  if (Math.abs(dx) > Math.abs(dy)) {
-    setDir(dx > 0 ? 1 : -1, 0);
-  } else {
-    setDir(0, dy > 0 ? 1 : -1);
-  }
   touchStart = null;
+  if (Math.abs(dx) < minSwipe && Math.abs(dy) < minSwipe) return;
+  if (controlMode === 'turn') {
+    registerControlMethod('turn');
+    const clockwise = Math.abs(dx) > Math.abs(dy) ? dx > 0 : dy > 0;
+    clockwise ? turnClockwise() : turnCounterClockwise();
+  } else {
+    registerControlMethod('dpad');
+    if (Math.abs(dx) > Math.abs(dy)) setDir(dx > 0 ? 1 : -1, 0);
+    else setDir(0, dy > 0 ? 1 : -1);
+  }
 });
 
 // ============================================================
@@ -2011,6 +2280,7 @@ document.querySelectorAll('#turn-controls .turn-btn').forEach(btn => {
     if (turnControls.classList.contains('edit-mode')) return;
     e.preventDefault(); e.stopPropagation();
     if (paused && alive) togglePause();
+    registerControlMethod('turn');
     action(); btn.classList.add('pressed');
     turnControls.classList.add('active');
     clearTimeout(turnTimeout);
@@ -2081,6 +2351,7 @@ document.querySelectorAll('#dpad .btn').forEach(btn => {
     if (dpad.classList.contains('edit-mode')) return;
     e.preventDefault(); e.stopPropagation();
     if (paused && alive) togglePause();
+    registerControlMethod('dpad');
     setDir(x, y); btn.classList.add('pressed');
     dpad.classList.add('active');
     clearTimeout(dpadTimeout);
@@ -2380,15 +2651,15 @@ let lastSubmitTime = 0;
 let submittedThisRound = false;
 
 nameInput.addEventListener('input', () => {
-  submitScoreBtn.disabled = nameInput.value.trim().length < 1;
+  submitScoreBtn.disabled = runUsesMixedControls || nameInput.value.trim().length < 1;
 });
 
 nameInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && nameInput.value.trim().length >= 1) submitScore();
+  if (e.key === 'Enter' && !runUsesMixedControls && nameInput.value.trim().length >= 1) submitScore();
 });
 
 async function submitScore() {
-  if (!sb || submittedThisRound) return;
+  if (!sb || submittedThisRound || runUsesMixedControls) return;
   const now = Date.now();
   if (now - lastSubmitTime < 30000) {
     submitScoreBtn.textContent = 'Wait 30s';
@@ -2402,7 +2673,9 @@ async function submitScore() {
   const { error } = await sb.from('leaderboard').insert({
     name,
     score,
-    theme: currentTheme
+    theme: currentTheme,
+    control_method: runControlMethod || controlMode,
+    game_mode: runGameMode
   });
   if (error) {
     console.error('Submit failed:', error);
@@ -2415,54 +2688,117 @@ async function submitScore() {
   submitScoreBtn.textContent = '✓ Sent!';
   namePrompt.style.display = 'none';
   // Refresh leaderboard if open
-  if (leaderboardOverlay.classList.contains('visible')) loadLeaderboard(lbCurrentFilter);
+  if (leaderboardOverlay.classList.contains('visible')) loadLeaderboard();
 }
 
 submitScoreBtn.addEventListener('click', submitScore);
 
-let lbCurrentFilter = 'all';
+const LB_PAGE_SIZE = 10;
+const lbState = { gameMode: 'classic', control: 'all', theme: 'all', page: 0, total: 0, requestId: 0 };
 
-function buildFilters() {
-  const themes = ['all', ...Object.keys(THEMES)];
-  lbFilters.innerHTML = '';
-  themes.forEach(t => {
+function buildFilterGroup(container, values, stateKey, labelFor) {
+  container.innerHTML = '';
+  values.forEach(value => {
     const btn = document.createElement('button');
-    btn.className = 'lb-filter' + (t === lbCurrentFilter ? ' active' : '');
-    btn.textContent = t === 'all' ? 'All' : t.charAt(0).toUpperCase() + t.slice(1);
+    const active = value === lbState[stateKey];
+    btn.className = 'lb-filter' + (active ? ' active' : '');
+    btn.textContent = labelFor(value);
+    btn.type = 'button';
+    btn.setAttribute('aria-pressed', String(active));
     btn.addEventListener('click', () => {
-      lbCurrentFilter = t;
-      lbFilters.querySelectorAll('.lb-filter').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      loadLeaderboard(t);
+      if (lbState[stateKey] === value) return;
+      lbState[stateKey] = value;
+      lbState.page = 0;
+      container.querySelectorAll('.lb-filter').forEach(b => {
+        const selected = b === btn;
+        b.classList.toggle('active', selected);
+        b.setAttribute('aria-pressed', String(selected));
+      });
+      loadLeaderboard();
     });
-    lbFilters.appendChild(btn);
+    container.appendChild(btn);
   });
 }
 
-async function loadLeaderboard(filter) {
-  if (!sb) return;
+function buildFilters() {
+  buildFilterGroup(
+    lbGameModeFilters,
+    ['classic', 'sprint'],
+    'gameMode',
+    value => value === 'sprint' ? 'Sprint 60' : 'Classic'
+  );
+  buildFilterGroup(
+    lbControlFilters,
+    ['all', 'dpad', 'turn', 'keyboard'],
+    'control',
+    value => value === 'all' ? 'All' : CONTROL_LABELS[value]
+  );
+  buildFilterGroup(
+    lbThemeFilters,
+    ['all', ...Object.keys(THEMES)],
+    'theme',
+    value => value === 'all' ? 'All' : value.charAt(0).toUpperCase() + value.slice(1)
+  );
+}
+
+function updatePagination() {
+  const pageCount = Math.max(1, Math.ceil(lbState.total / LB_PAGE_SIZE));
+  lbPageInfo.textContent = `Page ${lbState.page + 1} of ${pageCount}`;
+  lbPrev.disabled = lbState.page === 0;
+  lbNext.disabled = lbState.page + 1 >= pageCount;
+  lbPagination.style.display = lbState.total > 0 ? 'flex' : 'none';
+}
+
+async function loadLeaderboard() {
+  if (!sb) {
+    lbLoading.style.display = 'none';
+    lbTable.style.display = 'none';
+    lbPagination.style.display = 'none';
+    lbEmpty.style.display = 'block';
+    lbEmpty.textContent = 'Leaderboard unavailable';
+    return;
+  }
+  const requestId = ++lbState.requestId;
   lbLoading.style.display = 'block';
   lbEmpty.style.display = 'none';
   lbTable.style.display = 'none';
-  let query = sb.from('leaderboard').select('name, score, theme, created_at').order('score', { ascending: false }).limit(50);
-  if (filter && filter !== 'all') query = query.eq('theme', filter);
-  const { data, error } = await query;
+  lbPagination.style.display = 'none';
+  const from = lbState.page * LB_PAGE_SIZE;
+  const to = from + LB_PAGE_SIZE - 1;
+  let query = sb.from('leaderboard')
+    .select('name, score, theme, control_method, game_mode, created_at', { count: 'exact' })
+    .order('score', { ascending: false })
+    .order('created_at', { ascending: true })
+    .range(from, to);
+  query = query.eq('game_mode', lbState.gameMode);
+  if (lbState.control !== 'all') query = query.eq('control_method', lbState.control);
+  if (lbState.theme !== 'all') query = query.eq('theme', lbState.theme);
+  const { data, error, count } = await query;
+  if (requestId !== lbState.requestId) return;
   lbLoading.style.display = 'none';
   if (error || !data || data.length === 0) {
     lbEmpty.style.display = 'block';
-    lbEmpty.textContent = error ? 'Failed to load' : 'No scores yet. Be the first!';
+    lbEmpty.textContent = error
+      ? (error.code === '42703' ? 'Leaderboard update required' : 'Failed to load')
+      : 'No scores yet. Be the first!';
+    lbState.total = error ? 0 : (count || 0);
+    updatePagination();
     return;
   }
+  lbState.total = count ?? data.length;
   lbTable.style.display = 'table';
   lbBody.innerHTML = '';
   data.forEach((row, i) => {
+    const rank = from + i + 1;
     const tr = document.createElement('tr');
-    if (i === 0) tr.className = 'top1';
-    else if (i === 1) tr.className = 'top2';
-    else if (i === 2) tr.className = 'top3';
-    tr.innerHTML = `<td class="lb-rank">${i + 1}</td><td>${escHtml(row.name)}</td><td class="lb-theme-col">${escHtml(row.theme)}</td><td class="lb-score">${row.score}</td>`;
+    if (rank === 1) tr.className = 'top1';
+    else if (rank === 2) tr.className = 'top2';
+    else if (rank === 3) tr.className = 'top3';
+    const method = CONTROL_LABELS[row.control_method] || CONTROL_LABELS.legacy;
+    tr.innerHTML = `<td class="lb-rank">${rank}</td><td>${escHtml(row.name)}<span class="lb-method-tag">${method}</span></td><td class="lb-theme-col">${escHtml(row.theme)}</td><td class="lb-score">${row.score}</td>`;
     lbBody.appendChild(tr);
   });
+  updatePagination();
 }
 
 function escHtml(s) {
@@ -2472,10 +2808,13 @@ function escHtml(s) {
 }
 
 function showLeaderboard() {
-  lbCurrentFilter = 'all';
+  lbState.gameMode = gameMode;
+  lbState.control = 'all';
+  lbState.theme = 'all';
+  lbState.page = 0;
   buildFilters();
-  loadLeaderboard('all');
   leaderboardOverlay.classList.add('visible');
+  loadLeaderboard();
 }
 
 function hideLeaderboard() {
@@ -2484,12 +2823,23 @@ function hideLeaderboard() {
 
 lbBtn.addEventListener('click', showLeaderboard);
 lbBack.addEventListener('click', hideLeaderboard);
+lbPrev.addEventListener('click', () => {
+  if (lbState.page === 0) return;
+  lbState.page--;
+  loadLeaderboard();
+});
+lbNext.addEventListener('click', () => {
+  if ((lbState.page + 1) * LB_PAGE_SIZE >= lbState.total) return;
+  lbState.page++;
+  loadLeaderboard();
+});
 
 // --- Init ---
 startBtn.addEventListener('click', startGame);
 
 shareBtn.addEventListener('click', async () => {
-  const text = `I scored ${score} in Snake! Can you beat me?\nhttps://chicoramon.github.io/snake-game/`;
+  const modeName = runGameMode === 'sprint' ? 'Sprint 60' : 'Classic';
+  const text = `I scored ${score} in Snake ${modeName}! Can you beat me?\nhttps://chicoramon.github.io/snake-game/`;
   if (navigator.share) {
     try { await navigator.share({ title: 'Snake Score', text }); } catch {}
   } else {
