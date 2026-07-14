@@ -2057,8 +2057,10 @@ canvas.addEventListener('touchend', e => {
 // ============================================================
 const AudioEngine = (() => {
   let actx, master, musicGain, sfxGain;
-  let running = false, muted = false, stepTimer = null;
+  let running = false, muted = false;
   let step = 0, curBPM = 120;
+  let stepAccum = 0, lastStepTime = 0;
+  let seqRafId = null;
 
   function getTheme() { return THEMES[currentTheme].music; }
 
@@ -2159,10 +2161,43 @@ const AudioEngine = (() => {
     step++;
   }
 
+  // rAF-based sequencer timer — survives page backgrounding unlike setInterval
+  function sequencerTick(now) {
+    seqRafId = null;
+    if (!running) return;
+    if (!lastStepTime) lastStepTime = now;
+    const rawDt = now - lastStepTime;
+    lastStepTime = now;
+    // Cap to avoid burst catch-up after long background
+    const dt = Math.min(rawDt, 200);
+    stepAccum += dt;
+    const stepInterval = 60000 / curBPM / 4;
+    let stepsThisFrame = 0;
+    while (stepAccum >= stepInterval && stepsThisFrame < 4) {
+      sequencer();
+      stepAccum -= stepInterval;
+      stepsThisFrame++;
+    }
+    if (stepAccum > stepInterval * 4) stepAccum = 0;
+    seqRafId = requestAnimationFrame(sequencerTick);
+  }
+
+  function startSeqTimer() {
+    if (seqRafId) return;
+    lastStepTime = 0;
+    stepAccum = 0;
+    seqRafId = requestAnimationFrame(sequencerTick);
+  }
+
+  function stopSeqTimer() {
+    if (seqRafId) { cancelAnimationFrame(seqRafId); seqRafId = null; }
+    lastStepTime = 0;
+    stepAccum = 0;
+  }
+
   function updateTempo(len) {
     const m = getTheme();
     curBPM = Math.min(m.maxBPM, m.baseBPM + len * m.bpmPerLen);
-    if (stepTimer) { clearInterval(stepTimer); stepTimer = setInterval(sequencer, 60000 / curBPM / 4); }
   }
 
   function start() {
@@ -2171,40 +2206,23 @@ const AudioEngine = (() => {
     step = 0; running = true;
     const m = getTheme();
     curBPM = m.baseBPM;
-    if (!stepTimer) stepTimer = setInterval(sequencer, 60000 / curBPM / 4);
+    startSeqTimer();
   }
 
   function stop() {
     running = false;
-    if (stepTimer) { clearInterval(stepTimer); stepTimer = null; }
+    stopSeqTimer();
   }
 
-  function pause()  { if (stepTimer) { clearInterval(stepTimer); stepTimer = null; } }
-  function resume() { if (running && !stepTimer) { stepTimer = setInterval(sequencer, 60000 / curBPM / 4); } }
+  function pause()  { stopSeqTimer(); }
+  function resume() { if (running) startSeqTimer(); }
 
-  // Restart sequencer after AudioContext resumes from background
-  // (setInterval gets killed/throttled when page is hidden)
-  function _recoverAudio() {
-    if (!actx || !running) return;
-    if (actx.state === 'suspended') {
-      actx.resume().then(() => {
-        // Clear stale timer and restart sequencer
-        if (stepTimer) { clearInterval(stepTimer); stepTimer = null; }
-        if (running) stepTimer = setInterval(sequencer, 60000 / curBPM / 4);
-      });
-    } else {
-      // Context already running but timer may be dead — force restart
-      if (stepTimer) { clearInterval(stepTimer); stepTimer = null; }
-      if (running) stepTimer = setInterval(sequencer, 60000 / curBPM / 4);
-    }
-  }
-
+  // Resume AudioContext from background (user gesture needed on iOS)
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') _recoverAudio();
+    if (document.visibilityState === 'visible' && actx && actx.state === 'suspended') actx.resume();
   });
-  window.addEventListener('pageshow', () => _recoverAudio());
-  // iOS Safari requires a user gesture to resume AudioContext
-  document.addEventListener('pointerdown', () => _recoverAudio(), { passive: true });
+  window.addEventListener('pageshow', () => { if (actx && actx.state === 'suspended') actx.resume(); });
+  document.addEventListener('pointerdown', () => { if (actx && actx.state === 'suspended') actx.resume(); }, { passive: true });
 
   function toggleMute() {
     muted = !muted;
