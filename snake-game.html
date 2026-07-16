@@ -2054,7 +2054,6 @@ const FOOD_SPRITES = {
     ],
     palette: [null, '#FFB800', '#CC8800', '#996600', '#FFDD55'],
   },
-};
   // Red power-up capsule — Contra spread shot
   contra: {
     grid: [
@@ -2077,6 +2076,7 @@ const FOOD_SPRITES = {
     ],
     palette: [null, '#FF3333', '#CC0000', '#660000', '#FF6666'],
   },
+};
 
 function drawFoodSprite(ctx, cx, cy, cellSize, theme, scale, themeName) {
   const data = FOOD_SPRITES[themeName] || FOOD_SPRITES.default;
