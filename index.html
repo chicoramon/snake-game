@@ -2214,10 +2214,16 @@ function showRunResult(reason) {
   overlayTitle.innerHTML = reason === 'time'
     ? 'TIME UP!'
     : '<svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="#ff003c"><rect x="2" y="1" width="6" height="2"/><rect x="1" y="3" width="8" height="2"/><rect x="1" y="5" width="2" height="2"/><rect x="7" y="5" width="2" height="2"/><rect x="3" y="5" width="4" height="2" fill="rgba(0,0,0,0.3)"/><rect x="2" y="7" width="2" height="2"/><rect x="6" y="7" width="2" height="2"/><rect x="3" y="9" width="4" height="1"/></svg> Game Over';
-  overlayMsg.textContent = `${isSprint ? 'Sprint ' : ''}Score: ${score}`;
-  startBtn.textContent = 'Play Again';
-  shareBtn.style.display = 'block';
-  lbBtn.style.display = 'block';
+  overlayMsg.textContent = `${isSprint ? 'Sprint ' : ''}Score: ${score}`;
+  startBtn.textContent = 'Play Again';
+  shareBtn.style.display = 'block';
+  lbBtn.style.display = 'block';
+  muteBtn.style.display = 'none';
+  optionsBtn.style.display = 'none';
+  controlsBtn.style.display = 'none';
+  document.querySelector('.game-mode-toggle').style.display = 'none';
+  document.querySelectorAll('.menu-kicker').forEach(k => k.style.display = 'none');
+  document.querySelector('.control-mode-toggle').style.display = 'none';
   namePrompt.style.setProperty('display', 'flex', 'important');
   nameInput.value = '';
   const scoreMethod = runControlMethod || controlMode;
@@ -2260,12 +2266,18 @@ function die() {
   finishRun('collision');
 }
 
-function startGame() {
-  if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
-  overlay.classList.add('hidden');
-  shareBtn.style.display = 'none';
-  lbBtn.style.display = 'none';
-  namePrompt.style.display = 'none';
+function startGame() {
+  if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
+  overlay.classList.add('hidden');
+  shareBtn.style.display = 'none';
+  lbBtn.style.display = 'none';
+  namePrompt.style.display = 'none';
+  muteBtn.style.display = '';
+  optionsBtn.style.display = '';
+  controlsBtn.style.display = '';
+  document.querySelector('.game-mode-toggle').style.display = '';
+  document.querySelectorAll('.menu-kicker').forEach(k => k.style.display = '');
+  document.querySelector('.control-mode-toggle').style.display = '';
   submittedThisRound = false;
   runControlMethod = null;
   runUsesMixedControls = false;
