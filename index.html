@@ -1316,8 +1316,8 @@
     </div>
 
     <div id="player-otp-group">
-      <label class="player-field-label" for="player-otp-input">6-digit email code</label>
-      <input id="player-otp-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" />
+      <label class="player-field-label" for="player-otp-input">8-digit email code</label>
+      <input id="player-otp-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="00000000" />
       <button id="player-verify-otp" class="primary" type="button">Verify Code</button>
     </div>
 
@@ -3825,7 +3825,7 @@ async function beginEmailCode(action) {
   const email = validPlayerEmail();
   playerSaveEmail.disabled = true;
   playerRestoreEmail.disabled = true;
-  setPlayerMessage('Sending a 6-digit code...');
+  setPlayerMessage('Sending an 8-digit code...');
   try {
     await playerIdentityPromise;
     if (action === 'save') {
@@ -3860,13 +3860,13 @@ async function beginEmailCode(action) {
 playerSaveEmail.addEventListener('click', () => beginEmailCode('save'));
 playerRestoreEmail.addEventListener('click', () => beginEmailCode('restore'));
 playerOtpInput.addEventListener('input', () => {
-  playerOtpInput.value = playerOtpInput.value.replace(/\D/g, '').slice(0, 6);
+  playerOtpInput.value = playerOtpInput.value.replace(/\D/g, '').slice(0, 8);
 });
 
 playerVerifyOtp.addEventListener('click', async () => {
   const token = playerOtpInput.value.trim();
-  if (!pendingOtpEmail || token.length !== 6) {
-    setPlayerMessage('Enter the complete 6-digit code', true);
+  if (!pendingOtpEmail || token.length !== 8) {
+    setPlayerMessage('Enter the complete 8-digit code', true);
     return;
   }
   playerVerifyOtp.disabled = true;
