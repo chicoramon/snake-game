@@ -562,7 +562,150 @@
     cursor: pointer;
     transition: transform 0.1s, background 0.2s;
   }
-  #options-back:active { transform: scale(0.95); background: var(--accent-glow-mid); }
+  #options-back:active { transform: scale(0.95); background: var(--accent-glow-mid); }
+
+  /* Persistent Player Identity */
+  #player-panel {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  #player-panel.visible { display: flex; }
+  .player-card {
+    width: min(100%, 390px);
+    max-height: calc(100dvh - 40px);
+    overflow-y: auto;
+    padding: 28px 24px 24px;
+    background: var(--panel-strong);
+    border: 1px solid var(--accent-dim);
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.9), 0 0 28px var(--accent-glow-soft);
+    text-align: center;
+  }
+  .player-card h2 {
+    margin: 4px 0 12px;
+    color: var(--accent);
+    font-family: var(--pixel-font);
+    font-size: 1.35rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+  #player-identity-status {
+    margin-bottom: 18px;
+    color: var(--text);
+    font-family: var(--pixel-font);
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    line-height: 1.6;
+  }
+  #player-identity-status .player-tag { color: var(--accent); }
+  .player-field-label {
+    display: block;
+    margin: 14px 0 7px;
+    color: var(--muted);
+    font-family: var(--pixel-font);
+    font-size: 0.58rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  #player-panel input[type="text"],
+  #player-panel input[type="email"] {
+    width: 100%;
+    min-height: 42px;
+    box-sizing: border-box;
+    border: 1px solid var(--accent-dim);
+    border-radius: 0;
+    outline: none;
+    background: rgba(255,255,255,0.04);
+    color: var(--text);
+    font-family: var(--pixel-font);
+    font-size: 0.78rem;
+    padding: 10px 12px;
+    text-align: center;
+  }
+  #player-panel input:focus { border-color: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
+  #player-initials-input { letter-spacing: 0.35em; text-transform: uppercase; }
+  #player-otp-input { letter-spacing: 0.35em; }
+  .player-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  #player-panel button {
+    min-height: 42px;
+    border: 1px solid var(--accent-dim);
+    border-radius: 0;
+    cursor: pointer;
+    background: transparent;
+    color: var(--accent);
+    font-family: var(--pixel-font);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 10px 12px;
+    text-transform: uppercase;
+  }
+  #player-panel button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #020504;
+  }
+  #player-panel button:disabled { cursor: default; opacity: 0.38; }
+  #player-profile-setup,
+  #player-account-setup,
+  #player-otp-group { margin-top: 14px; }
+  #player-otp-group { display: none; }
+  #player-otp-group.visible { display: block; }
+  .player-help {
+    margin: 10px 0 0;
+    color: var(--muted);
+    font-size: 0.7rem;
+    line-height: 1.45;
+  }
+  .player-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 18px 0 4px;
+    padding: 11px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    color: var(--text);
+    font-family: var(--pixel-font);
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    text-align: left;
+  }
+  .player-toggle input { width: 20px; height: 20px; accent-color: var(--accent); }
+  #player-message {
+    min-height: 1.4em;
+    margin: 12px 0 0;
+    color: var(--accent);
+    font-size: 0.72rem;
+    line-height: 1.45;
+  }
+  #player-message.error { color: #ff8b8b; }
+  #player-back { width: 100%; margin-top: 16px; }
+  .lb-you-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 2px 4px;
+    background: var(--accent);
+    color: #020504;
+    font-size: 0.52rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    vertical-align: 1px;
+  }
 
   /* Controls Edit Mode */
   #controls-btn {
@@ -579,21 +722,101 @@
     transition: all 0.15s;
   }
   #controls-btn:active { background: rgba(255,255,255,0.12); }
-  #controls-edit-overlay {
+  #controls-edit-overlay {
     display: none;
     position: fixed;
     inset: 0;
     z-index: 40;
-    background: rgba(0,0,0,0.8);
+    background: rgba(0,0,0,0.9);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
   }
-  #controls-edit-overlay.visible { display: flex; flex-direction: column; align-items: center; }
-  #controls-edit-bar {
+  #controls-edit-overlay.visible {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  #controls-settings-panel {
+    width: min(100%, 360px);
+    padding: 28px 24px 24px;
+    background: var(--panel-strong);
+    border: 1px solid var(--accent-dim);
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.9), 0 0 28px var(--accent-glow-soft);
+    text-align: center;
+  }
+  #controls-settings-panel h2 {
+    color: var(--accent);
+    font-family: var(--pixel-font);
+    font-size: 1.35rem;
+    letter-spacing: 0.16em;
+    margin: 4px 0 10px;
+    text-transform: uppercase;
+  }
+  #controls-settings-panel .controls-copy,
+  #controls-settings-panel .controls-note {
+    color: var(--muted);
+    font-size: 0.82rem;
+    line-height: 1.5;
+    margin: 0 auto 18px;
+    max-width: 290px;
+  }
+  #controls-settings-panel .controls-note {
+    font-size: 0.68rem;
+    margin: 10px auto 0;
+  }
+  #controls-settings-panel .control-mode-toggle {
+    justify-content: center;
+    margin: 0 0 18px;
+  }
+  #controls-settings-panel .control-mode-btn {
+    min-width: 112px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    cursor: pointer;
+    font-family: var(--pixel-font);
+    font-size: 0.74rem;
+    letter-spacing: 0.1em;
+    padding: 11px 14px;
+    text-transform: uppercase;
+  }
+  #controls-settings-panel .control-mode-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #020504;
+    box-shadow: 0 0 18px var(--accent-glow);
+  }
+  #controls-customize-btn,
+  #controls-back-btn {
+    width: 100%;
+    border-radius: 0;
+    cursor: pointer;
+    font-family: var(--pixel-font);
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 12px 16px;
+    text-transform: uppercase;
+  }
+  #controls-customize-btn {
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    color: #020504;
+  }
+  #controls-back-btn {
+    background: transparent;
+    border: 1px solid var(--accent-dim);
+    color: var(--accent);
+    margin-top: 16px;
+  }
+  #controls-edit-overlay.customizing #controls-settings-panel { display: none; }
+  #controls-edit-bar {
     position: absolute;
     top: 0; left: 0; right: 0;
     padding: max(env(safe-area-inset-top), 16px) 16px 12px;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: space-between;
     background: rgba(0,0,0,0.6);
@@ -706,34 +929,10 @@
   #turn-controls .turn-btn:active svg, #turn-controls .turn-btn.pressed svg {
     stroke: var(--accent);
   }
-  .control-mode-toggle {
-    display: flex;
-    gap: 6px;
-    margin-top: 8px;
-  }
-  #overlay .control-mode-btn {
-    background: rgba(255,255,255,0.05);
-    border: 1.5px solid rgba(255,255,255,0.1);
-    color: rgba(255,255,255,0.35);
-    font-family: inherit;
-    font-size: 0.75rem;
-    padding: 5px 14px;
-    cursor: pointer;
-    border-radius: 8px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    transition: all 0.2s;
-    -webkit-tap-highlight-color: transparent;
-    box-shadow: none;
-    text-shadow: none;
-  }
-  #overlay .control-mode-btn.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #000;
-    font-weight: 700;
-    box-shadow: 0 0 14px var(--accent-glow);
-    text-shadow: none;
+  .control-mode-toggle {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
   }
 
   /* ========================================================
@@ -776,6 +975,7 @@
     gap: 2px;
     min-width: 0;
   }
+  #controls-edit-overlay.customizing #controls-edit-bar { display: flex; }
   .hud-stat:last-child { text-align: right; }
   #score-bar .label {
     color: var(--muted);
@@ -866,9 +1066,8 @@
     margin-bottom: 7px;
     text-transform: uppercase;
   }
-  .control-kicker { margin-top: 15px; }
   .game-mode-toggle { margin-bottom: 16px; }
-  #overlay .game-mode-btn, #overlay .control-mode-btn {
+  #overlay .game-mode-btn {
     border-radius: 2px;
     min-height: 34px;
   }
@@ -882,7 +1081,7 @@
     letter-spacing: 1px;
     text-transform: uppercase;
   }
-  #overlay #mute-btn, #overlay #options-btn, #overlay #controls-btn,
+  #overlay #mute-btn, #overlay #options-btn, #overlay #controls-btn, #overlay #player-btn,
   #overlay #shareBtn, #overlay #lbBtn {
     width: min(100%, 228px);
     min-height: 42px;
@@ -897,13 +1096,15 @@
     box-shadow: none;
     text-transform: uppercase;
   }
-  #overlay #mute-btn:hover, #overlay #options-btn:hover, #overlay #controls-btn:hover,
+  #overlay #mute-btn:hover, #overlay #options-btn:hover, #overlay #controls-btn:hover, #overlay #player-btn:hover,
   #overlay #shareBtn:hover, #overlay #lbBtn:hover {
     border-color: var(--accent-dim);
     background: var(--accent-glow-soft);
   }
   #overlay #mute-btn { margin-top: 16px; }
-  #overlay #options-btn, #overlay #controls-btn { margin-top: 7px; }
+  #overlay #shareBtn { display: none; }
+  #overlay #lbBtn { display: block; }
+  #overlay #options-btn, #overlay #controls-btn, #overlay #player-btn { margin-top: 7px; }
   #overlay .control-mode-toggle { margin-top: 0; }
   #namePrompt {
     width: 100%;
@@ -972,7 +1173,7 @@
   #controls-edit-bar { font-family: var(--pixel-font); border-bottom-color: var(--accent-glow); }
   #controls-reset-btn, #controls-done-btn { border-radius: 2px; }
 
-  #dpad, #turn-controls { opacity: 0.76; }
+  #dpad, #turn-controls { opacity: 0.28; }
   #dpad.active, #turn-controls.active { opacity: 1; }
   #dpad .btn, #turn-controls .turn-btn {
     background: rgba(5,12,10,0.78);
@@ -996,7 +1197,6 @@
   @media (max-height: 700px) {
     #overlay .ov-content { margin: 18px 0; padding-top: 20px; padding-bottom: 20px; }
     #overlay #mute-btn { margin-top: 11px; }
-    .control-kicker { margin-top: 10px; }
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { scroll-behavior: auto !important; }
@@ -1041,12 +1241,8 @@
   <button id="lbBtn"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="vertical-align:middle;margin-right:4px"><path d="M2 14h3V6H2v8zm4.5 0h3V2h-3v12zm4.5 0h3V9H11v5z"/></svg>Leaderboard</button>
   <button id="mute-btn" title="Toggle music"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="1" y="3" width="2" height="4"/><rect x="3" y="2" width="2" height="6"/><rect x="5" y="1" width="1" height="8"/><rect x="7" y="3" width="1" height="4"/><rect x="9" y="2" width="1" height="6"/></svg> Music</button>
   <button id="options-btn" title="Themes"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="1" y="1" width="2" height="2"/><rect x="7" y="1" width="2" height="2"/><rect x="4" y="3" width="2" height="2"/><rect x="1" y="5" width="2" height="2"/><rect x="7" y="5" width="2" height="2"/><rect x="4" y="7" width="2" height="2"/></svg> Themes</button>
-  <span class="menu-kicker control-kicker">Control</span>
-  <div class="control-mode-toggle">
-    <button class="control-mode-btn active" data-mode="dpad">D-Pad</button>
-    <button class="control-mode-btn" data-mode="turn">Turn</button>
-  </div>
-  <button id="controls-btn" title="Customize Controls"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="3" y="0" width="4" height="2"/><rect x="1" y="2" width="2" height="2"/><rect x="7" y="2" width="2" height="2"/><rect x="3" y="2" width="4" height="2"/><rect x="3" y="4" width="4" height="2"/><rect x="1" y="6" width="2" height="2"/><rect x="7" y="6" width="2" height="2"/><rect x="3" y="6" width="4" height="2"/><rect x="3" y="8" width="4" height="2"/></svg> Controls</button>
+  <button id="controls-btn" title="Choose and customize controls"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="3" y="0" width="4" height="2"/><rect x="1" y="2" width="2" height="2"/><rect x="7" y="2" width="2" height="2"/><rect x="3" y="2" width="4" height="2"/><rect x="3" y="4" width="4" height="2"/><rect x="1" y="6" width="2" height="2"/><rect x="7" y="6" width="2" height="2"/><rect x="3" y="6" width="4" height="2"/><rect x="3" y="8" width="4" height="2"/></svg> Controls</button>
+  <button id="player-btn" title="Player identity and score saving"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="3" y="1" width="4" height="2"/><rect x="2" y="3" width="6" height="3"/><rect x="1" y="7" width="8" height="2"/></svg> <span id="player-menu-label">Player: Guest</span></button>
   </div>
 </div>
 
@@ -1075,7 +1271,7 @@
   <button id="lbBack">Back</button>
 </div>
 
-<div id="options-panel">
+<div id="options-panel">
   <h2><svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="#4ecca3"><rect x="3" y="1" width="4" height="2"/><rect x="1" y="3" width="2" height="4"/><rect x="7" y="3" width="2" height="4"/><rect x="3" y="7" width="4" height="2"/><rect x="3" y="3" width="4" height="4" fill="rgba(255,255,255,0.15)"/></svg> Choose Theme</h2>
   <div class="theme-grid">
     <div class="theme-btn selected" data-theme="default"><div class="theme-icon" id="ti-default"></div><span class="theme-name">Default</span></div>
@@ -1084,12 +1280,51 @@
     <div class="theme-btn" data-theme="streetfighter"><div class="theme-icon" id="ti-streetfighter"></div><span class="theme-name">Street Fighter</span></div>
     <div class="theme-btn" data-theme="dk"><div class="theme-icon" id="ti-dk"></div><span class="theme-name">Donkey Kong</span></div>
     <div class="theme-btn" data-theme="sonic"><div class="theme-icon" id="ti-sonic"></div><span class="theme-name">Sonic</span></div>
-    <div class="theme-btn" data-theme="tetris"><div class="theme-icon" id="ti-tetris"></div><span class="theme-name">Tetris</span></div>
+    <div class="theme-btn" data-theme="tetris"><div class="theme-icon" id="ti-tetris"></div><span class="theme-name">Tetris</span></div>
     <div class="theme-btn" data-theme="halo"><div class="theme-icon" id="ti-halo"></div><span class="theme-name">Halo</span></div>
     <div class="theme-btn" data-theme="contra"><div class="theme-icon" id="ti-contra"></div><span class="theme-name">Contra</span></div>
-  </div>
+  </div>
   <button id="options-back">Back</button>
-</div>
+</div>
+
+<div id="player-panel" role="dialog" aria-modal="true" aria-labelledby="player-heading">
+  <div class="player-card">
+    <span class="menu-kicker">Persistent Identity</span>
+    <h2 id="player-heading">Player</h2>
+    <div id="player-identity-status" aria-live="polite">Connecting...</div>
+
+    <div id="player-profile-setup">
+      <label class="player-field-label" for="player-initials-input">Arcade initials</label>
+      <input id="player-initials-input" type="text" maxlength="3" placeholder="___" autocomplete="off" />
+      <button id="player-initials-save" class="primary" type="button">Save Initials</button>
+      <p class="player-help">Initials may be shared. Your four-character player code makes your identity unique.</p>
+    </div>
+
+    <label class="player-toggle" for="auto-submit-toggle">
+      <span>Auto-submit personal bests</span>
+      <input id="auto-submit-toggle" type="checkbox" checked />
+    </label>
+
+    <div id="player-account-setup">
+      <p class="player-help">Save this player with email to restore the same identity and scores on another device.</p>
+      <label class="player-field-label" for="player-email-input">Email</label>
+      <input id="player-email-input" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" />
+      <div class="player-actions">
+        <button id="player-save-email" class="primary" type="button">Save Player</button>
+        <button id="player-restore-email" type="button">Restore Player</button>
+      </div>
+    </div>
+
+    <div id="player-otp-group">
+      <label class="player-field-label" for="player-otp-input">6-digit email code</label>
+      <input id="player-otp-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" />
+      <button id="player-verify-otp" class="primary" type="button">Verify Code</button>
+    </div>
+
+    <p id="player-message" aria-live="polite"></p>
+    <button id="player-back" type="button">Back</button>
+  </div>
+</div>
 
 <div id="fps-counter">-- FPS</div>
 
@@ -1101,8 +1336,20 @@
   <div class="drag-handle"><svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="var(--accent)" opacity="0.8"><rect x="2" y="2" width="2" height="2"/><rect x="6" y="2" width="2" height="2"/><rect x="2" y="6" width="2" height="2"/><rect x="6" y="6" width="2" height="2"/></svg></div>
 </div>
 
-<div id="controls-edit-overlay">
-  <div id="controls-edit-bar">
+<div id="controls-edit-overlay" role="dialog" aria-modal="true" aria-labelledby="controls-heading">
+  <div id="controls-settings-panel">
+    <span class="menu-kicker">Input Setup</span>
+    <h2 id="controls-heading">Controls</h2>
+    <p class="controls-copy">Choose the touch control used during play.</p>
+    <div class="control-mode-toggle" aria-label="Touch control method">
+      <button class="control-mode-btn active" data-mode="dpad" type="button" aria-pressed="true">D-PAD</button>
+      <button class="control-mode-btn" data-mode="turn" type="button" aria-pressed="false">TURN</button>
+    </div>
+    <button id="controls-customize-btn" type="button">Customize Layout</button>
+    <p class="controls-note">Move the selected control's buttons to comfortable positions.</p>
+    <button id="controls-back-btn" type="button">Back</button>
+  </div>
+  <div id="controls-edit-bar">
     <button id="controls-reset-btn">Reset</button>
     <span class="edit-hint">Drag each <span class="accent">button</span></span>
     <button id="controls-done-btn">Done</button>
@@ -1137,8 +1384,25 @@ const lbTable = document.getElementById('lbTable');
 const lbPagination = document.getElementById('lbPagination');
 const lbPrev = document.getElementById('lbPrev');
 const lbNext = document.getElementById('lbNext');
-const lbPageInfo = document.getElementById('lbPageInfo');
-const lbBack = document.getElementById('lbBack');
+const lbPageInfo = document.getElementById('lbPageInfo');
+const lbBack = document.getElementById('lbBack');
+const playerBtn = document.getElementById('player-btn');
+const playerMenuLabel = document.getElementById('player-menu-label');
+const playerPanel = document.getElementById('player-panel');
+const playerIdentityStatus = document.getElementById('player-identity-status');
+const playerProfileSetup = document.getElementById('player-profile-setup');
+const playerInitialsInput = document.getElementById('player-initials-input');
+const playerInitialsSave = document.getElementById('player-initials-save');
+const autoSubmitToggle = document.getElementById('auto-submit-toggle');
+const playerAccountSetup = document.getElementById('player-account-setup');
+const playerEmailInput = document.getElementById('player-email-input');
+const playerSaveEmail = document.getElementById('player-save-email');
+const playerRestoreEmail = document.getElementById('player-restore-email');
+const playerOtpGroup = document.getElementById('player-otp-group');
+const playerOtpInput = document.getElementById('player-otp-input');
+const playerVerifyOtp = document.getElementById('player-verify-otp');
+const playerMessage = document.getElementById('player-message');
+const playerBack = document.getElementById('player-back');
 const overlayTitle = document.getElementById('overlayTitle');
 const themeLabel = document.getElementById('themeLabel');
 const overlayMsg = document.getElementById('overlayMsg');
@@ -1201,8 +1465,9 @@ if (window.visualViewport) {
 
 // --- State ---
 let snake, dir, nextDir, food, score, best, speed, alive, paused;
-let runControlMethod = null;
-let runUsesMixedControls = false;
+let runControlMethod = null;
+let runUsesMixedControls = false;
+let currentRunId = null;
 let lastTick = 0, tickAccum = 0;
 let animationFrameId = null;
 let gameMode = localStorage.getItem('snake_game_mode') || 'classic';
@@ -1525,7 +1790,7 @@ const THEMES = {
     ],
     sfxDie: { type: 'sawtooth', freqStart: 659.25, freqEnd: 55, dur: 0.6, vol: 0.2 },
   },
-  halo: {
+  halo: {
     name: 'Halo',
     bg: '#0a1a0a', grid: 'rgba(100,200,100,0.03)',
     snakeHead: '#00ff41', snakeTail: [0, 255, 65],
@@ -1613,9 +1878,9 @@ const THEMES = {
     ],
     sfxDie: { type: 'sawtooth', freqStart: 440, freqEnd: 50, dur: 0.5, vol: 0.2 },
   },
-};
-
-let currentTheme = localStorage.getItem('snakeTheme') || 'default';
+};
+
+let currentTheme = localStorage.getItem('snakeTheme') || 'default';
 let controlMode = localStorage.getItem('snake_control_mode') || 'dpad'; // 'dpad' or 'turn'
 const TURN_ORDER = ['up','right','down','left']; // clockwise
 const CONTROL_LABELS = { dpad: 'D-PAD', turn: 'TURN', keyboard: 'KEYBOARD', legacy: 'LEGACY' };
@@ -2033,7 +2298,7 @@ const FOOD_SPRITES = {
     palette: [null, '#00BFFF', '#0050A0', '#004488', '#40D0FF'],
   },
   // Halo ring — golden energy orb with glow
-  halo: {
+  halo: {
     grid: [
       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -2052,8 +2317,8 @@ const FOOD_SPRITES = {
       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
     ],
-    palette: [null, '#FFB800', '#CC8800', '#996600', '#FFDD55'],
-  },
+    palette: [null, '#FFB800', '#CC8800', '#996600', '#FFDD55'],
+  },
   // Red power-up capsule — Contra spread shot
   contra: {
     grid: [
@@ -2076,7 +2341,7 @@ const FOOD_SPRITES = {
     ],
     palette: [null, '#FF3333', '#CC0000', '#660000', '#FF6666'],
   },
-};
+};
 
 function drawFoodSprite(ctx, cx, cy, cellSize, theme, scale, themeName) {
   const data = FOOD_SPRITES[themeName] || FOOD_SPRITES.default;
@@ -2277,7 +2542,7 @@ function gameTick() {
   }
 }
 
-function showRunResult(reason) {
+function showRunResult(reason) {
   const isSprint = runGameMode === 'sprint';
   overlayTitle.innerHTML = reason === 'time'
     ? 'TIME UP!'
@@ -2286,16 +2551,12 @@ function showRunResult(reason) {
   startBtn.textContent = 'Play Again';
   shareBtn.style.display = 'block';
   lbBtn.style.display = 'block';
-  namePrompt.style.setProperty('display', 'flex', 'important');
-  nameInput.value = '';
-  const scoreMethod = runControlMethod || controlMode;
+  const scoreMethod = runControlMethod || controlMode;
   scoreMethodLabel.textContent = runUsesMixedControls
     ? 'Mixed controls — this run is unranked'
     : `${runGameMode === 'sprint' ? 'SPRINT' : 'CLASSIC'} • ${CONTROL_LABELS[scoreMethod]} leaderboard`;
   scoreMethodLabel.classList.toggle('unranked', runUsesMixedControls);
-  submitScoreBtn.textContent = runUsesMixedControls ? 'Unranked' : 'Submit';
-  submitScoreBtn.disabled = true;
-  nameInput.disabled = runUsesMixedControls;
+  prepareRunSubmission();
   overlay.classList.remove('hidden');
 }
 
@@ -2328,13 +2589,13 @@ function die() {
   finishRun('collision');
 }
 
-function startGame() {
+function startGame() {
   if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
-  overlay.classList.add('hidden');
-  shareBtn.style.display = 'none';
-  lbBtn.style.display = 'none';
-  namePrompt.style.display = 'none';
-  submittedThisRound = false;
+  overlay.classList.add('hidden');
+  shareBtn.style.display = 'none';
+  namePrompt.style.display = 'none';
+  submittedThisRound = false;
+  currentRunId = createRunId();
   runControlMethod = null;
   runUsesMixedControls = false;
   nameInput.disabled = false;
@@ -2801,11 +3062,34 @@ const AudioEngine = (() => {
 
 // --- Mute button ---
 // --- D-pad controls ---
-const dpad = document.getElementById('dpad');
-const turnControls = document.getElementById('turn-controls');
-
-function applyControlMode(mode) {
-  controlMode = mode;
+const dpad = document.getElementById('dpad');
+const turnControls = document.getElementById('turn-controls');
+const CONTROL_FADE_DELAY_MS = 1500;
+let controlFadeTimeout;
+
+function showTouchControls() {
+  clearTimeout(controlFadeTimeout);
+  dpad.classList.toggle('active', controlMode === 'dpad');
+  turnControls.classList.toggle('active', controlMode === 'turn');
+}
+
+function scheduleTouchControlsFade(delay = CONTROL_FADE_DELAY_MS) {
+  clearTimeout(controlFadeTimeout);
+  controlFadeTimeout = setTimeout(() => {
+    if (dpad.classList.contains('edit-mode') || turnControls.classList.contains('edit-mode')) return;
+    dpad.classList.remove('active');
+    turnControls.classList.remove('active');
+  }, delay);
+}
+
+function wakeTouchControls(delay = CONTROL_FADE_DELAY_MS) {
+  showTouchControls();
+  scheduleTouchControlsFade(delay);
+}
+
+function applyControlMode(mode) {
+  if (mode !== 'dpad' && mode !== 'turn') mode = 'dpad';
+  controlMode = mode;
   localStorage.setItem('snake_control_mode', mode);
   if (mode === 'turn') {
     dpad.style.display = 'none';
@@ -2814,10 +3098,13 @@ function applyControlMode(mode) {
     dpad.style.display = '';
     turnControls.style.display = 'none';
   }
-  document.querySelectorAll('.control-mode-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.mode === mode);
-  });
-}
+  document.querySelectorAll('.control-mode-btn').forEach(b => {
+    const selected = b.dataset.mode === mode;
+    b.classList.toggle('active', selected);
+    b.setAttribute('aria-pressed', String(selected));
+  });
+  wakeTouchControls(2200);
+}
 applyControlMode(controlMode);
 
 document.querySelectorAll('.control-mode-btn').forEach(btn => {
@@ -2825,22 +3112,20 @@ document.querySelectorAll('.control-mode-btn').forEach(btn => {
 });
 
 // Turn controls touch/pointer handling
-const turnDirs = { cw: turnClockwise, ccw: turnCounterClockwise };
-let turnTimeout;
-document.querySelectorAll('#turn-controls .turn-btn').forEach(btn => {
+const turnDirs = { cw: turnClockwise, ccw: turnCounterClockwise };
+document.querySelectorAll('#turn-controls .turn-btn').forEach(btn => {
   const action = turnDirs[btn.dataset.turn];
   const doTurn = e => {
     if (turnControls.classList.contains('edit-mode')) return;
     e.preventDefault(); e.stopPropagation();
-    if (paused && alive) togglePause();
-    registerControlMethod('turn');
-    action(); btn.classList.add('pressed');
-    turnControls.classList.add('active');
-    clearTimeout(turnTimeout);
-  };
-  const unTurn = () => {
-    btn.classList.remove('pressed');
-    turnTimeout = setTimeout(() => turnControls.classList.remove('active'), 600);
+    if (paused && alive) togglePause();
+    registerControlMethod('turn');
+    action(); btn.classList.add('pressed');
+    showTouchControls();
+  };
+  const unTurn = () => {
+    btn.classList.remove('pressed');
+    scheduleTouchControlsFade();
   };
   btn.addEventListener('touchstart', doTurn, {passive: false});
   btn.addEventListener('touchend', unTurn, {passive: false});
@@ -2895,23 +3180,21 @@ DPAD_BTNS.forEach(dir => {
   if (saved) applyBtnPos(dir, saved);
 });
 
-const dpadDirs = { up: [0,-1], down: [0,1], left: [-1,0], right: [1,0] };
-let dpadTimeout;
-document.querySelectorAll('#dpad .btn').forEach(btn => {
+const dpadDirs = { up: [0,-1], down: [0,1], left: [-1,0], right: [1,0] };
+document.querySelectorAll('#dpad .btn').forEach(btn => {
   const d = btn.dataset.dir;
   const [x, y] = dpadDirs[d];
   const doDir = e => {
     if (dpad.classList.contains('edit-mode')) return;
     e.preventDefault(); e.stopPropagation();
-    if (paused && alive) togglePause();
-    registerControlMethod('dpad');
-    setDir(x, y); btn.classList.add('pressed');
-    dpad.classList.add('active');
-    clearTimeout(dpadTimeout);
-  };
-  const unDir = () => {
-    btn.classList.remove('pressed');
-    dpadTimeout = setTimeout(() => dpad.classList.remove('active'), 600);
+    if (paused && alive) togglePause();
+    registerControlMethod('dpad');
+    setDir(x, y); btn.classList.add('pressed');
+    showTouchControls();
+  };
+  const unDir = () => {
+    btn.classList.remove('pressed');
+    scheduleTouchControlsFade();
   };
   btn.addEventListener('touchstart', doDir, {passive: false});
   btn.addEventListener('touchend', unDir, {passive: false});
@@ -2975,10 +3258,12 @@ Object.keys(THEMES).forEach(key => {
 });
 
 // --- Controls Customization ---
-const controlsBtn = document.getElementById('controls-btn');
-const controlsOverlay = document.getElementById('controls-edit-overlay');
-const controlsDoneBtn = document.getElementById('controls-done-btn');
-const controlsResetBtn = document.getElementById('controls-reset-btn');
+const controlsBtn = document.getElementById('controls-btn');
+const controlsOverlay = document.getElementById('controls-edit-overlay');
+const controlsCustomizeBtn = document.getElementById('controls-customize-btn');
+const controlsBackBtn = document.getElementById('controls-back-btn');
+const controlsDoneBtn = document.getElementById('controls-done-btn');
+const controlsResetBtn = document.getElementById('controls-reset-btn');
 
 let draggingBtn = null;
 let dragStartX, dragStartY, dragStartBtnOffsetX, dragStartBtnOffsetY;
@@ -3026,11 +3311,27 @@ TURN_BTNS.forEach(id => {
   if (saved) applyTurnBtnPos(id, saved);
 });
 
-function startControlsEdit() {
-  controlsOverlay.classList.add('visible');
-  overlay.style.display = 'none';
-  if (controlMode === 'turn') {
-    turnControls.classList.add('edit-mode');
+function openControlsSettings() {
+  controlsOverlay.classList.add('visible');
+  controlsOverlay.classList.remove('customizing');
+  overlay.style.display = 'none';
+  applyControlMode(controlMode);
+}
+
+function closeControlsSettings() {
+  dpad.classList.remove('edit-mode');
+  turnControls.classList.remove('edit-mode');
+  controlsOverlay.classList.remove('visible', 'customizing');
+  overlay.style.display = '';
+  scheduleTouchControlsFade(300);
+}
+
+function startControlsEdit() {
+  controlsOverlay.classList.add('visible', 'customizing');
+  overlay.style.display = 'none';
+  clearTimeout(controlFadeTimeout);
+  if (controlMode === 'turn') {
+    turnControls.classList.add('edit-mode');
     document.querySelector('#controls-edit-bar .edit-hint').innerHTML = 'Drag each <span class="accent">button</span>';
   } else {
     dpad.classList.add('edit-mode');
@@ -3038,11 +3339,10 @@ function startControlsEdit() {
   }
 }
 
-function stopControlsEdit() {
+function stopControlsEdit() {
   dpad.classList.remove('edit-mode');
   turnControls.classList.remove('edit-mode');
-  controlsOverlay.classList.remove('visible');
-  overlay.style.display = '';
+  controlsOverlay.classList.remove('customizing');
   // Save dpad offsets
   DPAD_BTNS.forEach(dir => {
     const btn = dpad.querySelector('.btn.' + dir);
@@ -3052,17 +3352,26 @@ function stopControlsEdit() {
     if (ox !== 0 || oy !== 0) saveBtnPos(dir, { x: ox, y: oy });
   });
   // Save turn offsets
-  TURN_BTNS.forEach(id => {
+  TURN_BTNS.forEach(id => {
     const btn = turnControls.querySelector('.turn-btn[data-turn="' + id + '"]');
     if (!btn) return;
     const ox = btn._offsetX || 0;
     const oy = btn._offsetY || 0;
-    if (ox !== 0 || oy !== 0) saveTurnBtnPos(id, { x: ox, y: oy });
-  });
-}
-
-controlsBtn.addEventListener('click', startControlsEdit);
-controlsDoneBtn.addEventListener('click', stopControlsEdit);
+    if (ox !== 0 || oy !== 0) saveTurnBtnPos(id, { x: ox, y: oy });
+  });
+  applyControlMode(controlMode);
+}
+
+controlsBtn.addEventListener('click', openControlsSettings);
+controlsCustomizeBtn.addEventListener('click', startControlsEdit);
+controlsBackBtn.addEventListener('click', closeControlsSettings);
+controlsDoneBtn.addEventListener('click', stopControlsEdit);
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape' || !controlsOverlay.classList.contains('visible')) return;
+  if (controlsOverlay.classList.contains('customizing')) stopControlsEdit();
+  else closeControlsSettings();
+});
 
 controlsResetBtn.addEventListener('click', () => {
   if (controlMode === 'turn') {
@@ -3201,53 +3510,387 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 let sb = null;
 try { sb = supabase.createClient(SB_URL, SB_KEY); } catch(e) { console.warn('Supabase init failed:', e); }
 
-let lastSubmitTime = 0;
-let submittedThisRound = false;
-
-nameInput.addEventListener('input', () => {
-  submitScoreBtn.disabled = runUsesMixedControls || nameInput.value.trim().length < 1;
-});
+let submittedThisRound = false;
+let currentUser = null;
+let playerProfile = null;
+let pendingOtpEmail = '';
+let pendingOtpType = 'email';
+const AUTO_SUBMIT_KEY = 'snake_auto_submit';
+const PENDING_SCORES_KEY = 'snake_pending_scores';
+let autoSubmitEnabled = localStorage.getItem(AUTO_SUBMIT_KEY) !== 'false';
+autoSubmitToggle.checked = autoSubmitEnabled;
+
+function createRunId() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 3 | 8)).toString(16);
+  });
+}
+
+function cleanInitials(value) {
+  return value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
+}
+
+function playerDisplayName(profile = playerProfile) {
+  return profile ? `${profile.initials}\u00b7${profile.player_code}` : '';
+}
+
+function setPlayerMessage(message, isError = false) {
+  playerMessage.textContent = message;
+  playerMessage.classList.toggle('error', isError);
+}
+
+function isPermanentPlayer() {
+  return !!currentUser && currentUser.is_anonymous !== true;
+}
+
+function renderPlayerIdentity() {
+  const displayName = playerDisplayName();
+  const permanent = isPermanentPlayer();
+  playerMenuLabel.textContent = displayName ? `Player: ${displayName}` : 'Player: Guest';
+  playerIdentityStatus.innerHTML = displayName
+    ? `<span class="player-tag">${escHtml(displayName)}</span><br>${permanent ? 'Saved player \u2022 restorable by email' : 'Guest player \u2022 saved on this device'}`
+    : currentUser ? 'Guest connected<br>Choose your arcade initials' : 'Connecting...';
+  playerProfileSetup.style.display = playerProfile ? 'none' : 'block';
+  playerAccountSetup.style.display = permanent ? 'none' : 'block';
+}
+
+async function loadPlayerProfile() {
+  playerProfile = null;
+  if (!sb || !currentUser) return;
+  try {
+    const { data, error } = await sb.from('player_profiles')
+      .select('initials, player_code')
+      .eq('id', currentUser.id)
+      .maybeSingle();
+    if (!error && data) playerProfile = data;
+    else if (error && !['42P01', 'PGRST205'].includes(error.code)) console.warn('Player profile load failed:', error);
+  } catch (error) {
+    console.warn('Player profile unavailable:', error);
+  }
+  renderPlayerIdentity();
+}
+
+async function syncPlayerSession(session) {
+  currentUser = session?.user || null;
+  await loadPlayerProfile();
+  retryPendingScores();
+}
+
+async function initPlayerIdentity() {
+  renderPlayerIdentity();
+  if (!sb?.auth) {
+    playerIdentityStatus.textContent = 'Player service unavailable';
+    return;
+  }
+  try {
+    const { data: sessionData, error: sessionError } = await sb.auth.getSession();
+    if (sessionError) throw sessionError;
+    let session = sessionData?.session || null;
+    if (!session) {
+      const { data, error } = await sb.auth.signInAnonymously();
+      if (error) throw error;
+      session = data?.session || (data?.user ? { user: data.user } : null);
+    }
+    await syncPlayerSession(session);
+  } catch (error) {
+    console.warn('Player identity init failed:', error);
+    playerIdentityStatus.textContent = 'Guest scores unavailable right now';
+  }
+}
+
+const playerIdentityPromise = initPlayerIdentity();
+if (sb?.auth?.onAuthStateChange) {
+  sb.auth.onAuthStateChange((_event, session) => {
+    setTimeout(() => syncPlayerSession(session), 0);
+  });
+}
+
+async function savePlayerInitials(value) {
+  const initials = cleanInitials(value);
+  if (!initials || !sb || !currentUser) throw new Error('Enter 1 to 3 letters or numbers');
+  const { data, error } = await sb.rpc('set_player_initials', { p_initials: initials });
+  if (error) throw error;
+  playerProfile = Array.isArray(data) ? data[0] : data;
+  renderPlayerIdentity();
+  return playerProfile;
+}
+
+function getPendingScores() {
+  try {
+    const value = JSON.parse(localStorage.getItem(PENDING_SCORES_KEY) || '[]');
+    return Array.isArray(value) ? value : [];
+  } catch { return []; }
+}
+
+function savePendingScores(items) {
+  localStorage.setItem(PENDING_SCORES_KEY, JSON.stringify(items.slice(-12)));
+}
+
+function queuePendingScore(payload) {
+  if (!currentUser) return;
+  const item = { playerId: currentUser.id, payload };
+  const existingItems = getPendingScores();
+  const previous = existingItems.find(existing =>
+    existing.playerId === item.playerId &&
+      existing.payload.p_game_mode === payload.p_game_mode &&
+      existing.payload.p_control_method === payload.p_control_method
+  );
+  if (previous && previous.payload.p_score >= payload.p_score) return;
+  const items = existingItems.filter(existing => !(
+    existing.playerId === item.playerId &&
+    existing.payload.p_game_mode === payload.p_game_mode &&
+    existing.payload.p_control_method === payload.p_control_method
+  ));
+  items.push(item);
+  savePendingScores(items);
+}
+
+function isSchemaError(error) {
+  return ['42P01', '42703', '42883', 'PGRST202', 'PGRST205'].includes(error?.code);
+}
+
+async function sendBestScore(payload, { quiet = false, queueOnFailure = true } = {}) {
+  if (!sb || !currentUser || !playerProfile) return false;
+  if (!quiet) {
+    submitScoreBtn.disabled = true;
+    submitScoreBtn.textContent = 'Saving...';
+  }
+  try {
+    const { data, error } = await sb.rpc('submit_best_score', payload);
+    if (error) throw error;
+    const result = Array.isArray(data) ? data[0] : data;
+    if (payload.p_run_id === currentRunId) submittedThisRound = true;
+    if (!quiet) {
+      submitScoreBtn.textContent = result?.accepted ? 'New Best Saved!' : `Best: ${result?.personal_best ?? payload.p_score}`;
+      scoreMethodLabel.textContent = result?.accepted
+        ? `${playerDisplayName()} \u2022 personal best submitted`
+        : `${playerDisplayName()} \u2022 score did not beat your best`;
+    }
+    if (leaderboardOverlay.classList.contains('visible')) loadLeaderboard();
+    return true;
+  } catch (error) {
+    console.warn('Best score submit failed:', error);
+    if (isSchemaError(error)) {
+      if (!quiet) {
+        submitScoreBtn.textContent = 'Update Required';
+        scoreMethodLabel.textContent = 'Leaderboard database update required';
+      }
+      return false;
+    }
+    if (queueOnFailure) queuePendingScore(payload);
+    if (!quiet) {
+      submitScoreBtn.textContent = 'Queued Offline';
+      scoreMethodLabel.textContent = 'Saved on this device \u2022 will retry online';
+    }
+    return false;
+  }
+}
+
+async function retryPendingScores() {
+  if (!navigator.onLine || !sb || !currentUser || !playerProfile) return;
+  const items = getPendingScores();
+  if (!items.length) return;
+  const keep = [];
+  for (const item of items) {
+    if (item.playerId !== currentUser.id) { keep.push(item); continue; }
+    const sent = await sendBestScore(item.payload, { quiet: true, queueOnFailure: false });
+    if (!sent) keep.push(item);
+  }
+  savePendingScores(keep);
+}
+
+function currentScorePayload() {
+  return {
+    p_score: score,
+    p_theme: currentTheme,
+    p_control_method: runControlMethod || controlMode,
+    p_game_mode: runGameMode,
+    p_run_id: currentRunId || createRunId()
+  };
+}
+
+async function prepareRunSubmission() {
+  namePrompt.style.setProperty('display', 'flex', 'important');
+  const promptLabel = namePrompt.querySelector('.np-label');
+  if (runUsesMixedControls) {
+    promptLabel.textContent = 'Score submission';
+    nameInput.style.display = 'none';
+    submitScoreBtn.textContent = 'Unranked';
+    submitScoreBtn.disabled = true;
+    return;
+  }
+  if (score < 1) {
+    promptLabel.textContent = 'Score submission';
+    nameInput.style.display = 'none';
+    scoreMethodLabel.textContent = 'Score at least 1 point to enter the leaderboard';
+    submitScoreBtn.textContent = 'No Score';
+    submitScoreBtn.disabled = true;
+    return;
+  }
+  await playerIdentityPromise;
+  if (!playerProfile) {
+    promptLabel.textContent = 'Choose initials to create your player';
+    nameInput.style.display = '';
+    nameInput.disabled = false;
+    nameInput.value = '';
+    submitScoreBtn.textContent = 'Save & Submit';
+    submitScoreBtn.disabled = true;
+    return;
+  }
+  promptLabel.textContent = playerDisplayName();
+  nameInput.style.display = 'none';
+  nameInput.disabled = true;
+  submitScoreBtn.textContent = autoSubmitEnabled ? 'Saving...' : 'Submit Best';
+  submitScoreBtn.disabled = autoSubmitEnabled;
+  if (autoSubmitEnabled) await sendBestScore(currentScorePayload());
+}
+
+nameInput.addEventListener('input', () => {
+  nameInput.value = cleanInitials(nameInput.value);
+  submitScoreBtn.disabled = runUsesMixedControls || nameInput.value.length < 1;
+});
 
 nameInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !runUsesMixedControls && nameInput.value.trim().length >= 1) submitScore();
 });
 
-async function submitScore() {
-  if (!sb || submittedThisRound || runUsesMixedControls) return;
-  const now = Date.now();
-  if (now - lastSubmitTime < 30000) {
-    submitScoreBtn.textContent = 'Wait 30s';
-    setTimeout(() => { submitScoreBtn.textContent = 'Submit'; }, 2000);
-    return;
-  }
-  const name = nameInput.value.trim().toUpperCase().slice(0, 3);
-  if (!name) return;
-  submitScoreBtn.disabled = true;
-  submitScoreBtn.textContent = '...';
-  const { error } = await sb.from('leaderboard').insert({
-    name,
-    score,
-    theme: currentTheme,
-    control_method: runControlMethod || controlMode,
-    game_mode: runGameMode
-  });
-  if (error) {
-    console.error('Submit failed:', error);
-    submitScoreBtn.textContent = 'Error';
-    setTimeout(() => { submitScoreBtn.textContent = 'Submit'; submitScoreBtn.disabled = false; }, 2000);
-    return;
-  }
-  lastSubmitTime = now;
-  submittedThisRound = true;
-  submitScoreBtn.textContent = '✓ Sent!';
-  namePrompt.style.display = 'none';
-  // Refresh leaderboard if open
-  if (leaderboardOverlay.classList.contains('visible')) loadLeaderboard();
-}
-
-submitScoreBtn.addEventListener('click', submitScore);
-
-const LB_PAGE_SIZE = 10;
+async function submitScore() {
+  if (!sb || submittedThisRound || runUsesMixedControls) return;
+  await playerIdentityPromise;
+  if (!playerProfile) {
+    try {
+      submitScoreBtn.disabled = true;
+      submitScoreBtn.textContent = 'Creating...';
+      await savePlayerInitials(nameInput.value);
+    } catch (error) {
+      submitScoreBtn.textContent = isSchemaError(error) ? 'Update Required' : 'Try Again';
+      submitScoreBtn.disabled = false;
+      scoreMethodLabel.textContent = error.message || 'Could not create player';
+      return;
+    }
+  }
+  await sendBestScore(currentScorePayload());
+}
+
+submitScoreBtn.addEventListener('click', submitScore);
+window.addEventListener('online', retryPendingScores);
+
+playerBtn.addEventListener('click', () => {
+  setPlayerMessage('');
+  renderPlayerIdentity();
+  playerPanel.classList.add('visible');
+});
+
+playerBack.addEventListener('click', () => playerPanel.classList.remove('visible'));
+playerPanel.addEventListener('click', event => {
+  if (event.target === playerPanel) playerPanel.classList.remove('visible');
+});
+
+playerInitialsInput.addEventListener('input', () => {
+  playerInitialsInput.value = cleanInitials(playerInitialsInput.value);
+});
+
+playerInitialsSave.addEventListener('click', async () => {
+  playerInitialsSave.disabled = true;
+  setPlayerMessage('Saving player...');
+  try {
+    await playerIdentityPromise;
+    await savePlayerInitials(playerInitialsInput.value);
+    playerInitialsInput.value = '';
+    setPlayerMessage(`Player ${playerDisplayName()} created`);
+    retryPendingScores();
+  } catch (error) {
+    setPlayerMessage(isSchemaError(error) ? 'Leaderboard database update required' : (error.message || 'Could not save initials'), true);
+  } finally {
+    playerInitialsSave.disabled = false;
+  }
+});
+
+autoSubmitToggle.addEventListener('change', () => {
+  autoSubmitEnabled = autoSubmitToggle.checked;
+  localStorage.setItem(AUTO_SUBMIT_KEY, String(autoSubmitEnabled));
+  setPlayerMessage(autoSubmitEnabled ? 'Personal bests will submit automatically' : 'You will choose when to submit each score');
+});
+
+function validPlayerEmail() {
+  const email = playerEmailInput.value.trim().toLowerCase();
+  if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error('Enter a valid email address');
+  return email;
+}
+
+async function beginEmailCode(action) {
+  if (!sb?.auth) return;
+  const email = validPlayerEmail();
+  playerSaveEmail.disabled = true;
+  playerRestoreEmail.disabled = true;
+  setPlayerMessage('Sending a 6-digit code...');
+  try {
+    await playerIdentityPromise;
+    if (action === 'save') {
+      if (!currentUser || isPermanentPlayer()) throw new Error('This player is already saved');
+      const { error } = await sb.auth.updateUser({ email });
+      if (error) throw error;
+      pendingOtpType = 'email_change';
+    } else {
+      const { error } = await sb.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: false }
+      });
+      if (error) throw error;
+      pendingOtpType = 'email';
+    }
+    pendingOtpEmail = email;
+    playerOtpInput.value = '';
+    playerOtpGroup.classList.add('visible');
+    setPlayerMessage(`Code sent to ${email}`);
+    playerOtpInput.focus();
+  } catch (error) {
+    const fallback = action === 'save'
+      ? 'Could not save this email. If it already has a player, use Restore Player.'
+      : 'No saved player was found for that email.';
+    setPlayerMessage(error.message || fallback, true);
+  } finally {
+    playerSaveEmail.disabled = false;
+    playerRestoreEmail.disabled = false;
+  }
+}
+
+playerSaveEmail.addEventListener('click', () => beginEmailCode('save'));
+playerRestoreEmail.addEventListener('click', () => beginEmailCode('restore'));
+playerOtpInput.addEventListener('input', () => {
+  playerOtpInput.value = playerOtpInput.value.replace(/\D/g, '').slice(0, 6);
+});
+
+playerVerifyOtp.addEventListener('click', async () => {
+  const token = playerOtpInput.value.trim();
+  if (!pendingOtpEmail || token.length !== 6) {
+    setPlayerMessage('Enter the complete 6-digit code', true);
+    return;
+  }
+  playerVerifyOtp.disabled = true;
+  setPlayerMessage('Verifying...');
+  try {
+    const { data, error } = await sb.auth.verifyOtp({
+      email: pendingOtpEmail,
+      token,
+      type: pendingOtpType
+    });
+    if (error) throw error;
+    await syncPlayerSession(data?.session || (data?.user ? { user: data.user } : null));
+    playerOtpGroup.classList.remove('visible');
+    setPlayerMessage(playerProfile
+      ? `Player ${playerDisplayName()} restored on this device`
+      : 'Email verified. Choose initials to finish your player.');
+  } catch (error) {
+    setPlayerMessage(error.message || 'That code could not be verified', true);
+  } finally {
+    playerVerifyOtp.disabled = false;
+  }
+});
+
+const LB_PAGE_SIZE = 10;
 const lbState = { gameMode: 'classic', control: 'all', theme: 'all', page: 0, total: 0, requestId: 0 };
 
 function buildFilterGroup(container, values, stateKey, labelFor) {
@@ -3303,7 +3946,7 @@ function updatePagination() {
   lbPagination.style.display = lbState.total > 0 ? 'flex' : 'none';
 }
 
-async function loadLeaderboard() {
+async function loadLeaderboard() {
   if (!sb) {
     lbLoading.style.display = 'none';
     lbTable.style.display = 'none';
@@ -3317,17 +3960,24 @@ async function loadLeaderboard() {
   lbEmpty.style.display = 'none';
   lbTable.style.display = 'none';
   lbPagination.style.display = 'none';
-  const from = lbState.page * LB_PAGE_SIZE;
-  const to = from + LB_PAGE_SIZE - 1;
-  let query = sb.from('leaderboard')
-    .select('name, score, theme, control_method, game_mode, created_at', { count: 'exact' })
-    .order('score', { ascending: false })
-    .order('created_at', { ascending: true })
-    .range(from, to);
-  query = query.eq('game_mode', lbState.gameMode);
-  if (lbState.control !== 'all') query = query.eq('control_method', lbState.control);
-  if (lbState.theme !== 'all') query = query.eq('theme', lbState.theme);
-  const { data, error, count } = await query;
+  const from = lbState.page * LB_PAGE_SIZE;
+  const to = from + LB_PAGE_SIZE - 1;
+  const runQuery = columns => {
+    let query = sb.from('leaderboard')
+      .select(columns, { count: 'exact' })
+      .order('score', { ascending: false })
+      .order('created_at', { ascending: true })
+      .range(from, to);
+    query = query.eq('game_mode', lbState.gameMode);
+    if (lbState.control !== 'all') query = query.eq('control_method', lbState.control);
+    if (lbState.theme !== 'all') query = query.eq('theme', lbState.theme);
+    return query;
+  };
+  let result = await runQuery('name, score, theme, control_method, game_mode, created_at, player_id, player_code');
+  if (['42703', 'PGRST204'].includes(result.error?.code)) {
+    result = await runQuery('name, score, theme, control_method, game_mode, created_at');
+  }
+  const { data, error, count } = result;
   if (requestId !== lbState.requestId) return;
   lbLoading.style.display = 'none';
   if (error || !data || data.length === 0) {
@@ -3343,13 +3993,17 @@ async function loadLeaderboard() {
   lbTable.style.display = 'table';
   lbBody.innerHTML = '';
   data.forEach((row, i) => {
-    const rank = from + i + 1;
-    const tr = document.createElement('tr');
-    if (rank === 1) tr.className = 'top1';
-    else if (rank === 2) tr.className = 'top2';
-    else if (rank === 3) tr.className = 'top3';
-    const method = CONTROL_LABELS[row.control_method] || CONTROL_LABELS.legacy;
-    tr.innerHTML = `<td class="lb-rank">${rank}</td><td>${escHtml(row.name)}<span class="lb-method-tag">${method}</span></td><td class="lb-theme-col">${escHtml(row.theme)}</td><td class="lb-score">${row.score}</td>`;
+    const rank = from + i + 1;
+    const tr = document.createElement('tr');
+    if (rank === 1) tr.classList.add('top1');
+    else if (rank === 2) tr.classList.add('top2');
+    else if (rank === 3) tr.classList.add('top3');
+    const isOwnRow = !!currentUser && row.player_id === currentUser.id;
+    if (isOwnRow) tr.classList.add('you');
+    const method = CONTROL_LABELS[row.control_method] || CONTROL_LABELS.legacy;
+    const code = row.player_code ? `\u00b7${escHtml(row.player_code)}` : '';
+    const you = isOwnRow ? '<span class="lb-you-badge">YOU</span>' : '';
+    tr.innerHTML = `<td class="lb-rank">${rank}</td><td>${escHtml(row.name)}${code}${you}<span class="lb-method-tag">${escHtml(method)}</span></td><td class="lb-theme-col">${escHtml(row.theme)}</td><td class="lb-score">${row.score}</td>`;
     lbBody.appendChild(tr);
   });
   updatePagination();
