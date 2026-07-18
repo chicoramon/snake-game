@@ -6355,11 +6355,30 @@ async function initPlayerIdentity() {
   }
 }
 
-const playerIdentityPromise = initPlayerIdentity();
-if (sb?.auth?.onAuthStateChange) {
-  sb.auth.onAuthStateChange((_event, session) => {
-    setTimeout(() => syncPlayerSession(session), 0);
-  });
+let playerIdentityPromise = Promise.resolve();
+
+function startPlayerIdentity() {
+  try {
+    playerIdentityPromise = Promise.resolve(initPlayerIdentity()).catch(error => {
+      console.warn('Player identity startup failed:', error);
+      playerIdentityStatus.textContent = 'Guest scores unavailable right now';
+    });
+
+    if (sb?.auth?.onAuthStateChange) {
+      try {
+        sb.auth.onAuthStateChange((_event, session) => {
+          setTimeout(() => syncPlayerSession(session), 0);
+        });
+      } catch (error) {
+        console.warn('Player identity listener unavailable:', error);
+      }
+    }
+  } catch (error) {
+    // Identity must never prevent the offline game and menu from starting.
+    console.warn('Player identity unavailable:', error);
+    playerIdentityStatus.textContent = 'Guest scores unavailable right now';
+    playerIdentityPromise = Promise.resolve();
+  }
 }
 
 async function savePlayerInitials(value) {
@@ -6961,8 +6980,12 @@ reset();
 
 draw(1);
 
+// Attach and render the core game first. Identity is an optional enhancement
+// and may fail in restrictive mobile browsers or embedded web views.
+setTimeout(startPlayerIdentity, 0);
 </script>
 
 </body>
 
 </html>
+
