@@ -150,28 +150,59 @@
   #record-chase {
     display: none;
     position: absolute;
-    top: calc(100% + 7px);
-    left: 50%;
-    transform: translateX(-50%);
-    min-width: 150px;
-    padding: 6px 10px;
-    border: 1px solid #ff5a5a;
-    background: rgba(15,0,0,0.92);
-    color: #ff8b8b;
-    font-family: var(--pixel-font);
-    font-size: 0.62rem;
-    font-weight: 800;
-    letter-spacing: 0.1em;
-    text-align: center;
-    text-transform: uppercase;
-    pointer-events: none;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
     white-space: nowrap;
-    box-shadow: 0 0 18px rgba(255,51,51,0.3);
-    z-index: 12;
+    border: 0;
   }
-  #record-chase.visible { display: block; animation: record-chase-pulse 0.8s steps(2, end) infinite; }
-  #record-chase.record-pace { border-color: #ffd700; color: #ffd700; background: rgba(20,14,0,0.94); }
-  @keyframes record-chase-pulse { 50% { opacity: 0.62; } }
+  #record-chase.visible { display: block; }
+  #hud-mode.record-warning {
+    color: #fff;
+    border-color: #ff3b3b;
+    background: rgba(80,0,0,0.92);
+    box-shadow: 0 0 16px rgba(255,35,35,0.72), inset 0 -2px #ff5a5a;
+    text-shadow: 0 0 7px rgba(255,255,255,0.7);
+  }
+  #hud-mode.record-pace {
+    color: #181000;
+    border-color: #ffd700;
+    background: #ffd700;
+    box-shadow: 0 0 18px rgba(255,215,0,0.72), inset 0 -2px #a86f00;
+    text-shadow: none;
+  }
+  canvas.record-warning {
+    animation: record-border-pulse var(--record-pulse-speed, 720ms) ease-in-out infinite;
+  }
+  canvas.record-pace {
+    border-color: #ffd700;
+    outline-color: rgba(255,215,0,0.75);
+    box-shadow:
+      inset 0 0 34px rgba(255,215,0,0.12),
+      0 0 0 4px rgba(255,215,0,0.45),
+      0 0 32px rgba(255,215,0,0.72);
+  }
+  @keyframes record-border-pulse {
+    0%, 100% {
+      border-color: #ff3b3b;
+      outline-color: rgba(255,59,59,0.62);
+      box-shadow:
+        inset 0 0 24px rgba(255,35,35,0.08),
+        0 0 0 3px rgba(255,35,35,0.42),
+        0 0 18px rgba(255,35,35,0.58);
+    }
+    50% {
+      border-color: #fff0f0;
+      outline-color: #ff3333;
+      box-shadow:
+        inset 0 0 34px rgba(255,35,35,0.18),
+        0 0 0 6px rgba(255,35,35,0.82),
+        0 0 42px rgba(255,35,35,0.95);
+    }
+  }
 
   #record-celebration {
     position: fixed;
@@ -201,7 +232,12 @@
   #record-banner strong { display: block; color: #ffd700; font-size: clamp(1.5rem, 8vw, 2.7rem); letter-spacing: 0.12em; text-shadow: 3px 3px 0 #9b2d30; }
   #record-banner span { display: block; margin-top: 5px; font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; }
   @media (prefers-reduced-motion: reduce) {
-    #timer.urgent, #record-chase.visible { animation: none; }
+    #timer.urgent, canvas.record-warning { animation: none; }
+    canvas.record-warning {
+      border-color: #ff3b3b;
+      outline-color: rgba(255,59,59,0.9);
+      box-shadow: 0 0 0 5px rgba(255,35,35,0.72), 0 0 30px rgba(255,35,35,0.8);
+    }
     #record-celebration { transition: none; }
   }
   #pause-btn {
@@ -5541,18 +5577,30 @@ const AudioEngine = (() => {
     if (heartbeatProgress === null || !alive || paused || !actx || actx.state !== 'running') return;
     const now = actx.currentTime;
     const pulse = (start, frequency, volume) => {
-      const osc = actx.createOscillator();
-      const gain = actx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(frequency, start);
-      osc.frequency.exponentialRampToValueAtTime(frequency * 0.72, start + 0.11);
-      gain.gain.setValueAtTime(volume, start);
-      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.14);
-      osc.connect(gain); gain.connect(sfxGain);
-      osc.start(start); osc.stop(start + 0.15);
+      const thump = actx.createOscillator();
+      const thumpGain = actx.createGain();
+      thump.type = 'sine';
+      thump.frequency.setValueAtTime(frequency, start);
+      thump.frequency.exponentialRampToValueAtTime(frequency * 0.68, start + 0.14);
+      thumpGain.gain.setValueAtTime(volume, start);
+      thumpGain.gain.exponentialRampToValueAtTime(0.001, start + 0.18);
+      thump.connect(thumpGain); thumpGain.connect(sfxGain);
+      thump.start(start); thump.stop(start + 0.19);
+
+      // A short harmonic makes the thump audible on small phone speakers,
+      // which reproduce the low fundamental poorly.
+      const knock = actx.createOscillator();
+      const knockGain = actx.createGain();
+      knock.type = 'triangle';
+      knock.frequency.setValueAtTime(frequency * 2.15, start);
+      knock.frequency.exponentialRampToValueAtTime(frequency * 1.45, start + 0.075);
+      knockGain.gain.setValueAtTime(volume * 0.34, start);
+      knockGain.gain.exponentialRampToValueAtTime(0.001, start + 0.09);
+      knock.connect(knockGain); knockGain.connect(sfxGain);
+      knock.start(start); knock.stop(start + 0.1);
     };
-    pulse(now, 74, 0.26);
-    pulse(now + 0.17, 58, 0.19);
+    pulse(now, 96, 0.55);
+    pulse(now + 0.19, 78, 0.42);
     const delay = Math.round(920 - heartbeatProgress * 470);
     heartbeatTimer = setTimeout(playHeartbeatPulse, delay);
   }
@@ -5560,7 +5608,7 @@ const AudioEngine = (() => {
   function setRecordHeartbeat(progress) {
     init();
     heartbeatProgress = Math.max(0, Math.min(1, progress));
-    setMusicDuck(0.58);
+    setMusicDuck(0.14);
     if (!heartbeatTimer && alive && !paused) {
       wake();
       playHeartbeatPulse();
@@ -6568,6 +6616,27 @@ async function fetchRecordTopScore(mode, method) {
 function hideRecordChase() {
   recordChaseEl.classList.remove('visible', 'record-pace');
   recordChaseEl.textContent = '';
+  hudMode.classList.remove('record-warning', 'record-pace');
+  hudMode.textContent = (alive ? runGameMode : gameMode) === 'sprint' ? 'SPRINT' : 'CLASSIC';
+  canvas.classList.remove('record-warning', 'record-pace');
+  canvas.style.removeProperty('--record-pulse-speed');
+}
+
+function showRecordChase(message, hudMessage, state, progress = 0) {
+  recordChaseEl.textContent = message;
+  recordChaseEl.classList.add('visible');
+  recordChaseEl.classList.toggle('record-pace', state === 'pace');
+  hudMode.textContent = hudMessage;
+  hudMode.classList.toggle('record-warning', state === 'warning');
+  hudMode.classList.toggle('record-pace', state === 'pace');
+  canvas.classList.toggle('record-warning', state === 'warning');
+  canvas.classList.toggle('record-pace', state === 'pace');
+  if (state === 'warning') {
+    const pulseMs = Math.round(820 - Math.max(0, Math.min(1, progress)) * 330);
+    canvas.style.setProperty('--record-pulse-speed', pulseMs + 'ms');
+  } else {
+    canvas.style.removeProperty('--record-pulse-speed');
+  }
 }
 
 function disableRecordChase() {
@@ -6592,19 +6661,17 @@ function updateRecordChase() {
   if (score > recordTargetScore) {
     recordBrokenThisRun = true;
     AudioEngine.stopRecordHeartbeat();
-    recordChaseEl.textContent = 'Record pace — keep going!';
-    recordChaseEl.classList.add('visible', 'record-pace');
+    showRecordChase('Record pace — keep going!', 'NEW #1', 'pace');
     return;
   }
   const pointsToBreak = recordTargetScore - score + 1;
   const warningDistance = Math.max(RECORD_WARNING_MIN_POINTS, Math.ceil(recordTargetScore * RECORD_WARNING_PERCENT));
   if (pointsToBreak <= warningDistance) {
     const progress = 1 - ((pointsToBreak - 1) / Math.max(1, warningDistance));
-    recordChaseEl.textContent = recordTargetScore === 0
+    const warningText = recordTargetScore === 0
       ? '1 point to set the record'
       : `${pointsToBreak} ${pointsToBreak === 1 ? 'point' : 'points'} to new #1`;
-    recordChaseEl.classList.add('visible');
-    recordChaseEl.classList.remove('record-pace');
+    showRecordChase(warningText, `${pointsToBreak} TO #1`, 'warning', progress);
     AudioEngine.setRecordHeartbeat(progress);
   } else {
     hideRecordChase();
