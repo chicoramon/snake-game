@@ -147,8 +147,63 @@
 
   @keyframes timer-pulse { 50% { opacity: 0.45; } }
 
-  @media (prefers-reduced-motion: reduce) { #timer.urgent { animation: none; } }
+  #record-chase {
+    display: none;
+    position: absolute;
+    top: calc(100% + 7px);
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 150px;
+    padding: 6px 10px;
+    border: 1px solid #ff5a5a;
+    background: rgba(15,0,0,0.92);
+    color: #ff8b8b;
+    font-family: var(--pixel-font);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-align: center;
+    text-transform: uppercase;
+    pointer-events: none;
+    white-space: nowrap;
+    box-shadow: 0 0 18px rgba(255,51,51,0.3);
+    z-index: 12;
+  }
+  #record-chase.visible { display: block; animation: record-chase-pulse 0.8s steps(2, end) infinite; }
+  #record-chase.record-pace { border-color: #ffd700; color: #ffd700; background: rgba(20,14,0,0.94); }
+  @keyframes record-chase-pulse { 50% { opacity: 0.62; } }
 
+  #record-celebration {
+    position: fixed;
+    inset: 0;
+    z-index: 25;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.18s;
+  }
+  #record-celebration.active { opacity: 1; visibility: visible; }
+  #record-fireworks { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; outline: 0; box-shadow: none; }
+  #record-banner {
+    position: absolute;
+    top: max(env(safe-area-inset-top), 54px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(88vw, 430px);
+    padding: 14px 18px 12px;
+    border: 2px solid #ffd700;
+    background: rgba(0,0,0,0.9);
+    color: #fff;
+    font-family: var(--pixel-font);
+    text-align: center;
+    box-shadow: 0 0 30px rgba(255,215,0,0.6), inset 0 0 18px rgba(255,215,0,0.12);
+  }
+  #record-banner strong { display: block; color: #ffd700; font-size: clamp(1.5rem, 8vw, 2.7rem); letter-spacing: 0.12em; text-shadow: 3px 3px 0 #9b2d30; }
+  #record-banner span { display: block; margin-top: 5px; font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; }
+  @media (prefers-reduced-motion: reduce) {
+    #timer.urgent, #record-chase.visible { animation: none; }
+    #record-celebration { transition: none; }
+  }
   #pause-btn {
 
     background: rgba(255,255,255,0.06);
@@ -1637,7 +1692,7 @@
     content: '';
     position: fixed;
     inset: 0;
-    z-index: 999;
+    z-index: 19;
     pointer-events: none;
     background: repeating-linear-gradient(to bottom, transparent 0 3px, rgba(255,255,255,0.025) 3px 4px);
     mix-blend-mode: screen;
@@ -1784,6 +1839,8 @@
     padding: 10px 16px;
     box-shadow: none;
     text-transform: uppercase;
+    pointer-events: auto;
+    touch-action: manipulation;
   }
   #overlay #mute-btn:hover, #overlay #options-btn:hover, #overlay #controls-btn:hover, #overlay #player-btn:hover,
   #overlay #shareBtn:hover, #overlay #lbBtn:hover {
@@ -1910,14 +1967,21 @@
   <div class="hud-stat" id="timer-block"><span class="label">TIME</span><span class="val" id="timer">1:00</span></div>
   <button id="pause-btn" title="Pause (P)" aria-label="Pause game"><svg width="18" height="18" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="2" y="1" width="2" height="8"/><rect x="6" y="1" width="2" height="8"/></svg></button>
   <div class="hud-stat"><span class="label">BEST</span><span class="val" id="best">0</span></div>
+  <div id="record-chase" role="status" aria-live="polite"></div>
 </div>
-
 
 
 <canvas id="game" role="img" aria-label="Snake game board"></canvas>
 
 <div id="countdownDisplay" aria-live="assertive"></div>
 
+<div id="record-celebration" aria-hidden="true">
+  <canvas id="record-fireworks"></canvas>
+  <div id="record-banner" role="status" aria-live="assertive">
+    <strong>NEW #1</strong>
+    <span id="record-banner-copy">Leaderboard record</span>
+  </div>
+</div>
 
 
 <div id="overlay">
@@ -2036,8 +2100,8 @@
     <div class="theme-btn" data-theme="halo"><div class="theme-icon" id="ti-halo"></div><span class="theme-name">Halo</span></div>
     <div class="theme-btn" data-theme="contra"><div class="theme-icon" id="ti-contra"></div><span class="theme-name">Contra</span></div>
     <div class="theme-btn" data-theme="lego"><div class="theme-icon" id="ti-lego"></div><span class="theme-name">LEGO</span></div>
+    <div class="theme-btn" data-theme="simpsons"><div class="theme-icon" id="ti-simpsons"></div><span class="theme-name">The Simpsons</span></div>
   </div>
-
   <button id="options-back">Back</button>
 
 </div>
@@ -2218,7 +2282,10 @@ const timerBlock = document.getElementById('timer-block');
 const timerEl = document.getElementById('timer');
 
 const countdownDisplay = document.getElementById('countdownDisplay');
-
+const recordChaseEl = document.getElementById('record-chase');
+const recordCelebrationEl = document.getElementById('record-celebration');
+const recordFireworksCanvas = document.getElementById('record-fireworks');
+const recordBannerCopy = document.getElementById('record-banner-copy');
 
 
 // --- Responsive canvas ---
@@ -2328,8 +2395,15 @@ let snake, dir, nextDir, food, score, best, speed, alive, paused;
 let runControlMethod = null;
 let runUsesMixedControls = false;
 let currentRunId = null;
+let recordTargets = Object.create(null);
+let recordTargetScore = null;
+let recordTargetMethod = null;
+let recordTargetRequest = 0;
+let recordTargetPromise = Promise.resolve();
+let recordBrokenThisRun = false;
+let recordResultVisible = false;
+let recordCelebrationShown = false;
 let lastTick = 0, tickAccum = 0;
-
 let animationFrameId = null;
 
 let gameMode = localStorage.getItem('snake_game_mode') || 'classic';
@@ -3156,6 +3230,60 @@ const THEMES = {
       bursts: [880, 659.25, 523.25, 392, 293.66, 196], burstGap: 0.055
     },
   },
+  simpsons: {
+    name: 'The Simpsons',
+    bg: '#163E68', grid: 'rgba(255,217,15,0.09)',
+    boardPattern: 'springfield',
+    snakeStyle: 'cel',
+    snakePalette: ['#FFD90F', '#70D1FE', '#F14E28', '#D6A4CC', '#94C11F'],
+    snakeHead: '#FFD90F', snakeTail: [255, 217, 15],
+    trail: '#70D1FE',
+    food: '#F78ACB', foodGlow: 'rgba(247,138,203,0.62)', foodAccent: '#FFD90F',
+    accent: '#FFD90F',
+    deathFlash: 'rgba(241,78,40,',
+    deathParticle: '#F78ACB',
+    music: {
+      // Chiptune arrangement of the show's famous Lydian-flavoured opening:
+      // the exposed title leap arrives first, then bass, mallets, and percussion join.
+      bass: [
+        repeatMusicPattern([130.81,0,0,0,196,0,0,0,185,0,0,0,220,0,196,0]),
+        repeatMusicPattern([130.81,0,196,0,185,0,220,0,130.81,0,164.81,0,185,196,220,0]),
+        repeatMusicPattern([130.81,130.81,196,0,185,185,220,0,130.81,0,164.81,196,185,196,220,246.94]),
+        repeatMusicPattern([130.81,196,185,220,130.81,164.81,185,196,220,196,185,164.81,146.83,164.81,185,196]),
+      ],
+      melody: [
+        repeatMusicPattern([523.25,0,739.99,783.99,880,0,783.99,659.25,523.25,0,440,0,369.99,369.99,369.99,392,0,0,523.25,0,493.88,466.16,440,0]),
+        repeatMusicPattern([523.25,0,739.99,783.99,880,0,783.99,659.25,523.25,659.25,440,523.25,369.99,369.99,392,440,0,523.25,587.33,523.25,493.88,466.16,440,392]),
+        repeatMusicPattern([523.25,659.25,739.99,783.99,880,987.77,880,783.99,659.25,523.25,440,523.25,739.99,659.25,587.33,523.25,392,440,523.25,587.33,523.25,493.88,466.16,440]),
+        repeatMusicPattern([523.25,659.25,739.99,783.99,880,987.77,1046.5,987.77,880,783.99,659.25,523.25,739.99,783.99,880,739.99,659.25,587.33,523.25,493.88,466.16,440,392,369.99]),
+      ],
+      arpeggio: [
+        repeatMusicPattern([0]),
+        repeatMusicPattern([261.63,0,329.63,0,369.99,0,392,0,261.63,0,329.63,0,369.99,0,440,0]),
+        repeatMusicPattern([261.63,329.63,369.99,392,0,369.99,329.63,0,293.66,369.99,440,493.88,0,440,369.99,0]),
+        repeatMusicPattern([261.63,329.63,369.99,392,440,392,369.99,329.63,293.66,369.99,440,493.88,587.33,493.88,440,369.99]),
+      ],
+      drums: [
+        repeatMusicPattern([1,0,0,0,0,0,0,2,1,0,0,0,0,0,2,0]),
+        repeatMusicPattern([1,0,2,0,3,0,2,0,1,0,2,0,3,0,2,0]),
+        repeatMusicPattern([1,2,2,0,3,0,2,2,1,0,2,0,3,2,2,0]),
+        repeatMusicPattern([1,2,2,1,3,2,2,0,1,2,2,1,3,2,2,2]),
+      ],
+      bassType: 'triangle', melodyType: 'square', arpType: 'triangle',
+      bassVol: 0.31, melodyVol: 0.145, arpVol: 0.075,
+      baseBPM: 168, maxBPM: 232, bpmPerLen: 1.8,
+      swing: 0.08,
+      percussion: 'blocks',
+    },
+    sfxEat: [
+      { type: 'square', freqs: [659.25, 880, 1174.66], times: [0, 0.045, 0.09], dur: 0.18, vol: 0.14 },
+      { type: 'triangle', freqs: [261.63, 369.99], times: [0, 0.04], dur: 0.13, vol: 0.08 }
+    ],
+    sfxDie: {
+      type: 'square', freqStart: 739.99, freqEnd: 55, dur: 0.72, vol: 0.14,
+      bursts: [880, 739.99, 659.25, 523.25, 369.99, 261.63], burstGap: 0.06
+    },
+  },
 };
 
 
@@ -3173,10 +3301,14 @@ function registerControlMethod(method) {
 
   if (!alive || countdownActive) return;
 
-  if (!runControlMethod) runControlMethod = method;
-
-  else if (runControlMethod !== method) runUsesMixedControls = true;
-
+  if (!runControlMethod) {
+    runControlMethod = method;
+    activateRecordTarget(method);
+  }
+  else if (runControlMethod !== method) {
+    runUsesMixedControls = true;
+    disableRecordChase();
+  }
 }
 
 
@@ -4074,6 +4206,28 @@ const FOOD_SPRITES = {
     ],
     palette: [null, '#FFD500', '#D9A900', '#241F17'],
   },
+  // Pink-frosted donut with bright sprinkles — Springfield's most famous snack.
+  simpsons: {
+    grid: [
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,3,3,3,3,3,3,0,0,0,0,0],
+      [0,0,0,3,3,1,1,1,1,1,1,3,3,0,0,0],
+      [0,0,3,1,1,2,2,2,2,2,2,1,1,3,0,0],
+      [0,3,1,2,2,2,5,2,2,6,2,2,2,1,3,0],
+      [0,3,1,2,7,2,2,2,2,2,2,5,2,1,3,0],
+      [3,1,2,2,2,2,3,3,3,3,2,2,2,2,1,3],
+      [3,1,2,5,2,3,4,4,4,4,3,2,6,2,1,3],
+      [3,1,2,2,2,3,4,4,4,4,3,2,2,2,1,3],
+      [3,1,2,2,7,2,3,3,3,3,2,2,5,2,1,3],
+      [0,3,1,2,2,2,2,2,6,2,2,2,2,1,3,0],
+      [0,3,1,1,2,5,2,2,2,2,7,2,1,1,3,0],
+      [0,0,3,1,1,1,2,2,2,2,1,1,1,3,0,0],
+      [0,0,0,3,3,1,1,1,1,1,1,3,3,0,0,0],
+      [0,0,0,0,0,3,3,3,3,3,3,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    ],
+    palette: [null, '#D89A55', '#F78ACB', '#542F22', '#163E68', '#70D1FE', '#FFD90F', '#94C11F'],
+  },
 };
 
 
@@ -4159,6 +4313,31 @@ function draw(interp) {
       }
     }
     ctx.globalAlpha = 1;
+  } else if (T.boardPattern === 'springfield') {
+    // A quiet cel-painted Springfield backdrop: clouds, distant rooftops, and the family home.
+    ctx.save();
+    ctx.globalAlpha = 0.12;
+    ctx.fillStyle = '#FFFFFF';
+    for (const cloud of [[55,55,44],[250,105,54],[330,38,34]]) {
+      ctx.beginPath();
+      ctx.arc(cloud[0], cloud[1], cloud[2] * 0.28, 0, Math.PI * 2);
+      ctx.arc(cloud[0] + cloud[2] * 0.3, cloud[1] - 5, cloud[2] * 0.36, 0, Math.PI * 2);
+      ctx.arc(cloud[0] + cloud[2] * 0.65, cloud[1], cloud[2] * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#F14E28';
+    ctx.fillRect(0, canvasH - 92, canvasW, 92);
+    ctx.fillStyle = '#FFD90F';
+    ctx.beginPath();
+    ctx.moveTo(35, canvasH - 92); ctx.lineTo(105, canvasH - 148); ctx.lineTo(175, canvasH - 92);
+    ctx.closePath(); ctx.fill();
+    ctx.fillRect(52, canvasH - 92, 108, 66);
+    ctx.fillStyle = '#70D1FE';
+    ctx.fillRect(72, canvasH - 76, 25, 24);
+    ctx.fillRect(116, canvasH - 76, 25, 24);
+    ctx.fillStyle = '#94C11F';
+    ctx.fillRect(0, canvasH - 28, canvasW, 28);
+    ctx.restore();
   }
 
   // Interpolated snake position
@@ -4230,7 +4409,7 @@ function draw(interp) {
 
     }
 
-    const segmentColor = T.snakeStyle === 'bricks'
+    const segmentColor = (T.snakeStyle === 'bricks' || T.snakeStyle === 'cel')
       ? T.snakePalette[i % T.snakePalette.length]
       : `rgb(${r},${g},${b})`;
     ctx.fillStyle = segmentColor;
@@ -4249,6 +4428,14 @@ function draw(interp) {
         ctx.arc(studX, py + 5, i === 0 ? 3.2 : 2.8, 0, Math.PI * 2);
         ctx.fill();
       }
+    } else if (T.snakeStyle === 'cel') {
+      // Heavy ink outline and a single bright highlight mimic the show's cel animation.
+      ctx.fillStyle = '#241F20';
+      roundRect(px + pad, py + pad, CELL - pad * 2, CELL - pad * 2, i === 0 ? 6 : 4);
+      ctx.fillStyle = segmentColor;
+      roundRect(px + pad + 2, py + pad + 2, CELL - pad * 2 - 4, CELL - pad * 2 - 4, i === 0 ? 4 : 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.28)';
+      ctx.fillRect(px + pad + 4, py + pad + 4, Math.max(3, CELL - pad * 2 - 9), 2);
     } else {
       const radius = i === 0 ? 6 : 3;
       roundRect(px + pad, py + pad, CELL - pad * 2, CELL - pad * 2, radius);
@@ -4436,7 +4623,7 @@ function gameTick() {
     score++;
 
     scoreEl.textContent = score;
-
+    updateRecordChase();
     haptic('eat');
 
     AudioEngine.sfxEat();
@@ -4519,6 +4706,7 @@ function showRunResult(reason) {
   lbBtn.style.display = 'block';
 
   const scoreMethod = runControlMethod || controlMode;
+  recordTargetMethod = scoreMethod;
   scoreMethodLabel.textContent = runUsesMixedControls
 
     ? 'Mixed controls — this run is unranked'
@@ -4529,7 +4717,9 @@ function showRunResult(reason) {
 
   prepareRunSubmission();
   overlay.classList.remove('hidden');
-
+  recordResultVisible = true;
+  hideRecordChase();
+  maybeCelebrateRecordAtGameOver();
 }
 
 
@@ -4594,7 +4784,8 @@ function die() {
 
 function startGame() {
   if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
-
+  stopRecordCelebration();
+  recordResultVisible = false;
   overlay.classList.add('hidden');
   shareBtn.style.display = 'none';
   namePrompt.style.display = 'none';
@@ -4616,8 +4807,8 @@ function startGame() {
 
   reset(true);
 
+  beginRecordChase();
   AudioEngine.start();
-
   prevSnake = null;
 
   lastTick = performance.now();
@@ -5015,6 +5206,8 @@ const AudioEngine = (() => {
   let stepAccum = 0, lastStepTime = 0;
   let seqRafId = null;
   let wakePromise = null;
+  let heartbeatTimer = null;
+  let heartbeatProgress = null;
 
 
   function getTheme() { return THEMES[currentTheme].music; }
@@ -5331,6 +5524,84 @@ const AudioEngine = (() => {
 
 
 
+  function setMusicDuck(value) {
+    if (!musicGain || !actx) return;
+    const now = actx.currentTime;
+    musicGain.gain.cancelScheduledValues(now);
+    musicGain.gain.setTargetAtTime(value, now, 0.08);
+  }
+
+  function clearHeartbeatTimer() {
+    if (heartbeatTimer) clearTimeout(heartbeatTimer);
+    heartbeatTimer = null;
+  }
+
+  function playHeartbeatPulse() {
+    heartbeatTimer = null;
+    if (heartbeatProgress === null || !alive || paused || !actx || actx.state !== 'running') return;
+    const now = actx.currentTime;
+    const pulse = (start, frequency, volume) => {
+      const osc = actx.createOscillator();
+      const gain = actx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(frequency, start);
+      osc.frequency.exponentialRampToValueAtTime(frequency * 0.72, start + 0.11);
+      gain.gain.setValueAtTime(volume, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.14);
+      osc.connect(gain); gain.connect(sfxGain);
+      osc.start(start); osc.stop(start + 0.15);
+    };
+    pulse(now, 74, 0.26);
+    pulse(now + 0.17, 58, 0.19);
+    const delay = Math.round(920 - heartbeatProgress * 470);
+    heartbeatTimer = setTimeout(playHeartbeatPulse, delay);
+  }
+
+  function setRecordHeartbeat(progress) {
+    init();
+    heartbeatProgress = Math.max(0, Math.min(1, progress));
+    setMusicDuck(0.58);
+    if (!heartbeatTimer && alive && !paused) {
+      wake();
+      playHeartbeatPulse();
+    }
+  }
+
+  function stopRecordHeartbeat() {
+    heartbeatProgress = null;
+    clearHeartbeatTimer();
+    setMusicDuck(1);
+  }
+
+  function playScheduledTone(freq, start, duration, type, volume) {
+    if (!freq) return;
+    const osc = actx.createOscillator();
+    const gain = actx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, start);
+    gain.gain.setValueAtTime(volume, start);
+    gain.gain.setValueAtTime(volume, Math.max(start, start + duration - 0.08));
+    gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
+    osc.connect(gain); gain.connect(sfxGain);
+    osc.start(start); osc.stop(start + duration + 0.02);
+  }
+
+  function playRecordFanfare() {
+    init();
+    wake(true).then(awake => {
+      if (!awake || !actx || actx.state !== 'running') return;
+      const t = actx.currentTime + 0.04;
+      const lead = [523.25,659.25,783.99,1046.5,783.99,987.77,1174.66,1318.51];
+      lead.forEach((freq, index) => playScheduledTone(freq, t + index * 0.12, 0.2, 'square', 0.12));
+      [[261.63,329.63,392],[349.23,440,523.25],[392,493.88,587.33],[523.25,659.25,783.99]].forEach((chord, index) => {
+        const start = t + 1.1 + index * 0.38;
+        const duration = index === 3 ? 1.15 : 0.28;
+        chord.forEach(freq => playScheduledTone(freq, start, duration, 'square', index === 3 ? 0.075 : 0.065));
+      });
+      [130.81,174.61,196,261.63].forEach((freq, index) => playScheduledTone(freq, t + 1.1 + index * 0.38, index === 3 ? 1.15 : 0.3, 'triangle', 0.12));
+    });
+  }
+
   function start() {
     init();
     step = 0; running = true;
@@ -5345,18 +5616,20 @@ const AudioEngine = (() => {
   function stop() {
 
     running = false;
-
+    stopRecordHeartbeat();
     stopSeqTimer();
 
   }
 
 
 
-  function pause()  { stopSeqTimer(); }
+  function pause()  { stopSeqTimer(); clearHeartbeatTimer(); }
   function resume() {
     if (!running) return;
     stopSeqTimer();
-    wake(true);
+    wake(true).then(() => {
+      if (heartbeatProgress !== null) playHeartbeatPulse();
+    });
   }
 
   // Background recovery is best-effort; the capture-phase gesture hooks are
@@ -5459,8 +5732,11 @@ const AudioEngine = (() => {
 
 
 
-  return { start, stop, pause, resume, updateTempo, sfxEat, sfxDie, toggleMute, get muted() { return muted; } };
-
+  return {
+    start, stop, pause, resume, updateTempo, sfxEat, sfxDie, toggleMute,
+    setRecordHeartbeat, stopRecordHeartbeat, playRecordFanfare,
+    get muted() { return muted; }
+  };
 })();
 
 
@@ -5751,6 +6027,7 @@ document.querySelectorAll('.theme-btn').forEach(btn => {
 // --- Theme Picker Icons ---
 
 const THEME_ICON_URLS = {
+  simpsons: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiB2aWV3Qm94PSIwIDAgMTkyIDE5MiIgc2hhcGUtcmVuZGVyaW5nPSJjcmlzcEVkZ2VzIj48cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgZmlsbD0iIzcwRDFGRSIvPjxnIHN0cm9rZT0iIzFFMUUxRSIgc3Ryb2tlLXdpZHRoPSI4IiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBmaWxsPSIjRkZEOTBGIiBkPSJNNjAgMzJoNDh2MTJoMTJ2MTJoMTJ2MjRoMTJ2NDhoLTEydjIwaC0yNHYxMkg3MnYtMTJINDh2LTIwSDM2VjgwaDEyVjU2aDEyeiIvPjxwYXRoIGZpbGw9IiNGRkYiIGQ9Ik02MCA2NGgzMnYzNkg2MHpNOTYgNjRoMzJ2MzZIOTZ6Ii8+PHJlY3QgeD0iNzYiIHk9Ijc2IiB3aWR0aD0iOCIgaGVpZ2h0PSIxMiIgZmlsbD0iIzFFMUUxRSIgc3Ryb2tlPSJub25lIi8+PHJlY3QgeD0iMTA4IiB5PSI3NiIgd2lkdGg9IjgiIGhlaWdodD0iMTIiIGZpbGw9IiMxRTFFMUUiIHN0cm9rZT0ibm9uZSIvPjxwYXRoIGZpbGw9IiNGRkQ5MEYiIGQ9Ik04NCA5MmgzMnYyOEg4NHoiLz48cGF0aCBmaWxsPSIjRkZGIiBkPSJNNzIgMTEyaDUydjIwSDcyeiIvPjxwYXRoIGZpbGw9IiNGRkQ5MEYiIGQ9Ik02NCAyMGwxNiAxNiAxMi0yMCAxMiAyMCAxNi0xNiIvPjwvZz48L3N2Zz4=',
   lego: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiB2aWV3Qm94PSIwIDAgMTkyIDE5MiIgc2hhcGUtcmVuZGVyaW5nPSJjcmlzcEVkZ2VzIj48ZyBpZD0icGl4ZWwtYXJ0Ij48cmVjdCB4PSIyNCIgeT0iNzIiIHdpZHRoPSIxNDQiIGhlaWdodD0iODQiIGZpbGw9IiM3QTAwMDgiLz48cmVjdCB4PSIyNCIgeT0iNjAiIHdpZHRoPSIxNDQiIGhlaWdodD0iODQiIGZpbGw9IiNFMzAwMEIiLz48cmVjdCB4PSIzNiIgeT0iNDgiIHdpZHRoPSIyNCIgaGVpZ2h0PSIxMiIgZmlsbD0iI0E4MDAwOCIvPjxyZWN0IHg9IjM2IiB5PSIzNiIgd2lkdGg9IjI0IiBoZWlnaHQ9IjEyIiBmaWxsPSIjRjAxQjI0Ii8+PHJlY3QgeD0iNzIiIHk9IjQ4IiB3aWR0aD0iMjQiIGhlaWdodD0iMTIiIGZpbGw9IiNBODAwMDgiLz48cmVjdCB4PSI3MiIgeT0iMzYiIHdpZHRoPSIyNCIgaGVpZ2h0PSIxMiIgZmlsbD0iI0YwMUIyNCIvPjxyZWN0IHg9IjEwOCIgeT0iNDgiIHdpZHRoPSIyNCIgaGVpZ2h0PSIxMiIgZmlsbD0iI0E4MDAwOCIvPjxyZWN0IHg9IjEwOCIgeT0iMzYiIHdpZHRoPSIyNCIgaGVpZ2h0PSIxMiIgZmlsbD0iI0YwMUIyNCIvPjxyZWN0IHg9IjE0NCIgeT0iNDgiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI0E4MDAwOCIvPjxyZWN0IHg9IjE0NCIgeT0iMzYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI0YwMUIyNCIvPjxyZWN0IHg9IjM2IiB5PSI3MiIgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxMiIgZmlsbD0iI0ZGMzk0MSIvPjxyZWN0IHg9IjM2IiB5PSIxMzIiIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIiIGZpbGw9IiNCNTAwMDkiLz48cmVjdCB4PSI0OCIgeT0iOTYiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgZmlsbD0iI0ZGRDUwMCIvPjxyZWN0IHg9Ijg0IiB5PSI5NiIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjMDA2REI3Ii8+PHJlY3QgeD0iMTIwIiB5PSI5NiIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjMDBBNjUxIi8+PC9nPjwvc3ZnPg==',
   mario: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiB2aWV3Qm94PSIwIDAgMTkyIDE5MiIgc2hhcGUtcmVuZGVyaW5nPSJjcmlzcEVkZ2VzIj4KICA8ZyBpZD0icGl4ZWwtYXJ0Ij4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSI2MCIgeT0iMTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2M5MjUyNSIvPgogICAgPHJlY3QgY2xhc3M9InB4LVIiIHg9IjcyIiB5PSIxMiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjYzkyNTI1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUiIgeD0iODQiIHk9IjEyIiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSI5NiIgeT0iMTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2M5MjUyNSIvPgogICAgPHJlY3QgY2xhc3M9InB4LVIiIHg9IjEwOCIgeT0iMTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2M5MjUyNSIvPgogICAgPHJlY3QgY2xhc3M9InB4LVIiIHg9IjEyMCIgeT0iMTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2M5MjUyNSIvPgogICAgPHJlY3QgY2xhc3M9InB4LVIiIHg9IjQ4IiB5PSIyNCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjYzkyNTI1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUiIgeD0iNjAiIHk9IjI0IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSI3MiIgeT0iMjQiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2M5MjUyNSIvPgogICAgPHJlY3QgY2xhc3M9InB4LVIiIHg9Ijg0IiB5PSIyNCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjYzkyNTI1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUiIgeD0iOTYiIHk9IjI0IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSIxMDgiIHk9IjI0IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSIxMjAiIHk9IjI0IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSIxMzIiIHk9IjI0IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1TIiB4PSI0OCIgeT0iMzYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YxYjM2ZCIvPgogICAgPHJlY3QgY2xhc3M9InB4LVMiIHg9IjYwIiB5PSIzNiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZjFiMzZkIi8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iNzIiIHk9IjM2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNmMWIzNmQiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1TIiB4PSI4NCIgeT0iMzYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YxYjM2ZCIvPgogICAgPHJlY3QgY2xhc3M9InB4LUsiIHg9Ijk2IiB5PSIzNiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMTUxNTE1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iMTA4IiB5PSIzNiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZjFiMzZkIi8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iMTIwIiB5PSIzNiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZjFiMzZkIi8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iMzYiIHk9IjQ4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNmMWIzNmQiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1LIiB4PSI0OCIgeT0iNDgiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzE1MTUxNSIvPgogICAgPHJlY3QgY2xhc3M9InB4LVMiIHg9IjYwIiB5PSI0OCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZjFiMzZkIi8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iNzIiIHk9IjQ4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNmMWIzNmQiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1TIiB4PSI4NCIgeT0iNDgiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YxYjM2ZCIvPgogICAgPHJlY3QgY2xhc3M9InB4LUsiIHg9Ijk2IiB5PSI0OCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMTUxNTE1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iMTA4IiB5PSI0OCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZjFiMzZkIi8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iMTIwIiB5PSI0OCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZjFiMzZkIi8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iMTMyIiB5PSI0OCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZjFiMzZkIi8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iMzYiIHk9IjYwIiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNmMWIzNmQiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1LIiB4PSI0OCIgeT0iNjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzE1MTUxNSIvPgogICAgPHJlY3QgY2xhc3M9InB4LUsiIHg9IjYwIiB5PSI2MCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMTUxNTE1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iNzIiIHk9IjYwIiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNmMWIzNmQiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1TIiB4PSI4NCIgeT0iNjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YxYjM2ZCIvPgogICAgPHJlY3QgY2xhc3M9InB4LVMiIHg9Ijk2IiB5PSI2MCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZjFiMzZkIi8+CiAgICA8cmVjdCBjbGFzcz0icHgtSyIgeD0iMTA4IiB5PSI2MCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMTUxNTE1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iMTIwIiB5PSI2MCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZjFiMzZkIi8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iMTMyIiB5PSI2MCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZjFiMzZkIi8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iNDgiIHk9IjcyIiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNmMWIzNmQiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1TIiB4PSI2MCIgeT0iNzIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YxYjM2ZCIvPgogICAgPHJlY3QgY2xhc3M9InB4LVMiIHg9IjcyIiB5PSI3MiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZjFiMzZkIi8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iODQiIHk9IjcyIiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNmMWIzNmQiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1TIiB4PSI5NiIgeT0iNzIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YxYjM2ZCIvPgogICAgPHJlY3QgY2xhc3M9InB4LVMiIHg9IjEwOCIgeT0iNzIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YxYjM2ZCIvPgogICAgPHJlY3QgY2xhc3M9InB4LVIiIHg9IjQ4IiB5PSI4NCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjYzkyNTI1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUiIgeD0iNjAiIHk9Ijg0IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1CIiB4PSI3MiIgeT0iODQiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9Ijg0IiB5PSI4NCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMjE0ZmM2Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUiIgeD0iOTYiIHk9Ijg0IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSIxMDgiIHk9Ijg0IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSIzNiIgeT0iOTYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2M5MjUyNSIvPgogICAgPHJlY3QgY2xhc3M9InB4LVIiIHg9IjQ4IiB5PSI5NiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjYzkyNTI1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUiIgeD0iNjAiIHk9Ijk2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1CIiB4PSI3MiIgeT0iOTYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9Ijg0IiB5PSI5NiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMjE0ZmM2Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUiIgeD0iOTYiIHk9Ijk2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSIxMDgiIHk9Ijk2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSIxMjAiIHk9Ijk2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSIyNCIgeT0iMTA4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSIzNiIgeT0iMTA4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1CIiB4PSI0OCIgeT0iMTA4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiMyMTRmYzYiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSI2MCIgeT0iMTA4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1CIiB4PSI3MiIgeT0iMTA4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiMyMTRmYzYiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1CIiB4PSI4NCIgeT0iMTA4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiMyMTRmYzYiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSI5NiIgeT0iMTA4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1CIiB4PSIxMDgiIHk9IjEwOCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMjE0ZmM2Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUiIgeD0iMTIwIiB5PSIxMDgiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2M5MjUyNSIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9IjI0IiB5PSIxMjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9IjM2IiB5PSIxMjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9IjQ4IiB5PSIxMjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LVkiIHg9IjYwIiB5PSIxMjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YwZDEzYiIvPgogICAgPHJlY3QgY2xhc3M9InB4LVkiIHg9IjcyIiB5PSIxMjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YwZDEzYiIvPgogICAgPHJlY3QgY2xhc3M9InB4LVkiIHg9Ijg0IiB5PSIxMjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YwZDEzYiIvPgogICAgPHJlY3QgY2xhc3M9InB4LVkiIHg9Ijk2IiB5PSIxMjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YwZDEzYiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9IjEwOCIgeT0iMTIwIiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiMyMTRmYzYiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1CIiB4PSIxMjAiIHk9IjEyMCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMjE0ZmM2Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtQiIgeD0iMTMyIiB5PSIxMjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9IjI0IiB5PSIxMzIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9IjQ4IiB5PSIxMzIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LVkiIHg9IjYwIiB5PSIxMzIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YwZDEzYiIvPgogICAgPHJlY3QgY2xhc3M9InB4LVkiIHg9IjcyIiB5PSIxMzIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YwZDEzYiIvPgogICAgPHJlY3QgY2xhc3M9InB4LVkiIHg9Ijg0IiB5PSIxMzIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YwZDEzYiIvPgogICAgPHJlY3QgY2xhc3M9InB4LVkiIHg9Ijk2IiB5PSIxMzIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YwZDEzYiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9IjEwOCIgeT0iMTMyIiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiMyMTRmYzYiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1CIiB4PSIxMzIiIHk9IjEzMiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMjE0ZmM2Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtQiIgeD0iNDgiIHk9IjE0NCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMjE0ZmM2Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtQiIgeD0iNjAiIHk9IjE0NCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMjE0ZmM2Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtQiIgeD0iOTYiIHk9IjE0NCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMjE0ZmM2Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtQiIgeD0iMTA4IiB5PSIxNDQiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9IjM2IiB5PSIxNTYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9IjQ4IiB5PSIxNTYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9IjYwIiB5PSIxNTYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9Ijk2IiB5PSIxNTYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9IjEwOCIgeT0iMTU2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiMyMTRmYzYiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1CIiB4PSIxMjAiIHk9IjE1NiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMjE0ZmM2Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtSyIgeD0iMjQiIHk9IjE2OCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMTUxNTE1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtSyIgeD0iMzYiIHk9IjE2OCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMTUxNTE1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtSyIgeD0iNDgiIHk9IjE2OCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMTUxNTE1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtSyIgeD0iMTA4IiB5PSIxNjgiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzE1MTUxNSIvPgogICAgPHJlY3QgY2xhc3M9InB4LUsiIHg9IjEyMCIgeT0iMTY4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiMxNTE1MTUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1LIiB4PSIxMzIiIHk9IjE2OCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMTUxNTE1Ii8+CiAgPC9nPgo8L3N2Zz4=',
 
@@ -6263,7 +6540,249 @@ let sb = null;
 
 try { sb = supabase.createClient(SB_URL, SB_KEY); } catch(e) { console.warn('Supabase init failed:', e); }
 
+// --- Leaderboard record chase ---
+const RECORD_METHODS = ['dpad', 'turn', 'keyboard'];
+const RECORD_WARNING_MIN_POINTS = 3;
+const RECORD_WARNING_PERCENT = 0.10;
+let recordCelebrationCheckStarted = false;
+let recordCelebrationTimeout = null;
+let recordFireworksFrame = null;
+let recordFireworkRockets = [];
+let recordFireworkSparks = [];
+let recordFireworksEnd = 0;
+let recordNextLaunch = 0;
 
+async function fetchRecordTopScore(mode, method) {
+  if (!sb) return null;
+  const { data, error } = await sb.from('leaderboard')
+    .select('score')
+    .eq('game_mode', mode)
+    .eq('control_method', method)
+    .order('score', { ascending: false })
+    .order('created_at', { ascending: true })
+    .limit(1);
+  if (error) throw error;
+  return data?.length ? Number(data[0].score) : 0;
+}
+
+function hideRecordChase() {
+  recordChaseEl.classList.remove('visible', 'record-pace');
+  recordChaseEl.textContent = '';
+}
+
+function disableRecordChase() {
+  recordTargetScore = null;
+  recordTargetMethod = null;
+  recordBrokenThisRun = false;
+  hideRecordChase();
+  AudioEngine.stopRecordHeartbeat();
+}
+
+function activateRecordTarget(method) {
+  if (runUsesMixedControls || !RECORD_METHODS.includes(method)) return disableRecordChase();
+  recordTargetMethod = method;
+  const target = recordTargets[method];
+  if (!Number.isFinite(target)) return;
+  recordTargetScore = target;
+  updateRecordChase();
+}
+
+function updateRecordChase() {
+  if (runUsesMixedControls || !Number.isFinite(recordTargetScore)) return;
+  if (score > recordTargetScore) {
+    recordBrokenThisRun = true;
+    AudioEngine.stopRecordHeartbeat();
+    recordChaseEl.textContent = 'Record pace — keep going!';
+    recordChaseEl.classList.add('visible', 'record-pace');
+    return;
+  }
+  const pointsToBreak = recordTargetScore - score + 1;
+  const warningDistance = Math.max(RECORD_WARNING_MIN_POINTS, Math.ceil(recordTargetScore * RECORD_WARNING_PERCENT));
+  if (pointsToBreak <= warningDistance) {
+    const progress = 1 - ((pointsToBreak - 1) / Math.max(1, warningDistance));
+    recordChaseEl.textContent = recordTargetScore === 0
+      ? '1 point to set the record'
+      : `${pointsToBreak} ${pointsToBreak === 1 ? 'point' : 'points'} to new #1`;
+    recordChaseEl.classList.add('visible');
+    recordChaseEl.classList.remove('record-pace');
+    AudioEngine.setRecordHeartbeat(progress);
+  } else {
+    hideRecordChase();
+    AudioEngine.stopRecordHeartbeat();
+  }
+}
+
+function beginRecordChase() {
+  const requestId = ++recordTargetRequest;
+  const runId = currentRunId;
+  recordTargets = Object.create(null);
+  recordTargetScore = null;
+  recordTargetMethod = null;
+  recordBrokenThisRun = false;
+  recordCelebrationShown = false;
+  recordCelebrationCheckStarted = false;
+  hideRecordChase();
+  AudioEngine.stopRecordHeartbeat();
+
+  const params = new URLSearchParams(location.search);
+  const debugTarget = document.body.classList.contains('debug') ? Number(params.get('recordTarget')) : NaN;
+  if (Number.isFinite(debugTarget) && debugTarget >= 0) {
+    RECORD_METHODS.forEach(method => { recordTargets[method] = debugTarget; });
+    recordTargetPromise = Promise.resolve(recordTargets);
+    return;
+  }
+
+  recordTargetPromise = Promise.all(RECORD_METHODS.map(async method => {
+    try { return [method, await fetchRecordTopScore(runGameMode, method)]; }
+    catch (error) { console.warn(`Record target unavailable for ${method}:`, error); return [method, null]; }
+  })).then(entries => {
+    if (requestId !== recordTargetRequest || runId !== currentRunId) return recordTargets;
+    entries.forEach(([method, target]) => {
+      if (Number.isFinite(target)) recordTargets[method] = target;
+    });
+    if (runControlMethod) activateRecordTarget(runControlMethod);
+    return recordTargets;
+  });
+}
+
+function resizeRecordFireworks() {
+  const dpr = window.devicePixelRatio || 1;
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  recordFireworksCanvas.width = Math.max(1, Math.round(width * dpr));
+  recordFireworksCanvas.height = Math.max(1, Math.round(height * dpr));
+  recordFireworksCanvas.style.width = width + 'px';
+  recordFireworksCanvas.style.height = height + 'px';
+  const context = recordFireworksCanvas.getContext('2d');
+  context.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function explodeRecordFirework(rocket) {
+  const palette = [THEMES[currentTheme].accent, THEMES[currentTheme].food, '#ffd700', '#ff4f81', '#70d1fe', '#ffffff'];
+  const color = palette[Math.floor(Math.random() * palette.length)];
+  const count = 42 + Math.floor(Math.random() * 28);
+  for (let i = 0; i < count; i++) {
+    const angle = (Math.PI * 2 * i / count) + Math.random() * 0.08;
+    const speed = 1.4 + Math.random() * 4.3;
+    recordFireworkSparks.push({
+      x: rocket.x, y: rocket.y,
+      vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+      life: 0.85 + Math.random() * 0.75, maxLife: 1.6,
+      color, size: 1.2 + Math.random() * 2.4
+    });
+  }
+}
+
+function launchRecordFirework(now) {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  recordFireworkRockets.push({
+    x: width * (0.12 + Math.random() * 0.76), y: height + 12,
+    vx: (Math.random() - 0.5) * 0.8, vy: -(6.5 + Math.random() * 3),
+    explodeY: height * (0.12 + Math.random() * 0.46),
+    color: Math.random() > 0.5 ? '#ffd700' : THEMES[currentTheme].accent
+  });
+  recordNextLaunch = now + 230 + Math.random() * 260;
+}
+
+function animateRecordFireworks(now) {
+  const ctx = recordFireworksCanvas.getContext('2d');
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  ctx.clearRect(0, 0, width, height);
+  ctx.globalCompositeOperation = 'lighter';
+
+  if (now < recordFireworksEnd && now >= recordNextLaunch) launchRecordFirework(now);
+  for (let i = recordFireworkRockets.length - 1; i >= 0; i--) {
+    const rocket = recordFireworkRockets[i];
+    rocket.x += rocket.vx; rocket.y += rocket.vy; rocket.vy += 0.025;
+    ctx.fillStyle = rocket.color;
+    ctx.fillRect(rocket.x - 1.5, rocket.y, 3, 11);
+    if (rocket.y <= rocket.explodeY || rocket.vy >= -1.5) {
+      explodeRecordFirework(rocket);
+      recordFireworkRockets.splice(i, 1);
+    }
+  }
+  for (let i = recordFireworkSparks.length - 1; i >= 0; i--) {
+    const spark = recordFireworkSparks[i];
+    spark.x += spark.vx; spark.y += spark.vy;
+    spark.vx *= 0.986; spark.vy = spark.vy * 0.986 + 0.045;
+    spark.life -= 0.016;
+    if (spark.life <= 0) { recordFireworkSparks.splice(i, 1); continue; }
+    ctx.globalAlpha = Math.min(1, spark.life / spark.maxLife);
+    ctx.fillStyle = spark.color;
+    ctx.fillRect(spark.x, spark.y, spark.size, spark.size);
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+  if (now < recordFireworksEnd || recordFireworkRockets.length || recordFireworkSparks.length) {
+    recordFireworksFrame = requestAnimationFrame(animateRecordFireworks);
+  } else {
+    recordFireworksFrame = null;
+  }
+}
+
+function stopRecordCelebration() {
+  if (recordCelebrationTimeout) clearTimeout(recordCelebrationTimeout);
+  recordCelebrationTimeout = null;
+  if (recordFireworksFrame) cancelAnimationFrame(recordFireworksFrame);
+  recordFireworksFrame = null;
+  recordFireworkRockets = [];
+  recordFireworkSparks = [];
+  recordCelebrationEl.classList.remove('active');
+  recordCelebrationEl.setAttribute('aria-hidden', 'true');
+  const ctx = recordFireworksCanvas.getContext('2d');
+  ctx.clearRect(0, 0, recordFireworksCanvas.width, recordFireworksCanvas.height);
+}
+
+function launchRecordCelebration({ confirmed = false, previousTop = recordTargetScore } = {}) {
+  if (recordCelebrationShown) {
+    if (confirmed) recordBannerCopy.textContent = 'World record confirmed and saved';
+    return;
+  }
+  recordCelebrationShown = true;
+  recordBannerCopy.textContent = confirmed
+    ? 'World record confirmed and saved'
+    : `Previous best: ${Number.isFinite(previousTop) ? previousTop : '—'} • ${CONTROL_LABELS[recordTargetMethod] || 'Ranked'}`;
+  recordCelebrationEl.classList.add('active');
+  recordCelebrationEl.setAttribute('aria-hidden', 'false');
+  AudioEngine.playRecordFanfare();
+  if (navigator.vibrate) navigator.vibrate([35,25,35,25,80]);
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    resizeRecordFireworks();
+    recordFireworksEnd = performance.now() + 4400;
+    recordNextLaunch = 0;
+    recordFireworksFrame = requestAnimationFrame(animateRecordFireworks);
+  }
+  recordCelebrationTimeout = setTimeout(stopRecordCelebration, 5600);
+}
+
+function maybeCelebrateRecordAtGameOver() {
+  if (!recordResultVisible || recordCelebrationCheckStarted || runUsesMixedControls || score < 1) return;
+  recordCelebrationCheckStarted = true;
+  const runId = currentRunId;
+  const method = runControlMethod || controlMode;
+  recordTargetMethod = method;
+  const frozenTarget = Number.isFinite(recordTargets[method]) ? recordTargets[method] : null;
+  const params = new URLSearchParams(location.search);
+  const hasDebugTarget = document.body.classList.contains('debug') && Number.isFinite(Number(params.get('recordTarget')));
+  const latestTarget = hasDebugTarget
+    ? Promise.resolve(frozenTarget)
+    : fetchRecordTopScore(runGameMode, method).catch(() => frozenTarget);
+  Promise.resolve(latestTarget).then(target => {
+    if (runId !== currentRunId || !recordResultVisible || runUsesMixedControls) return;
+    if (Number.isFinite(target)) {
+      recordTargetScore = target;
+      recordBrokenThisRun = score > target;
+    }
+    hideRecordChase();
+    if (recordBrokenThisRun) launchRecordCelebration({ previousTop: target });
+  });
+}
+
+window.addEventListener('resize', () => {
+  if (recordCelebrationEl.classList.contains('active')) resizeRecordFireworks();
+});
 
 let submittedThisRound = false;
 let currentUser = null;
@@ -6436,10 +6955,16 @@ async function sendBestScore(payload, { quiet = false, queueOnFailure = true } =
     if (error) throw error;
     const result = Array.isArray(data) ? data[0] : data;
     if (payload.p_run_id === currentRunId) submittedThisRound = true;
+    if (payload.p_run_id === currentRunId && result?.is_new_top) {
+      recordTargetMethod = payload.p_control_method;
+      launchRecordCelebration({ confirmed: true, previousTop: result.previous_top_score });
+    }
     if (!quiet) {
-      submitScoreBtn.textContent = result?.accepted ? 'New Best Saved!' : `Best: ${result?.personal_best ?? payload.p_score}`;
+      submitScoreBtn.textContent = result?.is_new_top
+        ? 'World Record Saved!'
+        : (result?.accepted ? 'New Best Saved!' : `Best: ${result?.personal_best ?? payload.p_score}`);
       scoreMethodLabel.textContent = result?.accepted
-        ? `${playerDisplayName()} \u2022 personal best submitted`
+        ? `${playerDisplayName()} \u2022 ${result?.is_new_top ? 'new leaderboard #1' : `rank #${result?.leaderboard_rank ?? '—'}`}`
         : `${playerDisplayName()} \u2022 score did not beat your best`;
     }
     if (leaderboardOverlay.classList.contains('visible')) loadLeaderboard();
@@ -6944,8 +7469,30 @@ lbNext.addEventListener('click', () => {
 
 // --- Init ---
 
-startBtn.addEventListener('click', startGame);
+// iOS Safari and some embedded WebKit views occasionally omit the synthetic
+// click after a touch. Forward the completed tap explicitly and suppress the
+// duplicate trusted click when the browser does emit one.
+let lastOverlayTouchButton = null;
+let lastOverlayTouchTime = 0;
 
+overlay.addEventListener('click', event => {
+  const button = event.target.closest('button');
+  if (event.isTrusted && button === lastOverlayTouchButton && performance.now() - lastOverlayTouchTime < 700) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+}, true);
+
+overlay.addEventListener('touchend', event => {
+  const button = event.target.closest('button');
+  if (!button || button.disabled || !overlay.contains(button)) return;
+  event.preventDefault();
+  lastOverlayTouchButton = button;
+  lastOverlayTouchTime = performance.now();
+  button.click();
+}, { passive: false });
+
+startBtn.addEventListener('click', startGame);
 
 
 shareBtn.addEventListener('click', async () => {
