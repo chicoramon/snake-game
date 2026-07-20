@@ -1741,8 +1741,9 @@
 
   #score-bar {
     display: grid;
-    grid-template-columns: minmax(48px, 1fr) auto auto auto minmax(48px, 1fr);
-    gap: clamp(5px, 2vw, 16px);
+    grid-template-columns: minmax(52px, 1fr) minmax(64px, 78px) 50px 42px minmax(52px, 1fr);
+    grid-template-areas: "score mode timer pause best";
+    gap: clamp(4px, 1.5vw, 12px);
     padding: max(env(safe-area-inset-top), 8px) clamp(12px, 4vw, 28px) 8px;
     background: linear-gradient(180deg, rgba(1,6,5,0.97), rgba(1,6,5,0.88));
     border-bottom: 1px solid var(--accent-glow);
@@ -1755,8 +1756,9 @@
     gap: 2px;
     min-width: 0;
   }
+  .hud-score { grid-area: score; align-items: flex-start; text-align: left; }
+  .hud-best { grid-area: best; align-items: flex-end; text-align: right; }
   #controls-edit-overlay.customizing #controls-edit-bar { display: flex; }
-  .hud-stat:last-child { text-align: right; }
   #score-bar .label {
     color: var(--muted);
     font-size: 0.56rem;
@@ -1770,9 +1772,19 @@
     text-shadow: 0 0 12px var(--accent-glow);
   }
   #timer-block { display: flex; visibility: hidden; }
+  #timer-block {
+    grid-area: timer;
+    width: 50px;
+    align-items: center;
+    justify-self: center;
+    text-align: center;
+  }
   #timer-block.visible { display: flex; visibility: visible; }
   #hud-mode {
+    grid-area: mode;
     align-self: center;
+    justify-self: stretch;
+    width: 100%;
     color: var(--accent);
     border: 1px solid var(--accent-glow);
     background: var(--accent-glow-soft);
@@ -1781,9 +1793,13 @@
     font-size: 0.56rem;
     font-weight: 800;
     letter-spacing: 0.8px;
+    text-align: center;
+    white-space: nowrap;
   }
   #pause-btn {
+    grid-area: pause;
     align-self: center;
+    justify-self: center;
     min-width: 42px;
     min-height: 34px;
     border-radius: 2px;
@@ -1998,11 +2014,11 @@
 
 
 <div id="score-bar">
-  <div class="hud-stat"><span class="label">SCORE</span><span class="val" id="score">0</span></div>
+  <div class="hud-stat hud-score"><span class="label">SCORE</span><span class="val" id="score">0</span></div>
   <div id="hud-mode">CLASSIC</div>
   <div class="hud-stat" id="timer-block"><span class="label">TIME</span><span class="val" id="timer">1:00</span></div>
   <button id="pause-btn" title="Pause (P)" aria-label="Pause game"><svg width="18" height="18" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="2" y="1" width="2" height="8"/><rect x="6" y="1" width="2" height="8"/></svg></button>
-  <div class="hud-stat"><span class="label">BEST</span><span class="val" id="best">0</span></div>
+  <div class="hud-stat hud-best"><span class="label">BEST</span><span class="val" id="best">0</span></div>
   <div id="record-chase" role="status" aria-live="polite"></div>
 </div>
 
@@ -6600,12 +6616,11 @@ let recordFireworkSparks = [];
 let recordFireworksEnd = 0;
 let recordNextLaunch = 0;
 
-async function fetchRecordTopScore(mode, method) {
+async function fetchRecordTopScore(mode) {
   if (!sb) return null;
   const { data, error } = await sb.from('leaderboard')
     .select('score')
     .eq('game_mode', mode)
-    .eq('control_method', method)
     .order('score', { ascending: false })
     .order('created_at', { ascending: true })
     .limit(1);
@@ -6699,15 +6714,15 @@ function beginRecordChase() {
     return;
   }
 
-  recordTargetPromise = Promise.all(RECORD_METHODS.map(async method => {
-    try { return [method, await fetchRecordTopScore(runGameMode, method)]; }
-    catch (error) { console.warn(`Record target unavailable for ${method}:`, error); return [method, null]; }
-  })).then(entries => {
+  recordTargetPromise = fetchRecordTopScore(runGameMode).then(target => {
     if (requestId !== recordTargetRequest || runId !== currentRunId) return recordTargets;
-    entries.forEach(([method, target]) => {
-      if (Number.isFinite(target)) recordTargets[method] = target;
-    });
+    if (Number.isFinite(target)) {
+      RECORD_METHODS.forEach(method => { recordTargets[method] = target; });
+    }
     if (runControlMethod) activateRecordTarget(runControlMethod);
+    return recordTargets;
+  }).catch(error => {
+    console.warn(`Mode-wide record target unavailable for ${runGameMode}:`, error);
     return recordTargets;
   });
 }
@@ -6810,7 +6825,7 @@ function launchRecordCelebration({ confirmed = false, previousTop = recordTarget
   recordCelebrationShown = true;
   recordBannerCopy.textContent = confirmed
     ? 'World record confirmed and saved'
-    : `Previous best: ${Number.isFinite(previousTop) ? previousTop : '—'} • ${CONTROL_LABELS[recordTargetMethod] || 'Ranked'}`;
+    : `Previous best: ${Number.isFinite(previousTop) ? previousTop : '—'} • ${runGameMode === 'sprint' ? 'Sprint' : 'Classic'} world record`;
   recordCelebrationEl.classList.add('active');
   recordCelebrationEl.setAttribute('aria-hidden', 'false');
   AudioEngine.playRecordFanfare();
@@ -6835,7 +6850,7 @@ function maybeCelebrateRecordAtGameOver() {
   const hasDebugTarget = document.body.classList.contains('debug') && Number.isFinite(Number(params.get('recordTarget')));
   const latestTarget = hasDebugTarget
     ? Promise.resolve(frozenTarget)
-    : fetchRecordTopScore(runGameMode, method).catch(() => frozenTarget);
+    : fetchRecordTopScore(runGameMode).catch(() => frozenTarget);
   Promise.resolve(latestTarget).then(target => {
     if (runId !== currentRunId || !recordResultVisible || runUsesMixedControls) return;
     if (Number.isFinite(target)) {
