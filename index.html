@@ -1405,6 +1405,7 @@
     <div class="theme-btn" data-theme="contra"><div class="theme-icon" id="ti-contra"></div><span class="theme-name">Contra</span></div>
     <div class="theme-btn" data-theme="lego"><div class="theme-icon" id="ti-lego"></div><span class="theme-name">LEGO</span></div>
     <div class="theme-btn" data-theme="simpsons"><div class="theme-icon" id="ti-simpsons"></div><span class="theme-name">The Simpsons</span></div>
+    <div class="theme-btn" data-theme="got"><div class="theme-icon" id="ti-got"></div><span class="theme-name">Game of Thrones</span></div>
   </div>
   <button id="options-back">Back</button>
 </div>
@@ -1630,6 +1631,11 @@ const SPRINT_COUNTDOWN_MS = 3000;
 // ============================================================
 // Keeps compact motif definitions at the engine's standard 48-step length.
 const repeatMusicPattern = pattern => Array.from({ length: 48 }, (_, index) => pattern[index % pattern.length]);
+// Marquee themes use four evolving 32-step movements, giving the score room
+// to introduce, develop, crescendo, and resolve before its 128-step loop.
+const buildMusicArc = (...movements) => movements.flatMap(
+  movement => Array.from({ length: 32 }, (_, index) => movement[index % movement.length])
+);
 
 const THEMES = {
   default: {
@@ -2056,7 +2062,7 @@ const THEMES = {
       ],
       bassType: 'triangle', melodyType: 'square', arpType: 'triangle',
       bassVol: 0.34, melodyVol: 0.13, arpVol: 0.075,
-      baseBPM: 135, maxBPM: 210, bpmPerLen: 2,
+      baseBPM: 112, maxBPM: 196, bpmPerLen: 2, tempoGrowth: 32,
       swing: 0.16,
       percussion: 'blocks',
     },
@@ -2110,7 +2116,7 @@ const THEMES = {
       ],
       bassType: 'triangle', melodyType: 'square', arpType: 'triangle',
       bassVol: 0.31, melodyVol: 0.145, arpVol: 0.075,
-      baseBPM: 168, maxBPM: 232, bpmPerLen: 1.8,
+      baseBPM: 126, maxBPM: 210, bpmPerLen: 1.8, tempoGrowth: 30,
       swing: 0.08,
       percussion: 'blocks',
     },
@@ -2121,6 +2127,142 @@ const THEMES = {
     sfxDie: {
       type: 'square', freqStart: 739.99, freqEnd: 55, dur: 0.72, vol: 0.14,
       bursts: [880, 739.99, 659.25, 523.25, 369.99, 261.63], burstGap: 0.06
+    },
+  },
+  got: {
+    name: 'Game of Thrones',
+    bg: '#05070b', grid: 'rgba(157,176,194,0.07)',
+    boardPattern: 'winterfell', snakeStyle: 'dragon',
+    snakeHead: '#343943', snakeTail: [58, 62, 70],
+    dragonScale: '#252a32', dragonScaleLight: '#505762',
+    dragonHorn: '#c8a45d', dragonEye: '#ffb21c',
+    fireCore: '#fff0a8', fireMid: '#ff8a18', fireOuter: '#b51e16',
+    food: '#c8a45d', foodGlow: 'rgba(200,164,93,0.52)', foodAccent: '#f06a22',
+    accent: '#c8a45d',
+    deathFlash: 'rgba(181,30,22,',
+    trail: '#8b2635', deathParticle: '#ff8a18',
+    music: {
+      // Original dark-fantasy suite: a sparse D-minor cello procession
+      // develops through four movements into choir, brass, and war drums.
+      bass: [
+        buildMusicArc(
+          [73.42,0,0,0,73.42,0,0,0,65.41,0,0,0,73.42,0,0,0],
+          [73.42,0,110,0,73.42,0,98,0,65.41,0,98,0,73.42,0,110,0],
+          [73.42,0,73.42,0,110,0,98,0,65.41,0,65.41,0,98,0,110,0],
+          [73.42,0,110,0,130.81,0,98,0,65.41,0,98,0,73.42,0,0,0]
+        ),
+        buildMusicArc(
+          [73.42,0,110,73.42,0,98,110,0,65.41,0,98,65.41,0,110,98,0],
+          [73.42,73.42,0,110,73.42,0,98,110,65.41,65.41,0,98,73.42,0,110,98],
+          [73.42,0,110,0,130.81,0,110,98,65.41,0,98,0,130.81,0,110,98],
+          [73.42,73.42,110,73.42,130.81,110,98,0,65.41,65.41,98,65.41,110,98,73.42,0]
+        ),
+        buildMusicArc(
+          [73.42,73.42,110,73.42,130.81,110,98,110,65.41,65.41,98,65.41,130.81,110,98,110],
+          [73.42,110,146.83,110,130.81,110,98,110,65.41,98,130.81,98,146.83,130.81,110,98],
+          [73.42,73.42,110,146.83,130.81,110,98,73.42,65.41,65.41,98,130.81,146.83,130.81,110,98],
+          [73.42,110,130.81,146.83,174.61,146.83,130.81,110,98,130.81,146.83,130.81,110,98,73.42,0]
+        ),
+        buildMusicArc(
+          [73.42,110,146.83,174.61,146.83,130.81,110,98,65.41,98,130.81,164.81,146.83,130.81,110,98],
+          [73.42,146.83,110,146.83,174.61,146.83,130.81,110,65.41,130.81,98,130.81,164.81,146.83,130.81,98],
+          [73.42,110,146.83,174.61,196,174.61,146.83,130.81,65.41,98,130.81,164.81,196,174.61,146.83,130.81],
+          [73.42,146.83,174.61,146.83,130.81,110,98,0,65.41,98,130.81,110,73.42,0,0,0]
+        ),
+      ],
+      melody: [
+        buildMusicArc(
+          [0],
+          [0,0,293.66,0,349.23,0,440,0,392,0,349.23,0,293.66,0,0,0],
+          [293.66,0,349.23,0,440,0,392,0,523.25,0,440,0,349.23,0,293.66,0],
+          [293.66,0,349.23,0,440,440,392,0,349.23,0,329.63,0,293.66,0,0,0]
+        ),
+        buildMusicArc(
+          [293.66,0,349.23,0,440,0,392,0,349.23,0,293.66,0,261.63,0,293.66,0],
+          [293.66,349.23,440,0,523.25,440,392,0,349.23,392,440,0,349.23,293.66,261.63,0],
+          [349.23,0,440,0,523.25,0,587.33,0,523.25,440,392,0,349.23,293.66,349.23,0],
+          [293.66,349.23,440,523.25,587.33,523.25,440,392,349.23,392,440,349.23,293.66,0,0,0]
+        ),
+        buildMusicArc(
+          [293.66,349.23,440,523.25,587.33,523.25,440,392,349.23,440,523.25,587.33,698.46,587.33,523.25,440],
+          [349.23,440,523.25,587.33,698.46,587.33,523.25,440,392,523.25,587.33,698.46,783.99,698.46,587.33,523.25],
+          [440,523.25,587.33,698.46,783.99,698.46,587.33,523.25,440,587.33,698.46,783.99,880,783.99,698.46,587.33],
+          [523.25,587.33,698.46,783.99,698.46,587.33,523.25,440,392,440,523.25,440,349.23,293.66,0,0]
+        ),
+        buildMusicArc(
+          [587.33,698.46,880,783.99,698.46,587.33,523.25,440,698.46,783.99,880,1046.5,880,783.99,698.46,587.33],
+          [523.25,587.33,698.46,783.99,880,1046.5,880,783.99,698.46,880,1046.5,1174.66,1046.5,880,783.99,698.46],
+          [587.33,698.46,783.99,880,1046.5,1174.66,1046.5,880,783.99,880,1046.5,1174.66,1318.51,1174.66,1046.5,880],
+          [783.99,698.46,587.33,523.25,440,392,349.23,293.66,349.23,440,523.25,440,349.23,293.66,0,0]
+        ),
+      ],
+      arpeggio: [
+        buildMusicArc(
+          [0],
+          [146.83,0,174.61,0,220,0,174.61,0,130.81,0,164.81,0,196,0,164.81,0],
+          [146.83,174.61,220,174.61,146.83,174.61,220,174.61,130.81,164.81,196,164.81,146.83,174.61,220,174.61],
+          [146.83,0,220,0,261.63,0,220,0,130.81,0,196,0,146.83,0,0,0]
+        ),
+        buildMusicArc(
+          [146.83,174.61,220,174.61,146.83,174.61,220,261.63,130.81,164.81,196,164.81,146.83,174.61,220,174.61],
+          [146.83,220,261.63,220,174.61,220,261.63,293.66,164.81,196,246.94,196,174.61,220,261.63,220],
+          [174.61,220,261.63,293.66,220,261.63,293.66,349.23,196,246.94,293.66,246.94,220,261.63,293.66,261.63],
+          [146.83,174.61,220,261.63,220,174.61,146.83,0,130.81,164.81,196,164.81,146.83,0,0,0]
+        ),
+        buildMusicArc(
+          [146.83,220,293.66,349.23,293.66,220,174.61,220,164.81,246.94,329.63,392,329.63,246.94,196,246.94],
+          [174.61,261.63,349.23,440,349.23,261.63,220,261.63,196,293.66,392,493.88,392,293.66,246.94,293.66],
+          [220,293.66,349.23,440,523.25,440,349.23,293.66,246.94,329.63,392,493.88,587.33,493.88,392,329.63],
+          [174.61,220,293.66,349.23,293.66,220,174.61,146.83,164.81,196,246.94,196,174.61,146.83,0,0]
+        ),
+        buildMusicArc(
+          [293.66,349.23,440,523.25,587.33,523.25,440,349.23,329.63,392,493.88,587.33,659.25,587.33,493.88,392],
+          [349.23,440,523.25,698.46,783.99,698.46,523.25,440,392,493.88,587.33,783.99,880,783.99,587.33,493.88],
+          [440,523.25,698.46,880,1046.5,880,698.46,523.25,493.88,587.33,783.99,987.77,1174.66,987.77,783.99,587.33],
+          [349.23,293.66,261.63,220,196,174.61,146.83,0,130.81,164.81,196,174.61,146.83,0,0,0]
+        ),
+      ],
+      drums: [
+        buildMusicArc(
+          [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+          [1,0,0,0,0,0,0,0,1,0,0,0,0,0,2,0],
+          [1,0,0,0,0,0,2,0,1,0,0,0,0,0,2,0],
+          [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]
+        ),
+        buildMusicArc(
+          [1,0,0,0,2,0,0,0,1,0,0,0,2,0,2,0],
+          [1,0,0,0,2,0,2,0,1,0,0,0,2,0,2,0],
+          [1,0,3,0,2,0,2,0,1,0,3,0,2,0,2,0],
+          [1,0,0,0,2,0,2,0,1,0,0,0,0,0,0,0]
+        ),
+        buildMusicArc(
+          [1,0,3,0,2,0,2,0,1,0,3,0,2,0,2,0],
+          [1,0,3,0,2,2,2,0,1,0,3,0,2,2,2,0],
+          [1,0,3,0,2,0,3,0,1,0,3,0,2,0,3,0],
+          [1,0,3,0,2,0,2,0,1,0,0,0,2,0,0,0]
+        ),
+        buildMusicArc(
+          [1,0,3,0,2,2,3,0,1,0,3,0,2,2,3,0],
+          [1,2,3,0,2,2,3,0,1,2,3,0,2,2,3,0],
+          [1,2,3,2,1,2,3,2,1,2,3,2,1,2,3,2],
+          [1,0,3,0,2,0,2,0,1,0,0,0,0,0,0,0]
+        ),
+      ],
+      bassType: 'cello', melodyType: 'horn', arpType: 'choir',
+      bassVol: 0.24, melodyVol: 0.11, arpVol: 0.052,
+      baseBPM: 76, maxBPM: 148, bpmPerLen: 1.6,
+      tempoGrowth: 36,
+      intensityThresholds: [9, 18, 30],
+      minStepsPerIntensity: 64,
+      percussion: 'war',
+    },
+    sfxEat: [
+      { type: 'triangle', freqs: [293.66, 440, 587.33], times: [0, 0.055, 0.12], dur: 0.32, vol: 0.14 },
+      { type: 'sawtooth', freqs: [120, 180, 240], times: [0, 0.04, 0.09], dur: 0.18, vol: 0.045 },
+    ],
+    sfxDie: {
+      type: 'sawtooth', freqStart: 190, freqEnd: 38, dur: 1.05, vol: 0.2,
+      bursts: [{ at: 0.12, freq: 95, dur: 0.3, vol: 0.12 }, { at: 0.42, freq: 62, dur: 0.42, vol: 0.1 }]
     },
   },
 };
@@ -2164,7 +2306,8 @@ function applyTheme(id) {
   document.querySelectorAll('.theme-btn').forEach(b => {
     b.classList.toggle('selected', b.dataset.theme === id);
   });
-  themeLabel.textContent = t.name + ' Theme';
+  themeLabel.textContent = t.name + ' Theme';
+  overlayTitle.textContent = id === 'got' ? 'DRAGON' : 'SNAKE';
 }
 
 // Initialize theme
@@ -2227,7 +2370,8 @@ function reset(startingRun = false) {
   trailPoints.length = 0;
   screenShake = 0; shakeX = 0; shakeY = 0;
   deathFlash = 0;
-  foodScale = 1; foodScaleTarget = 1;
+  foodScale = 1; foodScaleTarget = 1;
+  dragonFireBurst = 0;
   // Reset pause button
   const pauseBtn = document.getElementById('pause-btn');
   pauseBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="2" y="1" width="2" height="8"/><rect x="6" y="1" width="2" height="8"/></svg>';
@@ -2235,7 +2379,7 @@ function reset(startingRun = false) {
   pauseBtn.setAttribute('aria-label', 'Pause game');
   pauseBtn.title = 'Pause (P)';
   // Keep the game identity primary; the selected theme has its own label.
-  overlayTitle.textContent = 'SNAKE';
+  overlayTitle.textContent = currentTheme === 'got' ? 'DRAGON' : 'SNAKE';
   themeLabel.textContent = THEMES[currentTheme].name + ' Theme';
   overlayMsg.textContent = 'Ready to play?';
   placeFood();
@@ -2263,7 +2407,8 @@ let prevFood = null;
 let foodPulse = 0;
 let deathFlash = 0;
 let fpsFrames = 0, fpsLast = performance.now(), fpsDisplay = 0;
-let foodScale = 1, foodScaleTarget = 1;
+let foodScale = 1, foodScaleTarget = 1;
+let dragonFireBurst = 0;
 let screenShake = 0, shakeX = 0, shakeY = 0;
 
 // --- Particle System (from game-engine: object pooling for perf) ---
@@ -2636,9 +2781,31 @@ const FOOD_SPRITES = {
     ],
     palette: [null, '#D89A55', '#F78ACB', '#542F22', '#163E68', '#70D1FE', '#FFD90F', '#94C11F'],
   },
+  // Obsidian dragon egg with gold scales and a living ember at its core.
+  got: {
+    grid: [
+      [0,0,0,0,0,0,0,3,3,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,3,1,1,3,0,0,0,0,0,0],
+      [0,0,0,0,0,3,1,2,1,1,3,0,0,0,0,0],
+      [0,0,0,0,3,1,2,1,2,1,1,3,0,0,0,0],
+      [0,0,0,3,1,2,1,4,1,2,1,1,3,0,0,0],
+      [0,0,3,1,2,1,4,5,4,1,2,1,1,3,0,0],
+      [0,0,3,1,1,4,5,4,5,4,1,2,1,3,0,0],
+      [0,3,1,2,1,4,4,5,4,4,1,1,2,1,3,0],
+      [0,3,1,1,2,1,4,4,4,1,2,1,1,1,3,0],
+      [0,3,1,2,1,2,1,4,1,2,1,2,1,1,3,0],
+      [0,0,3,1,2,1,2,1,2,1,2,1,1,3,0,0],
+      [0,0,3,1,1,2,1,2,1,2,1,1,1,3,0,0],
+      [0,0,0,3,1,1,2,1,2,1,1,1,3,0,0,0],
+      [0,0,0,0,3,1,1,2,1,1,1,3,0,0,0,0],
+      [0,0,0,0,0,3,1,1,1,1,3,0,0,0,0,0],
+      [0,0,0,0,0,0,3,3,3,3,0,0,0,0,0,0],
+    ],
+    palette: [null, '#343943', '#C8A45D', '#11141A', '#B51E16', '#FFF0A8'],
+  },
 };
 
-function drawFoodSprite(ctx, cx, cy, cellSize, theme, scale, themeName) {
+function drawFoodSprite(ctx, cx, cy, cellSize, theme, scale, themeName) {
   const data = FOOD_SPRITES[themeName] || FOOD_SPRITES.default;
   const sprite = data.grid, palette = data.palette;
   const rows = sprite.length, cols = sprite[0].length;
@@ -2655,9 +2822,66 @@ function drawFoodSprite(ctx, cx, cy, cellSize, theme, scale, themeName) {
                    Math.ceil(pxSize), Math.ceil(pxSize));
     }
   }
-}
-
-function draw(interp) {
+}
+
+function drawDragonHeadAndFire(hx, hy, T) {
+  const cx = hx + CELL / 2;
+  const cy = hy + CELL / 2;
+  const angle = Math.atan2(dir.y, dir.x);
+  const idleBreath = alive && !paused
+    ? Math.max(0, (Math.sin(foodPulse * 0.34) - 0.78) / 0.22) * 0.55
+    : 0;
+  const fireStrength = Math.max(dragonFireBurst, idleBreath);
+  dragonFireBurst = Math.max(0, dragonFireBurst - 0.022);
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(angle);
+
+  // The breath is canvas-only: it never changes collision, food, or scoring.
+  if (fireStrength > 0.02) {
+    const reach = 16 + fireStrength * 19;
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.34 + fireStrength * 0.34;
+    ctx.fillStyle = T.fireOuter;
+    ctx.beginPath();
+    ctx.moveTo(7, -5); ctx.quadraticCurveTo(reach * 0.55, -10, reach, 0);
+    ctx.quadraticCurveTo(reach * 0.55, 10, 7, 5); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = 0.62 + fireStrength * 0.26;
+    ctx.fillStyle = T.fireMid;
+    ctx.beginPath();
+    ctx.moveTo(9, -3); ctx.quadraticCurveTo(reach * 0.58, -6, reach * 0.82, 0);
+    ctx.quadraticCurveTo(reach * 0.58, 6, 9, 3); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = T.fireCore;
+    ctx.beginPath();
+    ctx.moveTo(10, -1.5); ctx.lineTo(reach * 0.58, 0); ctx.lineTo(10, 1.5);
+    ctx.closePath(); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+  }
+
+  // Long snout, crown horns, and directional ember eyes.
+  ctx.fillStyle = T.dragonScale;
+  ctx.strokeStyle = '#11141a';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(-7, -7); ctx.lineTo(5, -8); ctx.lineTo(10, -4);
+  ctx.lineTo(11, 4); ctx.lineTo(5, 8); ctx.lineTo(-7, 7);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = T.dragonScaleLight;
+  ctx.fillRect(1, -5, 7, 2);
+  ctx.fillStyle = T.dragonHorn;
+  ctx.beginPath(); ctx.moveTo(-5, -7); ctx.lineTo(-10, -12); ctx.lineTo(0, -8); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-5, 7); ctx.lineTo(-10, 12); ctx.lineTo(0, 8); ctx.fill();
+  ctx.fillStyle = T.dragonEye;
+  ctx.shadowColor = T.dragonEye; ctx.shadowBlur = 6;
+  ctx.fillRect(2, -5, 2.5, 2.5);
+  ctx.fillRect(2, 2.5, 2.5, 2.5);
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
+function draw(interp) {
   const T = THEMES[currentTheme];
   // Background
   ctx.fillStyle = T.bg;
@@ -2710,6 +2934,32 @@ function draw(interp) {
     ctx.fillStyle = '#94C11F';
     ctx.fillRect(0, canvasH - 28, canvasW, 28);
     ctx.restore();
+  } else if (T.boardPattern === 'winterfell') {
+    // Subtle icy masonry and distant battlements keep the board readable.
+    ctx.save();
+    ctx.globalAlpha = 0.16;
+    for (let y = 0; y < canvasH; y += 30) {
+      const offset = (Math.floor(y / 30) % 2) * 22;
+      for (let x = -offset; x < canvasW; x += 44) {
+        ctx.strokeStyle = '#7f8c99';
+        ctx.strokeRect(x, y, 42, 28);
+      }
+    }
+    const horizon = canvasH - 74;
+    ctx.fillStyle = '#171c24';
+    ctx.fillRect(0, horizon, canvasW, 74);
+    for (let x = 0; x < canvasW; x += 52) {
+      ctx.fillRect(x, horizon - 20, 34, 20);
+      ctx.fillRect(x, horizon - 30, 9, 10);
+      ctx.fillRect(x + 25, horizon - 30, 9, 10);
+    }
+    ctx.fillStyle = '#dce8f2';
+    for (let i = 0; i < 24; i++) {
+      const sx = (i * 83 + 19) % canvasW;
+      const sy = (i * 137 + 31) % canvasH;
+      ctx.fillRect(sx, sy, i % 3 === 0 ? 2 : 1, i % 3 === 0 ? 2 : 1);
+    }
+    ctx.restore();
   }
 
   // Interpolated snake position
@@ -2753,7 +3003,30 @@ function draw(interp) {
     ctx.fillStyle = segmentColor;
 
     const pad = i === 0 ? 1 : 2;
-    if (T.snakeStyle === 'bricks') {
+    if (T.snakeStyle === 'dragon') {
+      const dcx = px + CELL / 2;
+      const dcy = py + CELL / 2;
+      ctx.save();
+      ctx.translate(dcx, dcy);
+      ctx.fillStyle = i === 0 ? T.dragonScaleLight : (i % 2 ? T.dragonScale : segmentColor);
+      ctx.strokeStyle = '#11141a';
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.moveTo(0, -8); ctx.lineTo(8, -2); ctx.lineTo(6, 6);
+      ctx.lineTo(0, 8); ctx.lineTo(-6, 6); ctx.lineTo(-8, -2);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      if (i > 0) {
+        ctx.fillStyle = T.dragonHorn;
+        ctx.beginPath(); ctx.moveTo(-3, -7); ctx.lineTo(0, -12); ctx.lineTo(3, -7); ctx.fill();
+      }
+      if (i === 1) {
+        ctx.globalAlpha = 0.82;
+        ctx.fillStyle = '#8b2635';
+        ctx.beginPath(); ctx.moveTo(-3, 0); ctx.lineTo(-15, -11); ctx.lineTo(-10, 5); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(3, 0); ctx.lineTo(15, -11); ctx.lineTo(10, 5); ctx.fill();
+      }
+      ctx.restore();
+    } else if (T.snakeStyle === 'bricks') {
       // Square brick body, lower shadow, and two raised studs per segment.
       ctx.fillRect(px + pad, py + pad + 2, CELL - pad * 2, CELL - pad * 2 - 2);
       ctx.fillStyle = 'rgba(0,0,0,0.28)';
@@ -2784,11 +3057,15 @@ function draw(interp) {
   const hPrev = drawSnake && prevSnake[0] ? prevSnake[0] : hSeg;
   const hx = lerp(hPrev.x, hSeg.x, t) * CELL;
   const hy = lerp(hPrev.y, hSeg.y, t) * CELL;
-  ctx.fillStyle = '#fff';
-  const eyeOff1 = dir.x === 0 ? {x: 5, y: dir.y > 0 ? 12 : 5} : {x: dir.x > 0 ? 12 : 5, y: 5};
-  const eyeOff2 = dir.x === 0 ? {x: 13, y: dir.y > 0 ? 12 : 5} : {x: dir.x > 0 ? 12 : 5, y: 13};
-  ctx.beginPath(); ctx.arc(hx + eyeOff1.x, hy + eyeOff1.y, 2.5, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(hx + eyeOff2.x, hy + eyeOff2.y, 2.5, 0, Math.PI * 2); ctx.fill();
+  if (T.snakeStyle === 'dragon') {
+    drawDragonHeadAndFire(hx, hy, T);
+  } else {
+    ctx.fillStyle = '#fff';
+    const eyeOff1 = dir.x === 0 ? {x: 5, y: dir.y > 0 ? 12 : 5} : {x: dir.x > 0 ? 12 : 5, y: 5};
+    const eyeOff2 = dir.x === 0 ? {x: 13, y: dir.y > 0 ? 12 : 5} : {x: dir.x > 0 ? 12 : 5, y: 13};
+    ctx.beginPath(); ctx.arc(hx + eyeOff1.x, hy + eyeOff1.y, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(hx + eyeOff2.x, hy + eyeOff2.y, 2.5, 0, Math.PI * 2); ctx.fill();
+  }
 
   // Food with pulsing glow + scale punch
   foodPulse += 0.05;
@@ -2871,8 +3148,9 @@ function gameTick() {
     updateRecordChase();
     haptic('eat');
     AudioEngine.sfxEat();
-    AudioEngine.updateTempo(snake.length);
-    const T = THEMES[currentTheme];
+    AudioEngine.updateTempo(snake.length);
+    const T = THEMES[currentTheme];
+    if (T.snakeStyle === 'dragon') dragonFireBurst = 1;
     // Particle burst on eat
     spawnParticles(
       food.x * CELL + CELL / 2,
@@ -3230,14 +3508,20 @@ const AudioEngine = (() => {
     return pending;
   }
 
-  function getIntensity(len) {
-    if (len < 6)  return 0;
-    if (len < 12) return 1;
-    if (len < 20) return 2;
-    return 3;
+  function getIntensity(len, music = getTheme()) {
+    const thresholds = music.intensityThresholds || [8, 16, 28];
+    let intensity = len < thresholds[0] ? 0
+      : len < thresholds[1] ? 1
+      : len < thresholds[2] ? 2
+      : 3;
+    // Require musical time as well as score when a theme defines an arc.
+    if (music.minStepsPerIntensity) {
+      intensity = Math.min(intensity, Math.floor(step / music.minStepsPerIntensity));
+    }
+    return Math.max(0, Math.min(3, intensity));
   }
 
-  function playNote(freq, duration, type, gainNode, vol) {
+  function playNote(freq, duration, type, gainNode, vol) {
     if (!freq || freq === 0) return;
     const t = actx.currentTime;
     const osc = actx.createOscillator();
@@ -3299,6 +3583,34 @@ const AudioEngine = (() => {
 
   function playBlockClick(high = false) {
     const t = actx.currentTime;
+    if (type === 'cello' || type === 'horn' || type === 'choir') {
+      const filter = actx.createBiquadFilter();
+      const envelope = actx.createGain();
+      const attack = Math.min(duration * 0.28, type === 'cello' ? 0.065 : 0.09);
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(type === 'cello' ? 1050 : type === 'horn' ? 1450 : 1900, t);
+      filter.Q.value = type === 'horn' ? 3.2 : 1.1;
+      envelope.gain.setValueAtTime(0.001, t);
+      envelope.gain.linearRampToValueAtTime(vol, t + attack);
+      envelope.gain.exponentialRampToValueAtTime(0.001, t + duration);
+      filter.connect(envelope); envelope.connect(gainNode);
+      const voices = type === 'cello'
+        ? [{ wave: 'sawtooth', ratio: 1, detune: -4 }, { wave: 'triangle', ratio: 0.5, detune: 3 }]
+        : type === 'horn'
+          ? [{ wave: 'triangle', ratio: 1, detune: -3 }, { wave: 'sawtooth', ratio: 1, detune: 4 }]
+          : [{ wave: 'sine', ratio: 1, detune: -7 }, { wave: 'triangle', ratio: 2, detune: 7 }];
+      voices.forEach(voice => {
+        const osc = actx.createOscillator();
+        const voiceGain = actx.createGain();
+        osc.type = voice.wave;
+        osc.frequency.setValueAtTime(freq * voice.ratio, t);
+        osc.detune.value = voice.detune;
+        voiceGain.gain.value = type === 'choir' ? 0.48 : 0.55;
+        osc.connect(voiceGain); voiceGain.connect(filter);
+        osc.start(t); osc.stop(t + duration + 0.02);
+      });
+      return;
+    }
     const osc = actx.createOscillator();
     const g = actx.createGain();
     osc.type = 'square';
@@ -3310,22 +3622,51 @@ const AudioEngine = (() => {
     osc.start(t); osc.stop(t + 0.055);
   }
 
+  function playWarDrum(accent = false) {
+    const t = actx.currentTime;
+    const body = actx.createOscillator();
+    const overtone = actx.createOscillator();
+    const bodyGain = actx.createGain();
+    const overtoneGain = actx.createGain();
+    body.type = 'sine';
+    overtone.type = 'triangle';
+    body.frequency.setValueAtTime(accent ? 112 : 88, t);
+    body.frequency.exponentialRampToValueAtTime(accent ? 42 : 36, t + 0.24);
+    overtone.frequency.setValueAtTime(accent ? 205 : 164, t);
+    overtone.frequency.exponentialRampToValueAtTime(68, t + 0.13);
+    bodyGain.gain.setValueAtTime(accent ? 0.62 : 0.44, t);
+    bodyGain.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
+    overtoneGain.gain.setValueAtTime(accent ? 0.16 : 0.1, t);
+    overtoneGain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+    body.connect(bodyGain); overtone.connect(overtoneGain);
+    bodyGain.connect(musicGain); overtoneGain.connect(musicGain);
+    body.start(t); overtone.start(t);
+    body.stop(t + 0.34); overtone.stop(t + 0.18);
+  }
+
   function sequencer() {
-    const intensity = getIntensity(snake ? snake.length : 3);
-    const m = getTheme();
-    const bLen = m.bass[intensity][step % m.melody[0].length];
-    const mLen = m.melody[intensity][step % m.melody[0].length];
-    const aLen = m.arpeggio[intensity][step % m.melody[0].length];
-    const dVal = m.drums[intensity][step % m.melody[0].length];
+    const m = getTheme();
+    const intensity = getIntensity(snake ? snake.length : 3, m);
+    const channelValue = channel => channel[intensity][step % channel[intensity].length];
+    const bLen = channelValue(m.bass);
+    const mLen = channelValue(m.melody);
+    const aLen = channelValue(m.arpeggio);
+    const dVal = channelValue(m.drums);
 
     const beatDur = 60 / curBPM / 4;  // 16th note
 
     if (bLen) playNote(bLen, beatDur * 2.5, m.bassType, musicGain, m.bassVol);
     if (mLen) playNote(mLen, beatDur * 2, m.melodyType, musicGain, m.melodyVol);
     if (aLen) playNote(aLen, beatDur * 1.5, m.arpType, musicGain, m.arpVol);
-    if (dVal === 1) playKick();
-    else if (dVal === 2) m.percussion === 'blocks' ? playBlockClick(true) : playHihat();
-    else if (dVal === 3) m.percussion === 'blocks' ? playBlockClick(false) : playSnare();
+    if (m.percussion === 'war') {
+      if (dVal === 1) playWarDrum(false);
+      else if (dVal === 2) playHihat();
+      else if (dVal === 3) playWarDrum(true);
+    } else {
+      if (dVal === 1) playKick();
+      else if (dVal === 2) m.percussion === 'blocks' ? playBlockClick(true) : playHihat();
+      else if (dVal === 3) m.percussion === 'blocks' ? playBlockClick(false) : playSnare();
+    }
 
     step++;
   }
@@ -3368,10 +3709,17 @@ const AudioEngine = (() => {
     stepAccum = 0;
   }
 
-  function updateTempo(len) {
-    const m = getTheme();
-    curBPM = Math.min(m.maxBPM, m.baseBPM + len * m.bpmPerLen);
-  }
+  function updateTempo(len) {
+    const m = getTheme();
+    const growth = Math.max(0, len - 3);
+    if (m.tempoGrowth) {
+      const progress = Math.min(1, growth / m.tempoGrowth);
+      const eased = progress * progress * (3 - 2 * progress);
+      curBPM = m.baseBPM + (m.maxBPM - m.baseBPM) * eased;
+    } else {
+      curBPM = Math.min(m.maxBPM, m.baseBPM + growth * m.bpmPerLen);
+    }
+  }
 
   function setMusicDuck(value) {
     if (!musicGain || !actx) return;
@@ -3536,16 +3884,20 @@ const AudioEngine = (() => {
 
     if (T.bursts) {
       const gap = T.burstGap || 0.05;
-      T.bursts.forEach((freq, index) => {
-        const start = t + index * gap;
+      T.bursts.forEach((burst, index) => {
+        const detailed = typeof burst === 'object';
+        const freq = detailed ? burst.freq : burst;
+        const start = t + (detailed ? (burst.at || 0) : index * gap);
+        const duration = detailed ? (burst.dur || 0.05) : 0.05;
+        const volume = detailed ? (burst.vol || T.vol * 0.85) : T.vol * 0.85;
         const click = actx.createOscillator();
         const clickGain = actx.createGain();
-        click.type = 'square';
+        click.type = detailed ? (burst.type || 'sawtooth') : 'square';
         click.frequency.setValueAtTime(freq, start);
-        clickGain.gain.setValueAtTime(T.vol * 0.85, start);
-        clickGain.gain.exponentialRampToValueAtTime(0.001, start + 0.045);
+        clickGain.gain.setValueAtTime(volume, start);
+        clickGain.gain.exponentialRampToValueAtTime(0.001, start + duration);
         click.connect(clickGain); clickGain.connect(sfxGain);
-        click.start(start); click.stop(start + 0.05);
+        click.start(start); click.stop(start + duration + 0.01);
       });
     }
   }
@@ -3728,6 +4080,7 @@ document.querySelectorAll('.theme-btn').forEach(btn => {
 
 // --- Theme Picker Icons ---
 const THEME_ICON_URLS = {
+  got: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiB2aWV3Qm94PSIwIDAgMTkyIDE5MiIgc2hhcGUtcmVuZGVyaW5nPSJjcmlzcEVkZ2VzIj48cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgZmlsbD0iIzA1MDcwYiIvPjxwYXRoIGZpbGw9IiNjOGE0NWQiIGQ9Ik0yNCAzNmgzNnYxMmgyNFYyNGgyNHYyNGgyNFYzNmgzNnYyNGgtMTJ2MjRoLTI0djEyaDI0djEyaDEydjM2aC0yNHYtMTJoLTI0djI0SDcydi0yNEg0OHYxMkgyNHYtMzZoMTJWOTZoMjRWODRIMzZWNjBIMjR6Ii8+PHBhdGggZmlsbD0iIzM0Mzk0MyIgZD0iTTYwIDYwaDcydjI0aDEydjM2aC0yNHYxMkg3MnYtMTJINDhWODRoMTJ6Ii8+PHJlY3QgeD0iNzIiIHk9Ijc2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNmZmIyMWMiLz48cmVjdCB4PSIxMDgiIHk9Ijc2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNmZmIyMWMiLz48cGF0aCBmaWxsPSIjYjUxZTE2IiBkPSJNODQgMTA4aDI0djEyaDEydjEySDcydi0xMmgxMnoiLz48cGF0aCBmaWxsPSIjZmY4YTE4IiBkPSJNOTYgMTIwaDEydjI0SDg0di0xMmgxMnoiLz48L3N2Zz4=',
   simpsons: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiB2aWV3Qm94PSIwIDAgMTkyIDE5MiIgc2hhcGUtcmVuZGVyaW5nPSJjcmlzcEVkZ2VzIj48cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgZmlsbD0iIzcwRDFGRSIvPjxnIHN0cm9rZT0iIzFFMUUxRSIgc3Ryb2tlLXdpZHRoPSI4IiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBmaWxsPSIjRkZEOTBGIiBkPSJNNjAgMzJoNDh2MTJoMTJ2MTJoMTJ2MjRoMTJ2NDhoLTEydjIwaC0yNHYxMkg3MnYtMTJINDh2LTIwSDM2VjgwaDEyVjU2aDEyeiIvPjxwYXRoIGZpbGw9IiNGRkYiIGQ9Ik02MCA2NGgzMnYzNkg2MHpNOTYgNjRoMzJ2MzZIOTZ6Ii8+PHJlY3QgeD0iNzYiIHk9Ijc2IiB3aWR0aD0iOCIgaGVpZ2h0PSIxMiIgZmlsbD0iIzFFMUUxRSIgc3Ryb2tlPSJub25lIi8+PHJlY3QgeD0iMTA4IiB5PSI3NiIgd2lkdGg9IjgiIGhlaWdodD0iMTIiIGZpbGw9IiMxRTFFMUUiIHN0cm9rZT0ibm9uZSIvPjxwYXRoIGZpbGw9IiNGRkQ5MEYiIGQ9Ik04NCA5MmgzMnYyOEg4NHoiLz48cGF0aCBmaWxsPSIjRkZGIiBkPSJNNzIgMTEyaDUydjIwSDcyeiIvPjxwYXRoIGZpbGw9IiNGRkQ5MEYiIGQ9Ik02NCAyMGwxNiAxNiAxMi0yMCAxMiAyMCAxNi0xNiIvPjwvZz48L3N2Zz4=',
   lego: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiB2aWV3Qm94PSIwIDAgMTkyIDE5MiIgc2hhcGUtcmVuZGVyaW5nPSJjcmlzcEVkZ2VzIj48ZyBpZD0icGl4ZWwtYXJ0Ij48cmVjdCB4PSIyNCIgeT0iNzIiIHdpZHRoPSIxNDQiIGhlaWdodD0iODQiIGZpbGw9IiM3QTAwMDgiLz48cmVjdCB4PSIyNCIgeT0iNjAiIHdpZHRoPSIxNDQiIGhlaWdodD0iODQiIGZpbGw9IiNFMzAwMEIiLz48cmVjdCB4PSIzNiIgeT0iNDgiIHdpZHRoPSIyNCIgaGVpZ2h0PSIxMiIgZmlsbD0iI0E4MDAwOCIvPjxyZWN0IHg9IjM2IiB5PSIzNiIgd2lkdGg9IjI0IiBoZWlnaHQ9IjEyIiBmaWxsPSIjRjAxQjI0Ii8+PHJlY3QgeD0iNzIiIHk9IjQ4IiB3aWR0aD0iMjQiIGhlaWdodD0iMTIiIGZpbGw9IiNBODAwMDgiLz48cmVjdCB4PSI3MiIgeT0iMzYiIHdpZHRoPSIyNCIgaGVpZ2h0PSIxMiIgZmlsbD0iI0YwMUIyNCIvPjxyZWN0IHg9IjEwOCIgeT0iNDgiIHdpZHRoPSIyNCIgaGVpZ2h0PSIxMiIgZmlsbD0iI0E4MDAwOCIvPjxyZWN0IHg9IjEwOCIgeT0iMzYiIHdpZHRoPSIyNCIgaGVpZ2h0PSIxMiIgZmlsbD0iI0YwMUIyNCIvPjxyZWN0IHg9IjE0NCIgeT0iNDgiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI0E4MDAwOCIvPjxyZWN0IHg9IjE0NCIgeT0iMzYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI0YwMUIyNCIvPjxyZWN0IHg9IjM2IiB5PSI3MiIgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxMiIgZmlsbD0iI0ZGMzk0MSIvPjxyZWN0IHg9IjM2IiB5PSIxMzIiIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIiIGZpbGw9IiNCNTAwMDkiLz48cmVjdCB4PSI0OCIgeT0iOTYiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgZmlsbD0iI0ZGRDUwMCIvPjxyZWN0IHg9Ijg0IiB5PSI5NiIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjMDA2REI3Ii8+PHJlY3QgeD0iMTIwIiB5PSI5NiIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjMDBBNjUxIi8+PC9nPjwvc3ZnPg==',
   mario: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiB2aWV3Qm94PSIwIDAgMTkyIDE5MiIgc2hhcGUtcmVuZGVyaW5nPSJjcmlzcEVkZ2VzIj4KICA8ZyBpZD0icGl4ZWwtYXJ0Ij4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSI2MCIgeT0iMTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2M5MjUyNSIvPgogICAgPHJlY3QgY2xhc3M9InB4LVIiIHg9IjcyIiB5PSIxMiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjYzkyNTI1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUiIgeD0iODQiIHk9IjEyIiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSI5NiIgeT0iMTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2M5MjUyNSIvPgogICAgPHJlY3QgY2xhc3M9InB4LVIiIHg9IjEwOCIgeT0iMTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2M5MjUyNSIvPgogICAgPHJlY3QgY2xhc3M9InB4LVIiIHg9IjEyMCIgeT0iMTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2M5MjUyNSIvPgogICAgPHJlY3QgY2xhc3M9InB4LVIiIHg9IjQ4IiB5PSIyNCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjYzkyNTI1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUiIgeD0iNjAiIHk9IjI0IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSI3MiIgeT0iMjQiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2M5MjUyNSIvPgogICAgPHJlY3QgY2xhc3M9InB4LVIiIHg9Ijg0IiB5PSIyNCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjYzkyNTI1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUiIgeD0iOTYiIHk9IjI0IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSIxMDgiIHk9IjI0IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSIxMjAiIHk9IjI0IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSIxMzIiIHk9IjI0IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1TIiB4PSI0OCIgeT0iMzYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YxYjM2ZCIvPgogICAgPHJlY3QgY2xhc3M9InB4LVMiIHg9IjYwIiB5PSIzNiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZjFiMzZkIi8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iNzIiIHk9IjM2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNmMWIzNmQiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1TIiB4PSI4NCIgeT0iMzYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YxYjM2ZCIvPgogICAgPHJlY3QgY2xhc3M9InB4LUsiIHg9Ijk2IiB5PSIzNiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMTUxNTE1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iMTA4IiB5PSIzNiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZjFiMzZkIi8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iMTIwIiB5PSIzNiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZjFiMzZkIi8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iMzYiIHk9IjQ4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNmMWIzNmQiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1LIiB4PSI0OCIgeT0iNDgiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzE1MTUxNSIvPgogICAgPHJlY3QgY2xhc3M9InB4LVMiIHg9IjYwIiB5PSI0OCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZjFiMzZkIi8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iNzIiIHk9IjQ4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNmMWIzNmQiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1TIiB4PSI4NCIgeT0iNDgiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YxYjM2ZCIvPgogICAgPHJlY3QgY2xhc3M9InB4LUsiIHg9Ijk2IiB5PSI0OCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMTUxNTE1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iMTA4IiB5PSI0OCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZjFiMzZkIi8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iMTIwIiB5PSI0OCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZjFiMzZkIi8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iMTMyIiB5PSI0OCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZjFiMzZkIi8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iMzYiIHk9IjYwIiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNmMWIzNmQiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1LIiB4PSI0OCIgeT0iNjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzE1MTUxNSIvPgogICAgPHJlY3QgY2xhc3M9InB4LUsiIHg9IjYwIiB5PSI2MCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMTUxNTE1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iNzIiIHk9IjYwIiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNmMWIzNmQiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1TIiB4PSI4NCIgeT0iNjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YxYjM2ZCIvPgogICAgPHJlY3QgY2xhc3M9InB4LVMiIHg9Ijk2IiB5PSI2MCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZjFiMzZkIi8+CiAgICA8cmVjdCBjbGFzcz0icHgtSyIgeD0iMTA4IiB5PSI2MCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMTUxNTE1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iMTIwIiB5PSI2MCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZjFiMzZkIi8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iMTMyIiB5PSI2MCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZjFiMzZkIi8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iNDgiIHk9IjcyIiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNmMWIzNmQiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1TIiB4PSI2MCIgeT0iNzIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YxYjM2ZCIvPgogICAgPHJlY3QgY2xhc3M9InB4LVMiIHg9IjcyIiB5PSI3MiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZjFiMzZkIi8+CiAgICA8cmVjdCBjbGFzcz0icHgtUyIgeD0iODQiIHk9IjcyIiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNmMWIzNmQiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1TIiB4PSI5NiIgeT0iNzIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YxYjM2ZCIvPgogICAgPHJlY3QgY2xhc3M9InB4LVMiIHg9IjEwOCIgeT0iNzIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YxYjM2ZCIvPgogICAgPHJlY3QgY2xhc3M9InB4LVIiIHg9IjQ4IiB5PSI4NCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjYzkyNTI1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUiIgeD0iNjAiIHk9Ijg0IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1CIiB4PSI3MiIgeT0iODQiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9Ijg0IiB5PSI4NCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMjE0ZmM2Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUiIgeD0iOTYiIHk9Ijg0IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSIxMDgiIHk9Ijg0IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSIzNiIgeT0iOTYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2M5MjUyNSIvPgogICAgPHJlY3QgY2xhc3M9InB4LVIiIHg9IjQ4IiB5PSI5NiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjYzkyNTI1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUiIgeD0iNjAiIHk9Ijk2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1CIiB4PSI3MiIgeT0iOTYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9Ijg0IiB5PSI5NiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMjE0ZmM2Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUiIgeD0iOTYiIHk9Ijk2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSIxMDgiIHk9Ijk2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSIxMjAiIHk9Ijk2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSIyNCIgeT0iMTA4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSIzNiIgeT0iMTA4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1CIiB4PSI0OCIgeT0iMTA4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiMyMTRmYzYiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSI2MCIgeT0iMTA4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1CIiB4PSI3MiIgeT0iMTA4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiMyMTRmYzYiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1CIiB4PSI4NCIgeT0iMTA4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiMyMTRmYzYiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1SIiB4PSI5NiIgeT0iMTA4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNjOTI1MjUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1CIiB4PSIxMDgiIHk9IjEwOCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMjE0ZmM2Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtUiIgeD0iMTIwIiB5PSIxMDgiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2M5MjUyNSIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9IjI0IiB5PSIxMjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9IjM2IiB5PSIxMjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9IjQ4IiB5PSIxMjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LVkiIHg9IjYwIiB5PSIxMjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YwZDEzYiIvPgogICAgPHJlY3QgY2xhc3M9InB4LVkiIHg9IjcyIiB5PSIxMjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YwZDEzYiIvPgogICAgPHJlY3QgY2xhc3M9InB4LVkiIHg9Ijg0IiB5PSIxMjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YwZDEzYiIvPgogICAgPHJlY3QgY2xhc3M9InB4LVkiIHg9Ijk2IiB5PSIxMjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YwZDEzYiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9IjEwOCIgeT0iMTIwIiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiMyMTRmYzYiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1CIiB4PSIxMjAiIHk9IjEyMCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMjE0ZmM2Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtQiIgeD0iMTMyIiB5PSIxMjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9IjI0IiB5PSIxMzIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9IjQ4IiB5PSIxMzIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LVkiIHg9IjYwIiB5PSIxMzIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YwZDEzYiIvPgogICAgPHJlY3QgY2xhc3M9InB4LVkiIHg9IjcyIiB5PSIxMzIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YwZDEzYiIvPgogICAgPHJlY3QgY2xhc3M9InB4LVkiIHg9Ijg0IiB5PSIxMzIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YwZDEzYiIvPgogICAgPHJlY3QgY2xhc3M9InB4LVkiIHg9Ijk2IiB5PSIxMzIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iI2YwZDEzYiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9IjEwOCIgeT0iMTMyIiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiMyMTRmYzYiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1CIiB4PSIxMzIiIHk9IjEzMiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMjE0ZmM2Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtQiIgeD0iNDgiIHk9IjE0NCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMjE0ZmM2Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtQiIgeD0iNjAiIHk9IjE0NCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMjE0ZmM2Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtQiIgeD0iOTYiIHk9IjE0NCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMjE0ZmM2Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtQiIgeD0iMTA4IiB5PSIxNDQiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9IjM2IiB5PSIxNTYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9IjQ4IiB5PSIxNTYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9IjYwIiB5PSIxNTYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9Ijk2IiB5PSIxNTYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIxNGZjNiIvPgogICAgPHJlY3QgY2xhc3M9InB4LUIiIHg9IjEwOCIgeT0iMTU2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiMyMTRmYzYiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1CIiB4PSIxMjAiIHk9IjE1NiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMjE0ZmM2Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtSyIgeD0iMjQiIHk9IjE2OCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMTUxNTE1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtSyIgeD0iMzYiIHk9IjE2OCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMTUxNTE1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtSyIgeD0iNDgiIHk9IjE2OCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMTUxNTE1Ii8+CiAgICA8cmVjdCBjbGFzcz0icHgtSyIgeD0iMTA4IiB5PSIxNjgiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzE1MTUxNSIvPgogICAgPHJlY3QgY2xhc3M9InB4LUsiIHg9IjEyMCIgeT0iMTY4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiMxNTE1MTUiLz4KICAgIDxyZWN0IGNsYXNzPSJweC1LIiB4PSIxMzIiIHk9IjE2OCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMTUxNTE1Ii8+CiAgPC9nPgo8L3N2Zz4=',
