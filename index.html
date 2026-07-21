@@ -3590,15 +3590,22 @@ function turnCounterClockwise() {
 }
 
 // --- Main loop — requestAnimationFrame for 120Hz ProMotion ---
-function loop(now) {
-  const hasEffects = deathFlash > 0 || deathSegments.length > 0 || particles.length > 0;
+function loop(now) {
+  const hasEffects = deathFlash > 0 || deathSegments.length > 0 || particles.length > 0;
   if (!alive && !hasEffects) {
     animationFrameId = null;
     return;
   }
-  // Avoid catch-up bursts after throttled/backgrounded animation frames.
-  const rawDt = Math.max(0, now - lastTick);
-  const dt = Math.min(rawDt, 100);
+  // Avoid catch-up bursts after throttled/backgrounded animation frames.
+  const rawDt = Math.max(0, now - lastTick);
+  if (alive && !paused && (
+    pageLifecycleInactive ||
+    document.visibilityState !== 'visible' ||
+    rawDt > 250
+  )) {
+    pauseForPageInterruption();
+  }
+  const dt = Math.min(rawDt, 100);
   lastTick = now;
 
   if (alive && !paused) {
@@ -3716,18 +3723,37 @@ function setPaused(value) {
   }
   if (paused) draw(1);
 }
-function togglePause() { setPaused(!paused); }
-document.getElementById('pause-btn').addEventListener('click', togglePause);
-
-// Never let an inactive tab silently advance the run when rendering resumes.
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden && alive && !paused) setPaused(true);
-  lastTick = performance.now();
-  tickAccum = 0;
-});
-window.addEventListener('blur', () => {
-  if (alive && !paused) setPaused(true);
-});
+function togglePause() { setPaused(!paused); }
+document.getElementById('pause-btn').addEventListener('click', togglePause);
+
+// Stop gameplay at every lifecycle boundary Safari may use. The loop also
+// checks this flag before advancing a single movement tick.
+let pageLifecycleInactive = document.visibilityState !== 'visible';
+
+function pauseForPageInterruption() {
+  pageLifecycleInactive = true;
+  if (alive && !paused) setPaused(true);
+  lastTick = performance.now();
+  tickAccum = 0;
+}
+
+function markPageActive() {
+  if (document.visibilityState !== 'visible') return;
+  pageLifecycleInactive = false;
+  lastTick = performance.now();
+  tickAccum = 0;
+}
+
+document.addEventListener('visibilitychange', () => {
+  document.visibilityState === 'visible' ? markPageActive() : pauseForPageInterruption();
+}, true);
+document.addEventListener('pointercancel', pauseForPageInterruption, { passive: true, capture: true });
+document.addEventListener('touchcancel', pauseForPageInterruption, { passive: true, capture: true });
+window.addEventListener('blur', pauseForPageInterruption, true);
+window.addEventListener('pagehide', pauseForPageInterruption, true);
+document.addEventListener('freeze', pauseForPageInterruption, true);
+window.addEventListener('focus', markPageActive, true);
+window.addEventListener('pageshow', markPageActive, true);
 
 // --- Touch swipe (full canvas) ---
 let touchStart = null;
@@ -3764,6 +3790,7 @@ const AudioEngine = (() => {
   let stepAccum = 0, lastStepTime = 0;
   let seqRafId = null;
   let wakePromise = null;
+  let contextNeedsRebuild = false;
   let heartbeatTimer = null;
   let heartbeatProgress = null;
 
@@ -3784,17 +3811,43 @@ const AudioEngine = (() => {
     context.addEventListener('statechange', () => {
       if (context !== actx) return;
       if (context.state === 'running') {
+        contextNeedsRebuild = false;
         if (running && alive && !paused) startSeqTimer();
       } else {
         // Mobile Safari may report "interrupted" as well as "suspended".
+        if (context.state === 'interrupted') contextNeedsRebuild = true;
         stopSeqTimer();
       }
     });
   }
 
-  function wake(forceRetry = false) {
+  function rebuildContext() {
+    const previousContext = actx;
+    stopSeqTimer();
+    wakePromise = null;
+    actx = null;
+    master = null;
+    musicGain = null;
+    sfxGain = null;
+    contextNeedsRebuild = false;
+
+    if (previousContext && previousContext.state !== 'closed') {
+      try {
+        const closing = previousContext.close();
+        if (closing && typeof closing.catch === 'function') closing.catch(() => {});
+      } catch (e) {}
+    }
+
+    // Called synchronously from the returning gesture so iOS permits the new
+    // context to start even if it permanently interrupted the old one.
     init();
+  }
+
+  function wake(forceRetry = false) {
+    if (forceRetry && contextNeedsRebuild && actx && actx.state !== 'running') rebuildContext();
+    else init();
     if (actx.state === 'running') {
+      contextNeedsRebuild = false;
       if (running && alive && !paused) startSeqTimer();
       return Promise.resolve(true);
     }
@@ -3811,10 +3864,15 @@ const AudioEngine = (() => {
       .then(() => {
         if (context !== actx) return false;
         const awake = context.state === 'running';
+        if (awake) contextNeedsRebuild = false;
+        else if (forceRetry) contextNeedsRebuild = true;
         if (awake && running && alive && !paused) startSeqTimer();
         return awake;
       })
-      .catch(() => false);
+      .catch(() => {
+        if (context === actx && forceRetry) contextNeedsRebuild = true;
+        return false;
+      });
     wakePromise = pending;
     pending.finally(() => { if (wakePromise === pending) wakePromise = null; });
     return pending;
@@ -4145,13 +4203,23 @@ const AudioEngine = (() => {
     });
   }
 
-  // Background recovery is best-effort; the capture-phase gesture hooks are
-  // the reliable path when iOS revokes Web Audio after a longer tab switch.
+  // Try the existing context when the page returns. If Safari leaves it
+  // suspended/interrupted, the first capture-phase gesture rebuilds it.
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && actx) wake();
+    if (document.visibilityState === 'visible') {
+      if (actx) wake();
+    } else if (actx) {
+      contextNeedsRebuild = true;
+      stopSeqTimer();
+    }
+  });
+  window.addEventListener('pagehide', () => {
+    if (!actx) return;
+    contextNeedsRebuild = true;
+    stopSeqTimer();
   });
   window.addEventListener('pageshow', () => { if (actx) wake(); });
-  const wakeFromGesture = () => { if (actx) wake(true); };
+  const wakeFromGesture = () => { if (actx || running) wake(true); };
   document.addEventListener('pointerdown', wakeFromGesture, { passive: true, capture: true });
   document.addEventListener('touchend', wakeFromGesture, { passive: true, capture: true });
   document.addEventListener('keydown', wakeFromGesture, { capture: true });
