@@ -662,7 +662,16 @@
     background: var(--accent-glow-soft);
     box-shadow: 0 0 20px var(--accent-glow);
   }
-  .theme-btn .theme-icon { display:flex; align-items:center; justify-content:center; width:48px; height:48px; }
+  .theme-random-btn {
+    width: 100%;
+    color: var(--accent);
+    font: inherit;
+    border-style: dashed;
+  }
+  .theme-random-btn[hidden] { display: none; }
+  .theme-random-btn .theme-icon { filter: drop-shadow(0 0 8px var(--accent-glow)); }
+  .theme-random-btn .theme-name { color: var(--accent); }
+  .theme-btn .theme-icon { display:flex; align-items:center; justify-content:center; width:48px; height:48px; }
   .theme-btn .theme-icon svg, .theme-btn .theme-icon canvas { width:100%; height:100%; image-rendering: pixelated; }
   .icon { width:1em; height:1em; vertical-align:middle; display:inline-block; }
   .icon svg { width:100%; height:100%; display:block; }
@@ -1423,7 +1432,12 @@
 <div id="options-panel">
   <h2><svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="#4ecca3"><rect x="3" y="1" width="4" height="2"/><rect x="1" y="3" width="2" height="4"/><rect x="7" y="3" width="2" height="4"/><rect x="3" y="7" width="4" height="2"/><rect x="3" y="3" width="4" height="4" fill="rgba(255,255,255,0.15)"/></svg> Choose Theme</h2>
   <div class="theme-grid">
-    <div class="theme-btn selected" data-theme="default"><div class="theme-icon" id="ti-default"></div><span class="theme-name">Default</span></div>
+    <button class="theme-btn theme-random-btn" id="random-theme-btn" type="button" aria-label="Use a random theme for every new game" title="Use a random theme for every new game">
+      <div class="theme-icon" aria-hidden="true"><svg viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="1" y="0" width="8" height="1"/><rect x="0" y="1" width="1" height="8"/><rect x="9" y="1" width="1" height="8"/><rect x="1" y="9" width="8" height="1"/><rect x="2" y="2" width="2" height="2"/><rect x="6" y="2" width="2" height="2"/><rect x="4" y="4" width="2" height="2"/><rect x="2" y="6" width="2" height="2"/><rect x="6" y="6" width="2" height="2"/></svg></div>
+      <span class="theme-name">Random</span>
+    </button>
+
+    <div class="theme-btn selected" data-theme="default"><div class="theme-icon" id="ti-default"></div><span class="theme-name">Default</span></div>
     <div class="theme-btn" data-theme="mario"><div class="theme-icon" id="ti-mario"></div><span class="theme-name">Mario Bros</span></div>
     <div class="theme-btn" data-theme="zelda"><div class="theme-icon" id="ti-zelda"></div><span class="theme-name">Zelda</span></div>
     <div class="theme-btn" data-theme="streetfighter"><div class="theme-icon" id="ti-streetfighter"></div><span class="theme-name">Street Fighter</span></div>
@@ -2502,7 +2516,14 @@ Object.assign(THEMES.got.music, {
   swing: 0,
 });
 
-let currentTheme = localStorage.getItem('snakeTheme') || 'default';
+const savedThemeSelection = localStorage.getItem('snakeTheme') || 'default';
+let themeSelection = savedThemeSelection === 'random' || THEMES[savedThemeSelection]
+  ? savedThemeSelection
+  : 'default';
+const savedActiveTheme = localStorage.getItem('snakeThemeActive');
+let currentTheme = themeSelection === 'random'
+  ? (THEMES[savedActiveTheme] ? savedActiveTheme : 'default')
+  : themeSelection;
 let controlMode = localStorage.getItem('snake_control_mode') || 'dpad'; // 'dpad' or 'turn'
 const TURN_ORDER = ['up','right','down','left']; // clockwise
 const CONTROL_LABELS = { dpad: 'D-PAD', turn: 'TURN', keyboard: 'KEYBOARD', legacy: 'LEGACY' };
@@ -2519,9 +2540,52 @@ function registerControlMethod(method) {
   }
 }
 
-function applyTheme(id) {
-  currentTheme = id;
-  localStorage.setItem('snakeTheme', id);
+function getCosmeticRandomUnit() {
+  if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+    const value = new Uint32Array(1);
+    window.crypto.getRandomValues(value);
+    return value[0] / 0x100000000;
+  }
+
+  // Keep this fallback independent from Math.random(), which places food.
+  return ((Date.now() + Math.floor(performance.now() * 1000)) >>> 0) / 0x100000000;
+}
+
+function pickRandomThemeId(themeIds, activeId, randomValue = getCosmeticRandomUnit()) {
+  const candidates = themeIds.length > 1
+    ? themeIds.filter(id => id !== activeId)
+    : themeIds.slice();
+
+  if (!candidates.length) return null;
+  const unit = Number.isFinite(randomValue)
+    ? Math.min(Math.max(randomValue, 0), 0.9999999999999999)
+    : 0;
+  return candidates[Math.floor(unit * candidates.length)];
+}
+
+function updateThemeSelectionUI() {
+  document.getElementById('random-theme-btn').classList.toggle('selected', themeSelection === 'random');
+  document.querySelectorAll('.theme-btn[data-theme]').forEach(button => {
+    button.classList.toggle('selected', themeSelection !== 'random' && button.dataset.theme === themeSelection);
+  });
+}
+
+function selectRandomThemeMode() {
+  themeSelection = 'random';
+  localStorage.setItem('snakeTheme', themeSelection);
+  localStorage.setItem('snakeThemeActive', currentTheme);
+  updateThemeSelectionUI();
+}
+
+function applyTheme(id, { updateSelection = true } = {}) {
+
+  if (!THEMES[id]) return;
+  if (updateSelection) {
+    themeSelection = id;
+    localStorage.setItem('snakeTheme', themeSelection);
+  }
+  currentTheme = id;
+  localStorage.setItem('snakeThemeActive', currentTheme);
   const t = THEMES[id];
   const r = document.documentElement.style;
   r.setProperty('--accent', t.accent);
@@ -2538,15 +2602,16 @@ function applyTheme(id) {
   // Update theme color meta
   document.querySelector('meta[name="theme-color"]').content = t.bg;
   // Update selected state in options
-  document.querySelectorAll('.theme-btn').forEach(b => {
-    b.classList.toggle('selected', b.dataset.theme === id);
+  document.querySelectorAll('.theme-btn[data-theme]').forEach(b => {
+    b.classList.toggle('selected', themeSelection !== 'random' && b.dataset.theme === themeSelection);
   });
+  document.getElementById('random-theme-btn').classList.toggle('selected', themeSelection === 'random');
   themeLabel.textContent = t.name + ' Theme';
   overlayTitle.textContent = id === 'got' ? 'DRAGON' : 'SNAKE';
 }
 
 // Initialize theme
-applyTheme(currentTheme);
+applyTheme(currentTheme, { updateSelection: false });
 
 function formatSprintTime(ms) {
   const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
@@ -2567,6 +2632,12 @@ function applyGameMode(mode) {
   best = bestScores[mode];
   bestEl.textContent = best;
   hudMode.textContent = mode === 'sprint' ? 'SPRINT' : 'CLASSIC';
+  const randomThemeBtn = document.getElementById('random-theme-btn');
+  if (randomThemeBtn) {
+    const dailyThemeIsLocked = mode === 'daily';
+    randomThemeBtn.hidden = dailyThemeIsLocked;
+    randomThemeBtn.disabled = dailyThemeIsLocked;
+  }
   document.querySelectorAll('.game-mode-btn').forEach(btn => {
     const selected = btn.dataset.gameMode === mode;
     btn.classList.toggle('active', selected);
@@ -3470,6 +3541,10 @@ function startGame() {
   if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
   stopRecordCelebration();
   recordResultVisible = false;
+  if (themeSelection === 'random') {
+    const nextTheme = pickRandomThemeId(Object.keys(THEMES), currentTheme);
+    if (nextTheme) applyTheme(nextTheme, { updateSelection: false });
+  }
   overlay.classList.add('hidden');
   overlay.setAttribute('aria-hidden', 'true');
   shareBtn.style.display = 'none';
@@ -4307,7 +4382,11 @@ optionsBtn.addEventListener('click', () => {
 optionsBack.addEventListener('click', () => {
   optionsPanel.classList.remove('visible');
 });
-document.querySelectorAll('.theme-btn').forEach(btn => {
+document.getElementById('random-theme-btn').addEventListener('click', () => {
+  selectRandomThemeMode();
+});
+
+document.querySelectorAll('.theme-btn[data-theme]').forEach(btn => {
   btn.addEventListener('click', () => {
     applyTheme(btn.dataset.theme);
   });
@@ -4461,8 +4540,8 @@ document.addEventListener('keydown', e => {
   if (controlsOverlay.classList.contains('customizing')) stopControlsEdit();
   else closeControlsSettings();
 });
-
-controlsResetBtn.addEventListener('click', () => {
+
+controlsResetBtn.addEventListener('click', () => {
   if (controlMode === 'turn') {
     TURN_BTNS.forEach(id => resetTurnBtnPos(id));
   } else {
