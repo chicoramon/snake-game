@@ -238,7 +238,15 @@
     flex-direction: column;
     align-items: center;
   }
-  #overlay.hidden { opacity: 0; pointer-events: none; }
+  #overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  /* A hidden menu must not leave invisible buttons over the game board. */
+  #overlay.hidden .ov-content,
+  #overlay.hidden .ov-content * { pointer-events: none !important; }
   #overlay h2 { font-size: 2rem; color: var(--accent); margin-bottom: 8px; }
   #overlay .theme-label {
     color: var(--accent-dim);
@@ -3341,6 +3349,7 @@ function showRunResult(reason) {
   scoreMethodLabel.classList.toggle('unranked', runUsesMixedControls);
   prepareRunSubmission();
   overlay.classList.remove('hidden');
+  overlay.setAttribute('aria-hidden', 'false');
   recordResultVisible = true;
   hideRecordChase();
   maybeCelebrateRecordAtGameOver();
@@ -3380,6 +3389,7 @@ function startGame() {
   stopRecordCelebration();
   recordResultVisible = false;
   overlay.classList.add('hidden');
+  overlay.setAttribute('aria-hidden', 'true');
   shareBtn.style.display = 'none';
   namePrompt.style.display = 'none';
   submittedThisRound = false;
@@ -4329,6 +4339,8 @@ TURN_BTNS.forEach(id => {
 });
 
 function openControlsSettings() {
+  // Ignore stale/ghost clicks from the menu while gameplay has it hidden.
+  if (alive || overlay.classList.contains('hidden')) return;
   controlsOverlay.classList.add('visible');
   controlsOverlay.classList.remove('customizing');
   overlay.style.display = 'none';
