@@ -10,8 +10,7 @@
           "snake_game_turn_fixed_logical_board",
           "snake_game_turn_responsive_canvas_scaling",
           "snake_game_turn_visual_viewport",
-          "snake_game_turn_resize_safety",
-          "snake_game_turn_score_comparability"
+          "snake_game_turn_resize_safety"
         ],
         "relation": "form",
         "confidence": "INFERRED",
@@ -142,6 +141,83 @@
         "confidence": "EXTRACTED",
         "confidence_score": 1.0,
         "source_file": "supabase-leaderboard-game-mode.sql"
+      },
+      {
+        "id": "mobile_audio_recovery_paths",
+        "label": "Mobile Audio Recovery Paths",
+        "nodes": [
+          "snake_game_turn_audio_statechange_recovery",
+          "snake_game_turn_background_audio_wake_paths",
+          "snake_game_turn_gesture_audio_wake_paths",
+          "snake_game_turn_pause_aware_audio_restart"
+        ],
+        "relation": "implement",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "snake-game-turn.html"
+      },
+      {
+        "id": "extended_theme_audio_catalog",
+        "label": "Extended Theme Audio Catalog",
+        "nodes": [
+          "snake_game_turn_theme_catalog",
+          "snake_game_turn_tetris_theme",
+          "snake_game_turn_halo_theme",
+          "snake_game_turn_audio_engine"
+        ],
+        "relation": "form",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "snake-game-turn.html"
+      },
+      {
+        "id": "pixel_arcade_game_shell",
+        "label": "Pixel Arcade Game Shell",
+        "nodes": [
+          "snake_game_turn_pixel_arcade_visual_system",
+          "snake_game_turn_arcade_hud",
+          "snake_game_turn_board_frame",
+          "snake_game_turn_overlay_panel_hierarchy"
+        ],
+        "relation": "form",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "snake-game-turn.html"
+      },
+      {
+        "id": "responsive_arcade_interaction_layer",
+        "label": "Responsive Arcade Interaction Layer",
+        "nodes": [
+          "snake_game_turn_action_hierarchy",
+          "snake_game_turn_mobile_control_feedback",
+          "snake_game_turn_responsive_short_screen_layout",
+          "snake_game_turn_reduced_motion",
+          "snake_game_turn_focus_visibility"
+        ],
+        "relation": "form",
+        "confidence": "INFERRED",
+        "confidence_score": 0.95,
+        "source_file": "snake-game-turn.html"
+      },
+      {
+        "id": "contra_theme_integration",
+        "label": "Contra Theme Integration",
+        "nodes": [
+          "snake_game_turn_contra_theme",
+          "snake_game_turn_contra_four_layer_audio_score",
+          "snake_game_turn_contra_tempo_progression",
+          "snake_game_turn_contra_sound_effects",
+          "snake_game_turn_contra_power_up_capsule_sprite",
+          "snake_game_turn_contra_theme_picker_entry",
+          "snake_game_turn_theme_catalog",
+          "snake_game_turn_audio_engine",
+          "snake_game_turn_food_sprite_renderer",
+          "snake_game_turn_theme_options_grid"
+        ],
+        "relation": "form",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "snake-game-turn.html"
       }
     ]
   },
@@ -155,9 +231,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
-      "norm_label": "snake game",
-      "id": "snake_game_turn_snake_game"
+      "id": "snake_game_turn_snake_game",
+      "community": 1,
+      "norm_label": "snake game"
     },
     {
       "label": "Fixed 20 by 32 Logical Board",
@@ -168,9 +244,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
-      "norm_label": "fixed 20 by 32 logical board",
-      "id": "snake_game_turn_fixed_logical_board"
+      "id": "snake_game_turn_fixed_logical_board",
+      "community": 5,
+      "norm_label": "fixed 20 by 32 logical board"
     },
     {
       "label": "Responsive Canvas Scaling",
@@ -181,22 +257,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
-      "norm_label": "responsive canvas scaling",
-      "id": "snake_game_turn_responsive_canvas_scaling"
-    },
-    {
-      "label": "Cross-Device Score Comparability",
-      "file_type": "rationale",
-      "source_file": "snake-game-turn.html",
-      "source_location": null,
-      "source_url": null,
-      "captured_at": null,
-      "author": null,
-      "contributor": null,
-      "community": 2,
-      "norm_label": "cross-device score comparability",
-      "id": "snake_game_turn_score_comparability"
+      "id": "snake_game_turn_responsive_canvas_scaling",
+      "community": 5,
+      "norm_label": "responsive canvas scaling"
     },
     {
       "label": "Resize Safety",
@@ -207,9 +270,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
-      "norm_label": "resize safety",
-      "id": "snake_game_turn_resize_safety"
+      "id": "snake_game_turn_resize_safety",
+      "community": 5,
+      "norm_label": "resize safety"
     },
     {
       "label": "Visual Viewport",
@@ -220,9 +283,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
-      "norm_label": "visual viewport",
-      "id": "snake_game_turn_visual_viewport"
+      "id": "snake_game_turn_visual_viewport",
+      "community": 5,
+      "norm_label": "visual viewport"
     },
     {
       "label": "Game State",
@@ -233,9 +296,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
-      "norm_label": "game state",
-      "id": "snake_game_turn_game_state"
+      "id": "snake_game_turn_game_state",
+      "community": 1,
+      "norm_label": "game state"
     },
     {
       "label": "Game Loop",
@@ -246,9 +309,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
+      "id": "snake_game_turn_game_loop",
       "community": 0,
-      "norm_label": "game loop",
-      "id": "snake_game_turn_game_loop"
+      "norm_label": "game loop"
     },
     {
       "label": "Frame Delta Clamp",
@@ -259,9 +322,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
+      "id": "snake_game_turn_frame_delta_clamp",
       "community": 0,
-      "norm_label": "frame delta clamp",
-      "id": "snake_game_turn_frame_delta_clamp"
+      "norm_label": "frame delta clamp"
     },
     {
       "label": "Game Tick",
@@ -272,9 +335,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 1,
-      "norm_label": "game tick",
-      "id": "snake_game_turn_game_tick"
+      "id": "snake_game_turn_game_tick",
+      "community": 0,
+      "norm_label": "game tick"
     },
     {
       "label": "Canvas Renderer",
@@ -285,9 +348,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
-      "norm_label": "canvas renderer",
-      "id": "snake_game_turn_canvas_renderer"
+      "id": "snake_game_turn_canvas_renderer",
+      "community": 5,
+      "norm_label": "canvas renderer"
     },
     {
       "label": "Food Sprite Renderer",
@@ -298,9 +361,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
-      "norm_label": "food sprite renderer",
-      "id": "snake_game_turn_food_sprite_renderer"
+      "id": "snake_game_turn_food_sprite_renderer",
+      "community": 5,
+      "norm_label": "food sprite renderer"
     },
     {
       "label": "Particle System",
@@ -311,9 +374,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
+      "id": "snake_game_turn_particle_system",
       "community": 0,
-      "norm_label": "particle system",
-      "id": "snake_game_turn_particle_system"
+      "norm_label": "particle system"
     },
     {
       "label": "Death Explosion",
@@ -324,9 +387,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
+      "id": "snake_game_turn_death_explosion",
       "community": 0,
-      "norm_label": "death explosion",
-      "id": "snake_game_turn_death_explosion"
+      "norm_label": "death explosion"
     },
     {
       "label": "Food Placement",
@@ -337,9 +400,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 1,
-      "norm_label": "food placement",
-      "id": "snake_game_turn_food_placement"
+      "id": "snake_game_turn_food_placement",
+      "community": 0,
+      "norm_label": "food placement"
     },
     {
       "label": "Collision System",
@@ -350,9 +413,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 1,
-      "norm_label": "collision system",
-      "id": "snake_game_turn_collision_system"
+      "id": "snake_game_turn_collision_system",
+      "community": 0,
+      "norm_label": "collision system"
     },
     {
       "label": "Score and Speed Progression",
@@ -363,9 +426,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 1,
-      "norm_label": "score and speed progression",
-      "id": "snake_game_turn_score_speed_progression"
+      "id": "snake_game_turn_score_speed_progression",
+      "community": 0,
+      "norm_label": "score and speed progression"
     },
     {
       "label": "Theme System",
@@ -376,9 +439,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
-      "norm_label": "theme system",
-      "id": "snake_game_turn_theme_system"
+      "id": "snake_game_turn_theme_system",
+      "community": 5,
+      "norm_label": "theme system"
     },
     {
       "label": "Commercial Franchise Theme Catalog",
@@ -389,9 +452,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
-      "norm_label": "commercial franchise theme catalog",
-      "id": "snake_game_turn_commercial_theme_catalog"
+      "id": "snake_game_turn_commercial_theme_catalog",
+      "community": 5,
+      "norm_label": "commercial franchise theme catalog"
     },
     {
       "label": "Opening Game Identity",
@@ -402,9 +465,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
-      "norm_label": "opening game identity",
-      "id": "snake_game_turn_opening_game_identity"
+      "id": "snake_game_turn_opening_game_identity",
+      "community": 5,
+      "norm_label": "opening game identity"
     },
     {
       "label": "Opening Theme Label",
@@ -415,9 +478,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
-      "norm_label": "opening theme label",
-      "id": "snake_game_turn_opening_theme_label"
+      "id": "snake_game_turn_opening_theme_label",
+      "community": 5,
+      "norm_label": "opening theme label"
     },
     {
       "label": "Adaptive Chiptune Audio Engine",
@@ -428,9 +491,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 1,
-      "norm_label": "adaptive chiptune audio engine",
-      "id": "snake_game_turn_adaptive_chiptune_audio"
+      "id": "snake_game_turn_adaptive_chiptune_audio",
+      "community": 0,
+      "norm_label": "adaptive chiptune audio engine"
     },
     {
       "label": "Audio Sequencer",
@@ -441,9 +504,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 1,
-      "norm_label": "audio sequencer",
-      "id": "snake_game_turn_audio_sequencer"
+      "id": "snake_game_turn_audio_sequencer",
+      "community": 0,
+      "norm_label": "audio sequencer"
     },
     {
       "label": "Snake-Length Audio Intensity",
@@ -454,9 +517,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 1,
-      "norm_label": "snake-length audio intensity",
-      "id": "snake_game_turn_snake_length_audio_intensity"
+      "id": "snake_game_turn_snake_length_audio_intensity",
+      "community": 0,
+      "norm_label": "snake-length audio intensity"
     },
     {
       "label": "Direction Control",
@@ -467,9 +530,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
-      "norm_label": "direction control",
-      "id": "snake_game_turn_direction_control"
+      "id": "snake_game_turn_direction_control",
+      "community": 7,
+      "norm_label": "direction control"
     },
     {
       "label": "Clockwise Turn Control",
@@ -480,9 +543,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
-      "norm_label": "clockwise turn control",
-      "id": "snake_game_turn_clockwise_turn_control"
+      "id": "snake_game_turn_clockwise_turn_control",
+      "community": 7,
+      "norm_label": "clockwise turn control"
     },
     {
       "label": "Keyboard Controls",
@@ -493,9 +556,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
-      "norm_label": "keyboard controls",
-      "id": "snake_game_turn_keyboard_controls"
+      "id": "snake_game_turn_keyboard_controls",
+      "community": 7,
+      "norm_label": "keyboard controls"
     },
     {
       "label": "Swipe Controls",
@@ -506,9 +569,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
-      "norm_label": "swipe controls",
-      "id": "snake_game_turn_swipe_controls"
+      "id": "snake_game_turn_swipe_controls",
+      "community": 7,
+      "norm_label": "swipe controls"
     },
     {
       "label": "D-Pad Controls",
@@ -519,9 +582,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
-      "norm_label": "d-pad controls",
-      "id": "snake_game_turn_dpad_controls"
+      "id": "snake_game_turn_dpad_controls",
+      "community": 7,
+      "norm_label": "d-pad controls"
     },
     {
       "label": "Turn Controls",
@@ -532,9 +595,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
-      "norm_label": "turn controls",
-      "id": "snake_game_turn_turn_controls"
+      "id": "snake_game_turn_turn_controls",
+      "community": 7,
+      "norm_label": "turn controls"
     },
     {
       "label": "Customizable Touch Controls",
@@ -545,9 +608,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
-      "norm_label": "customizable touch controls",
-      "id": "snake_game_turn_customizable_touch_controls"
+      "id": "snake_game_turn_customizable_touch_controls",
+      "community": 7,
+      "norm_label": "customizable touch controls"
     },
     {
       "label": "Device-Aware Touch Controls",
@@ -558,9 +621,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
-      "norm_label": "device-aware touch controls",
-      "id": "snake_game_turn_device_aware_touch_controls"
+      "id": "snake_game_turn_device_aware_touch_controls",
+      "community": 7,
+      "norm_label": "device-aware touch controls"
     },
     {
       "label": "Pause System",
@@ -571,9 +634,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
+      "id": "snake_game_turn_pause_system",
       "community": 0,
-      "norm_label": "pause system",
-      "id": "snake_game_turn_pause_system"
+      "norm_label": "pause system"
     },
     {
       "label": "Background Auto-Pause",
@@ -584,9 +647,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
+      "id": "snake_game_turn_background_auto_pause",
       "community": 0,
-      "norm_label": "background auto-pause",
-      "id": "snake_game_turn_background_auto_pause"
+      "norm_label": "background auto-pause"
     },
     {
       "label": "Haptic Feedback",
@@ -597,9 +660,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 1,
-      "norm_label": "haptic feedback",
-      "id": "snake_game_turn_haptic_feedback"
+      "id": "snake_game_turn_haptic_feedback",
+      "community": 0,
+      "norm_label": "haptic feedback"
     },
     {
       "label": "Debug-Only FPS Counter",
@@ -610,9 +673,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
+      "id": "snake_game_turn_debug_fps_behavior",
       "community": 0,
-      "norm_label": "debug-only fps counter",
-      "id": "snake_game_turn_debug_fps_behavior"
+      "norm_label": "debug-only fps counter"
     },
     {
       "label": "Accessible Canvas Pause and Filter State",
@@ -623,9 +686,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
+      "id": "snake_game_turn_accessibility_state",
       "community": 0,
-      "norm_label": "accessible canvas pause and filter state",
-      "id": "snake_game_turn_accessibility_state"
+      "norm_label": "accessible canvas pause and filter state"
     },
     {
       "label": "Pause Accessible Label",
@@ -636,9 +699,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
+      "id": "snake_game_turn_pause_accessible_label",
       "community": 0,
-      "norm_label": "pause accessible label",
-      "id": "snake_game_turn_pause_accessible_label"
+      "norm_label": "pause accessible label"
     },
     {
       "label": "Canvas Accessible Label",
@@ -649,9 +712,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
+      "id": "snake_game_turn_canvas_accessible_label",
       "community": 0,
-      "norm_label": "canvas accessible label",
-      "id": "snake_game_turn_canvas_accessible_label"
+      "norm_label": "canvas accessible label"
     },
     {
       "label": "Page Zoom Accessibility",
@@ -662,9 +725,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
+      "id": "snake_game_turn_page_zoom_accessibility",
       "community": 0,
-      "norm_label": "page zoom accessibility",
-      "id": "snake_game_turn_page_zoom_accessibility"
+      "norm_label": "page zoom accessibility"
     },
     {
       "label": "Local Preferences",
@@ -675,9 +738,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
-      "norm_label": "local preferences",
-      "id": "snake_game_turn_local_preferences"
+      "id": "snake_game_turn_local_preferences",
+      "community": 1,
+      "norm_label": "local preferences"
     },
     {
       "label": "Supabase Leaderboard",
@@ -688,9 +751,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
-      "norm_label": "supabase leaderboard",
-      "id": "snake_game_turn_supabase_leaderboard"
+      "id": "snake_game_turn_supabase_leaderboard",
+      "community": 3,
+      "norm_label": "supabase leaderboard"
     },
     {
       "label": "Ranked Score Submission",
@@ -701,9 +764,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
-      "norm_label": "ranked score submission",
-      "id": "snake_game_turn_score_submission"
+      "id": "snake_game_turn_score_submission",
+      "community": 1,
+      "norm_label": "ranked score submission"
     },
     {
       "label": "Score Sharing",
@@ -714,9 +777,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
-      "norm_label": "score sharing",
-      "id": "snake_game_turn_score_sharing"
+      "id": "snake_game_turn_score_sharing",
+      "community": 1,
+      "norm_label": "score sharing"
     },
     {
       "label": "Single-File PWA Setup",
@@ -727,9 +790,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
-      "norm_label": "single-file pwa setup",
-      "id": "snake_game_turn_single_file_pwa"
+      "id": "snake_game_turn_single_file_pwa",
+      "community": 1,
+      "norm_label": "single-file pwa setup"
     },
     {
       "label": "Web App Manifest",
@@ -740,9 +803,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
-      "norm_label": "web app manifest",
-      "id": "snake_game_turn_web_app_manifest"
+      "id": "snake_game_turn_web_app_manifest",
+      "community": 1,
+      "norm_label": "web app manifest"
     },
     {
       "label": "Offline Service Worker Cache",
@@ -753,9 +816,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
-      "norm_label": "offline service worker cache",
-      "id": "snake_game_turn_offline_service_worker"
+      "id": "snake_game_turn_offline_service_worker",
+      "community": 1,
+      "norm_label": "offline service worker cache"
     },
     {
       "label": "Responsive Canvas Scaling",
@@ -766,9 +829,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
-      "norm_label": "responsive canvas scaling",
-      "id": "snake_game_turn_responsive_scaling"
+      "id": "snake_game_turn_responsive_scaling",
+      "community": 5,
+      "norm_label": "responsive canvas scaling"
     },
     {
       "label": "Collision and Speed Progression",
@@ -779,9 +842,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 1,
-      "norm_label": "collision and speed progression",
-      "id": "snake_game_turn_collision_progression"
+      "id": "snake_game_turn_collision_progression",
+      "community": 0,
+      "norm_label": "collision and speed progression"
     },
     {
       "label": "Opening Game Identity and Theme Label",
@@ -792,22 +855,22 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
-      "norm_label": "opening game identity and theme label",
-      "id": "snake_game_turn_opening_identity"
+      "id": "snake_game_turn_opening_identity",
+      "community": 5,
+      "norm_label": "opening game identity and theme label"
     },
     {
-      "label": "Adaptive Chiptune Audio Engine",
-      "file_type": "document",
+      "label": "Theme-Aware Web Audio Engine",
+      "file_type": "code",
       "source_file": "snake-game-turn.html",
       "source_location": null,
       "source_url": null,
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 1,
-      "norm_label": "adaptive chiptune audio engine",
-      "id": "snake_game_turn_audio_engine"
+      "id": "snake_game_turn_audio_engine",
+      "community": 2,
+      "norm_label": "theme-aware web audio engine"
     },
     {
       "label": "D-PAD and TURN Input System",
@@ -818,9 +881,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
-      "norm_label": "d-pad and turn input system",
-      "id": "snake_game_turn_input_system"
+      "id": "snake_game_turn_input_system",
+      "community": 1,
+      "norm_label": "d-pad and turn input system"
     },
     {
       "label": "Device-Aware Touch Controls",
@@ -831,9 +894,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
-      "norm_label": "device-aware touch controls",
-      "id": "snake_game_turn_device_aware_controls"
+      "id": "snake_game_turn_device_aware_controls",
+      "community": 1,
+      "norm_label": "device-aware touch controls"
     },
     {
       "label": "Customizable Touch Controls",
@@ -844,9 +907,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
-      "norm_label": "customizable touch controls",
-      "id": "snake_game_turn_customizable_controls"
+      "id": "snake_game_turn_customizable_controls",
+      "community": 1,
+      "norm_label": "customizable touch controls"
     },
     {
       "label": "Run Control Method Tracking",
@@ -857,9 +920,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
-      "norm_label": "run control method tracking",
-      "id": "snake_game_turn_control_method_tracking"
+      "id": "snake_game_turn_control_method_tracking",
+      "community": 1,
+      "norm_label": "run control method tracking"
     },
     {
       "label": "Mixed-Control Unranked Policy",
@@ -870,9 +933,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
-      "norm_label": "mixed-control unranked policy",
-      "id": "snake_game_turn_mixed_control_policy"
+      "id": "snake_game_turn_mixed_control_policy",
+      "community": 1,
+      "norm_label": "mixed-control unranked policy"
     },
     {
       "label": "Debug-Only FPS Counter",
@@ -883,9 +946,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
+      "id": "snake_game_turn_debug_fps",
       "community": 0,
-      "norm_label": "debug-only fps counter",
-      "id": "snake_game_turn_debug_fps"
+      "norm_label": "debug-only fps counter"
     },
     {
       "label": "Game Mode Control and Theme Filters",
@@ -896,9 +959,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
-      "norm_label": "game mode control and theme filters",
-      "id": "snake_game_turn_leaderboard_filters"
+      "id": "snake_game_turn_leaderboard_filters",
+      "community": 3,
+      "norm_label": "game mode control and theme filters"
     },
     {
       "label": "Leaderboard Pagination",
@@ -909,9 +972,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
-      "norm_label": "leaderboard pagination",
-      "id": "snake_game_turn_leaderboard_pagination"
+      "id": "snake_game_turn_leaderboard_pagination",
+      "community": 3,
+      "norm_label": "leaderboard pagination"
     },
     {
       "label": "Leaderboard Control Method Migration",
@@ -922,9 +985,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 8,
-      "norm_label": "leaderboard control method migration",
-      "id": "supabase_leaderboard_control_method_migration"
+      "id": "supabase_leaderboard_control_method_migration",
+      "community": 3,
+      "norm_label": "leaderboard control method migration"
     },
     {
       "label": "Control Method Column",
@@ -935,9 +998,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 8,
-      "norm_label": "control method column",
-      "id": "supabase_leaderboard_control_method_column"
+      "id": "supabase_leaderboard_control_method_column",
+      "community": 3,
+      "norm_label": "control method column"
     },
     {
       "label": "Legacy Score Classification",
@@ -948,9 +1011,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 8,
-      "norm_label": "legacy score classification",
-      "id": "supabase_leaderboard_legacy_scores"
+      "id": "supabase_leaderboard_legacy_scores",
+      "community": 3,
+      "norm_label": "legacy score classification"
     },
     {
       "label": "Control Method Check Constraint",
@@ -961,9 +1024,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 8,
-      "norm_label": "control method check constraint",
-      "id": "supabase_leaderboard_control_method_constraint"
+      "id": "supabase_leaderboard_control_method_constraint",
+      "community": 3,
+      "norm_label": "control method check constraint"
     },
     {
       "label": "Control and Theme Ranking Indexes",
@@ -974,9 +1037,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 8,
-      "norm_label": "control and theme ranking indexes",
-      "id": "supabase_leaderboard_ranking_indexes"
+      "id": "supabase_leaderboard_ranking_indexes",
+      "community": 3,
+      "norm_label": "control and theme ranking indexes"
     },
     {
       "label": "Classic and Sprint Game Mode Selection",
@@ -988,7 +1051,7 @@
       "author": null,
       "contributor": null,
       "id": "snake_game_turn_game_mode_selection",
-      "community": 3,
+      "community": 1,
       "norm_label": "classic and sprint game mode selection"
     },
     {
@@ -1001,7 +1064,7 @@
       "author": null,
       "contributor": null,
       "id": "snake_game_turn_frozen_run_mode",
-      "community": 3,
+      "community": 1,
       "norm_label": "frozen run game mode"
     },
     {
@@ -1014,7 +1077,7 @@
       "author": null,
       "contributor": null,
       "id": "snake_game_turn_mode_best_scores",
-      "community": 3,
+      "community": 1,
       "norm_label": "separate mode best scores"
     },
     {
@@ -1040,7 +1103,7 @@
       "author": null,
       "contributor": null,
       "id": "snake_game_turn_sprint_timer",
-      "community": 3,
+      "community": 1,
       "norm_label": "pause-aware sprint active timer"
     },
     {
@@ -1053,7 +1116,7 @@
       "author": null,
       "contributor": null,
       "id": "snake_game_turn_time_up_completion",
-      "community": 3,
+      "community": 1,
       "norm_label": "sprint time-up completion"
     },
     {
@@ -1066,7 +1129,7 @@
       "author": null,
       "contributor": null,
       "id": "snake_game_turn_run_result",
-      "community": 3,
+      "community": 1,
       "norm_label": "mode-aware run result"
     },
     {
@@ -1092,7 +1155,7 @@
       "author": null,
       "contributor": null,
       "id": "snake_game_turn_mode_aware_submission",
-      "community": 4,
+      "community": 1,
       "norm_label": "mode-aware score submission"
     },
     {
@@ -1105,7 +1168,7 @@
       "author": null,
       "contributor": null,
       "id": "snake_game_turn_mode_aware_sharing",
-      "community": 3,
+      "community": 1,
       "norm_label": "mode-aware score sharing"
     },
     {
@@ -1118,7 +1181,7 @@
       "author": null,
       "contributor": null,
       "id": "supabase_leaderboard_game_mode_migration",
-      "community": 6,
+      "community": 3,
       "norm_label": "leaderboard game mode migration"
     },
     {
@@ -1131,7 +1194,7 @@
       "author": null,
       "contributor": null,
       "id": "supabase_leaderboard_game_mode_column",
-      "community": 6,
+      "community": 3,
       "norm_label": "game mode column"
     },
     {
@@ -1144,7 +1207,7 @@
       "author": null,
       "contributor": null,
       "id": "supabase_leaderboard_classic_backfill",
-      "community": 6,
+      "community": 3,
       "norm_label": "classic score backfill"
     },
     {
@@ -1157,7 +1220,7 @@
       "author": null,
       "contributor": null,
       "id": "supabase_leaderboard_game_mode_constraint",
-      "community": 6,
+      "community": 3,
       "norm_label": "game mode check constraint"
     },
     {
@@ -1170,7 +1233,7 @@
       "author": null,
       "contributor": null,
       "id": "supabase_leaderboard_mode_ranking_indexes",
-      "community": 6,
+      "community": 3,
       "norm_label": "mode control and theme ranking indexes"
     },
     {
@@ -1183,7 +1246,7 @@
       "author": null,
       "contributor": null,
       "id": "supabase_leaderboard_mode_score_index",
-      "community": 6,
+      "community": 3,
       "norm_label": "mode-wide score index"
     },
     {
@@ -1196,21 +1259,531 @@
       "author": null,
       "contributor": null,
       "id": "supabase_leaderboard_mode_theme_score_index",
-      "community": 6,
+      "community": 3,
       "norm_label": "mode and theme score index"
+    },
+    {
+      "label": "AudioContext Lifecycle",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_audio_context_lifecycle",
+      "community": 2,
+      "norm_label": "audiocontext lifecycle"
+    },
+    {
+      "label": "Closed Audio Graph Rebuild",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_audio_graph_rebuild",
+      "community": 2,
+      "norm_label": "closed audio graph rebuild"
+    },
+    {
+      "label": "Synchronous Audio Wake",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_audio_wake",
+      "community": 2,
+      "norm_label": "synchronous audio wake"
+    },
+    {
+      "label": "Statechange-Driven Audio Recovery",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_audio_statechange_recovery",
+      "community": 2,
+      "norm_label": "statechange-driven audio recovery"
+    },
+    {
+      "label": "RequestAnimationFrame Music Sequencer",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_music_sequencer",
+      "community": 2,
+      "norm_label": "requestanimationframe music sequencer"
+    },
+    {
+      "label": "Visibility and Page-Show Wake Paths",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_background_audio_wake_paths",
+      "community": 2,
+      "norm_label": "visibility and page-show wake paths"
+    },
+    {
+      "label": "Pointer Touch and Keyboard Wake Paths",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_gesture_audio_wake_paths",
+      "community": 2,
+      "norm_label": "pointer touch and keyboard wake paths"
+    },
+    {
+      "label": "Pause-Aware Audio Restart",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_pause_aware_audio_restart",
+      "community": 2,
+      "norm_label": "pause-aware audio restart"
+    },
+    {
+      "label": "Theme Catalog",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_theme_catalog",
+      "community": 2,
+      "norm_label": "theme catalog"
+    },
+    {
+      "label": "Tetris Theme",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_tetris_theme",
+      "community": 2,
+      "norm_label": "tetris theme"
+    },
+    {
+      "label": "Halo Theme",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_halo_theme",
+      "community": 2,
+      "norm_label": "halo theme"
+    },
+    {
+      "label": "Global Pixel-Arcade Visual System",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_pixel_arcade_visual_system",
+      "community": 4,
+      "norm_label": "global pixel-arcade visual system"
+    },
+    {
+      "label": "Arcade HUD",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_arcade_hud",
+      "community": 4,
+      "norm_label": "arcade hud"
+    },
+    {
+      "label": "Game Mode Badge",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_game_mode_badge",
+      "community": 4,
+      "norm_label": "game mode badge"
+    },
+    {
+      "label": "Game Mode HUD Binding",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_game_mode_hud_binding",
+      "community": 4,
+      "norm_label": "game mode hud binding"
+    },
+    {
+      "label": "Pixel Arcade Board Frame",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_board_frame",
+      "community": 4,
+      "norm_label": "pixel arcade board frame"
+    },
+    {
+      "label": "Overlay Panel Hierarchy",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_overlay_panel_hierarchy",
+      "community": 4,
+      "norm_label": "overlay panel hierarchy"
+    },
+    {
+      "label": "Primary and Secondary Action Hierarchy",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_action_hierarchy",
+      "community": 4,
+      "norm_label": "primary and secondary action hierarchy"
+    },
+    {
+      "label": "Theme and Options Grid",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_theme_options_grid",
+      "community": 4,
+      "norm_label": "theme and options grid"
+    },
+    {
+      "label": "Pixel Arcade Leaderboard Presentation",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_leaderboard_presentation",
+      "community": 4,
+      "norm_label": "pixel arcade leaderboard presentation"
+    },
+    {
+      "label": "Mobile D-PAD and TURN Feedback",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_mobile_control_feedback",
+      "community": 4,
+      "norm_label": "mobile d-pad and turn feedback"
+    },
+    {
+      "label": "Responsive Short-Screen Layout",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_responsive_short_screen_layout",
+      "community": 4,
+      "norm_label": "responsive short-screen layout"
+    },
+    {
+      "label": "Reduced Motion Styling",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_reduced_motion",
+      "community": 4,
+      "norm_label": "reduced motion styling"
+    },
+    {
+      "label": "Keyboard Focus Visibility",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_focus_visibility",
+      "community": 4,
+      "norm_label": "keyboard focus visibility"
+    },
+    {
+      "label": "Single Controls Menu Entry",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "single_controls_menu_entry",
+      "community": 6,
+      "norm_label": "single controls menu entry"
+    },
+    {
+      "label": "Unified Controls Settings Panel (openControlsSettings / closeControlsSettings)",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "unified_controls_settings_panel",
+      "community": 6,
+      "norm_label": "unified controls settings panel (opencontrolssettings / closecontrolssettings)"
+    },
+    {
+      "label": "D-PAD/TURN Selection (applyControlMode)",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "dpad_turn_selection",
+      "community": 6,
+      "norm_label": "d-pad/turn selection (applycontrolmode)"
+    },
+    {
+      "label": "Nested Layout Customization Flow (startControlsEdit / stopControlsEdit)",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "nested_layout_customization_flow",
+      "community": 6,
+      "norm_label": "nested layout customization flow (startcontrolsedit / stopcontrolsedit)"
+    },
+    {
+      "label": "Control Preference Persistence",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "control_preference_persistence",
+      "community": 6,
+      "norm_label": "control preference persistence"
+    },
+    {
+      "label": "Inactivity Control Fade (scheduleTouchControlsFade)",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "inactivity_control_fade",
+      "community": 6,
+      "norm_label": "inactivity control fade (scheduletouchcontrolsfade)"
+    },
+    {
+      "label": "Input Wake Feedback (wakeTouchControls)",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "input_wake_feedback",
+      "community": 6,
+      "norm_label": "input wake feedback (waketouchcontrols)"
+    },
+    {
+      "label": "Accessible Controls Dialog",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "accessible_controls_dialog",
+      "community": 6,
+      "norm_label": "accessible controls dialog"
+    },
+    {
+      "label": "Drag Layout Persistence",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "drag_layout_persistence",
+      "community": 6,
+      "norm_label": "drag layout persistence"
+    },
+    {
+      "label": "D-PAD and TURN Input / Customizable Controls",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "dpad_turn_input_customizable_controls",
+      "community": 6,
+      "norm_label": "d-pad and turn input / customizable controls"
+    },
+    {
+      "label": "Contra Theme",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_contra_theme",
+      "community": 2,
+      "norm_label": "contra theme"
+    },
+    {
+      "label": "Contra Four-Layer Audio Score",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_contra_four_layer_audio_score",
+      "community": 2,
+      "norm_label": "contra four-layer audio score"
+    },
+    {
+      "label": "Contra Tempo Progression",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_contra_tempo_progression",
+      "community": 2,
+      "norm_label": "contra tempo progression"
+    },
+    {
+      "label": "Contra Sound Effects",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_contra_sound_effects",
+      "community": 2,
+      "norm_label": "contra sound effects"
+    },
+    {
+      "label": "Contra Power-Up Capsule Sprite",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_contra_power_up_capsule_sprite",
+      "community": 5,
+      "norm_label": "contra power-up capsule sprite"
+    },
+    {
+      "label": "Contra Theme Picker Entry",
+      "file_type": "code",
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "snake_game_turn_contra_theme_picker_entry",
+      "community": 2,
+      "norm_label": "contra theme picker entry"
     }
   ],
   "links": [
-    {
-      "relation": "references",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "snake-game-turn.html",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "snake_game_turn_snake_game",
-      "target": "snake_game_turn_offline_service_worker"
-    },
     {
       "relation": "implements",
       "confidence": "EXTRACTED",
@@ -1229,17 +1802,7 @@
       "source_location": null,
       "weight": 1.0,
       "source": "snake_game_turn_snake_game",
-      "target": "snake_game_turn_game_state"
-    },
-    {
-      "relation": "references",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "snake-game-turn.html",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "snake_game_turn_single_file_pwa",
-      "target": "snake_game_turn_snake_game"
+      "target": "snake_game_turn_game_mode_selection"
     },
     {
       "relation": "implements",
@@ -1249,17 +1812,37 @@
       "source_location": null,
       "weight": 1.0,
       "source": "snake_game_turn_snake_game",
-      "target": "snake_game_turn_game_mode_selection"
+      "target": "snake_game_turn_game_state"
     },
     {
-      "relation": "rationale_for",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_snake_game",
+      "target": "snake_game_turn_offline_service_worker"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_snake_game",
+      "target": "snake_game_turn_single_file_pwa"
+    },
+    {
+      "relation": "references",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "snake-game-turn.html",
       "source_location": null,
       "weight": 1.0,
       "source": "snake_game_turn_fixed_logical_board",
-      "target": "snake_game_turn_score_comparability"
+      "target": "snake_game_turn_canvas_renderer"
     },
     {
       "relation": "conceptually_related_to",
@@ -1290,16 +1873,6 @@
       "weight": 1.0,
       "source": "snake_game_turn_fixed_logical_board",
       "target": "snake_game_turn_responsive_scaling"
-    },
-    {
-      "relation": "references",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "snake-game-turn.html",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "snake_game_turn_canvas_renderer",
-      "target": "snake_game_turn_fixed_logical_board"
     },
     {
       "relation": "conceptually_related_to",
@@ -1339,7 +1912,37 @@
       "source_location": null,
       "weight": 1.0,
       "source": "snake_game_turn_game_state",
+      "target": "snake_game_turn_frozen_run_mode"
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_game_state",
+      "target": "snake_game_turn_input_system"
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_game_state",
       "target": "snake_game_turn_local_preferences"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_game_state",
+      "target": "snake_game_turn_mode_aware_sharing"
     },
     {
       "relation": "references",
@@ -1362,44 +1965,14 @@
       "target": "snake_game_turn_score_submission"
     },
     {
-      "relation": "shares_data_with",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "snake-game-turn.html",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "snake_game_turn_game_state",
-      "target": "snake_game_turn_input_system"
-    },
-    {
-      "relation": "shares_data_with",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "snake-game-turn.html",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "snake_game_turn_frozen_run_mode",
-      "target": "snake_game_turn_game_state"
-    },
-    {
-      "relation": "references",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "snake-game-turn.html",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "snake_game_turn_mode_aware_sharing",
-      "target": "snake_game_turn_game_state"
-    },
-    {
-      "relation": "references",
+      "relation": "implements",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "snake-game-turn.html",
       "source_location": null,
       "weight": 1.0,
       "source": "snake_game_turn_game_loop",
-      "target": "snake_game_turn_debug_fps_behavior"
+      "target": "snake_game_turn_animation_frame_ownership"
     },
     {
       "relation": "calls",
@@ -1420,6 +1993,26 @@
       "weight": 1.0,
       "source": "snake_game_turn_game_loop",
       "target": "snake_game_turn_death_explosion"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_game_loop",
+      "target": "snake_game_turn_debug_fps"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_game_loop",
+      "target": "snake_game_turn_debug_fps_behavior"
     },
     {
       "relation": "implements",
@@ -1452,16 +2045,6 @@
       "target": "snake_game_turn_particle_system"
     },
     {
-      "relation": "references",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "snake-game-turn.html",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "snake_game_turn_game_loop",
-      "target": "snake_game_turn_debug_fps"
-    },
-    {
       "relation": "implements",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -1482,16 +2065,6 @@
       "target": "snake_game_turn_sprint_timer"
     },
     {
-      "relation": "implements",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "snake-game-turn.html",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "snake_game_turn_game_loop",
-      "target": "snake_game_turn_animation_frame_ownership"
-    },
-    {
       "relation": "conceptually_related_to",
       "confidence": "INFERRED",
       "confidence_score": 0.8,
@@ -1510,6 +2083,26 @@
       "weight": 1.0,
       "source": "snake_game_turn_game_tick",
       "target": "snake_game_turn_adaptive_chiptune_audio"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_game_tick",
+      "target": "snake_game_turn_audio_engine"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_game_tick",
+      "target": "snake_game_turn_collision_progression"
     },
     {
       "relation": "implements",
@@ -1568,18 +2161,8 @@
       "source_file": "snake-game-turn.html",
       "source_location": null,
       "weight": 1.0,
-      "source": "snake_game_turn_game_tick",
-      "target": "snake_game_turn_audio_engine"
-    },
-    {
-      "relation": "implements",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "snake-game-turn.html",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "snake_game_turn_game_tick",
-      "target": "snake_game_turn_collision_progression"
+      "source": "snake_game_turn_canvas_renderer",
+      "target": "snake_game_turn_food_sprite_renderer"
     },
     {
       "relation": "calls",
@@ -1589,7 +2172,7 @@
       "source_location": null,
       "weight": 1.0,
       "source": "snake_game_turn_canvas_renderer",
-      "target": "snake_game_turn_food_sprite_renderer"
+      "target": "snake_game_turn_pause_system"
     },
     {
       "relation": "references",
@@ -1602,14 +2185,14 @@
       "target": "snake_game_turn_theme_system"
     },
     {
-      "relation": "calls",
+      "relation": "references",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "snake-game-turn.html",
       "source_location": null,
       "weight": 1.0,
-      "source": "snake_game_turn_canvas_renderer",
-      "target": "snake_game_turn_pause_system"
+      "source": "snake_game_turn_food_sprite_renderer",
+      "target": "snake_game_turn_contra_power_up_capsule_sprite"
     },
     {
       "relation": "calls",
@@ -1649,7 +2232,7 @@
       "source_location": null,
       "weight": 1.0,
       "source": "snake_game_turn_theme_system",
-      "target": "snake_game_turn_opening_theme_label"
+      "target": "snake_game_turn_opening_identity"
     },
     {
       "relation": "implements",
@@ -1659,7 +2242,7 @@
       "source_location": null,
       "weight": 1.0,
       "source": "snake_game_turn_theme_system",
-      "target": "snake_game_turn_opening_identity"
+      "target": "snake_game_turn_opening_theme_label"
     },
     {
       "relation": "conceptually_related_to",
@@ -1682,16 +2265,6 @@
       "target": "snake_game_turn_audio_sequencer"
     },
     {
-      "relation": "implements",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "snake-game-turn.html",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "snake_game_turn_adaptive_chiptune_audio",
-      "target": "snake_game_turn_snake_length_audio_intensity"
-    },
-    {
       "relation": "calls",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -1700,6 +2273,16 @@
       "weight": 1.0,
       "source": "snake_game_turn_adaptive_chiptune_audio",
       "target": "snake_game_turn_pause_system"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_adaptive_chiptune_audio",
+      "target": "snake_game_turn_snake_length_audio_intensity"
     },
     {
       "relation": "calls",
@@ -1802,24 +2385,14 @@
       "target": "snake_game_turn_local_preferences"
     },
     {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "snake-game-turn.html",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "snake_game_turn_background_auto_pause",
-      "target": "snake_game_turn_pause_system"
-    },
-    {
-      "relation": "implements",
+      "relation": "references",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "snake-game-turn.html",
       "source_location": null,
       "weight": 1.0,
       "source": "snake_game_turn_pause_system",
-      "target": "snake_game_turn_pause_accessible_label"
+      "target": "snake_game_turn_accessibility_state"
     },
     {
       "relation": "calls",
@@ -1832,6 +2405,26 @@
       "target": "snake_game_turn_audio_engine"
     },
     {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_pause_system",
+      "target": "snake_game_turn_background_auto_pause"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_pause_system",
+      "target": "snake_game_turn_pause_accessible_label"
+    },
+    {
       "relation": "references",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -1839,7 +2432,7 @@
       "source_location": null,
       "weight": 1.0,
       "source": "snake_game_turn_pause_system",
-      "target": "snake_game_turn_accessibility_state"
+      "target": "snake_game_turn_sprint_countdown"
     },
     {
       "relation": "references",
@@ -1848,18 +2441,8 @@
       "source_file": "snake-game-turn.html",
       "source_location": null,
       "weight": 1.0,
-      "source": "snake_game_turn_sprint_countdown",
-      "target": "snake_game_turn_pause_system"
-    },
-    {
-      "relation": "references",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "snake-game-turn.html",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "snake_game_turn_sprint_timer",
-      "target": "snake_game_turn_pause_system"
+      "source": "snake_game_turn_pause_system",
+      "target": "snake_game_turn_sprint_timer"
     },
     {
       "relation": "implements",
@@ -1870,6 +2453,16 @@
       "weight": 1.0,
       "source": "snake_game_turn_accessibility_state",
       "target": "snake_game_turn_canvas_accessible_label"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_accessibility_state",
+      "target": "snake_game_turn_leaderboard_filters"
     },
     {
       "relation": "implements",
@@ -1892,34 +2485,54 @@
       "target": "snake_game_turn_pause_accessible_label"
     },
     {
-      "relation": "references",
+      "relation": "shares_data_with",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "snake-game-turn.html",
       "source_location": null,
       "weight": 1.0,
-      "source": "snake_game_turn_accessibility_state",
+      "source": "snake_game_turn_local_preferences",
+      "target": "snake_game_turn_game_mode_selection"
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_local_preferences",
+      "target": "snake_game_turn_mode_best_scores"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_supabase_leaderboard",
       "target": "snake_game_turn_leaderboard_filters"
     },
     {
-      "relation": "shares_data_with",
+      "relation": "calls",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "snake-game-turn.html",
       "source_location": null,
       "weight": 1.0,
-      "source": "snake_game_turn_game_mode_selection",
-      "target": "snake_game_turn_local_preferences"
+      "source": "snake_game_turn_supabase_leaderboard",
+      "target": "snake_game_turn_leaderboard_pagination"
     },
     {
-      "relation": "shares_data_with",
+      "relation": "calls",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "snake-game-turn.html",
       "source_location": null,
       "weight": 1.0,
-      "source": "snake_game_turn_mode_best_scores",
-      "target": "snake_game_turn_local_preferences"
+      "source": "snake_game_turn_supabase_leaderboard",
+      "target": "snake_game_turn_mode_aware_submission"
     },
     {
       "relation": "calls",
@@ -1932,26 +2545,6 @@
       "target": "snake_game_turn_score_submission"
     },
     {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "snake-game-turn.html",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "snake_game_turn_leaderboard_filters",
-      "target": "snake_game_turn_supabase_leaderboard"
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "snake-game-turn.html",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "snake_game_turn_leaderboard_pagination",
-      "target": "snake_game_turn_supabase_leaderboard"
-    },
-    {
       "relation": "shares_data_with",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -1960,16 +2553,6 @@
       "weight": 1.0,
       "source": "snake_game_turn_supabase_leaderboard",
       "target": "supabase_leaderboard_control_method_column"
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "snake-game-turn.html",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "snake_game_turn_mode_aware_submission",
-      "target": "snake_game_turn_supabase_leaderboard"
     },
     {
       "relation": "shares_data_with",
@@ -2028,8 +2611,8 @@
       "source_file": "snake-game-turn.html",
       "source_location": null,
       "weight": 1.0,
-      "source": "snake_game_turn_input_system",
-      "target": "snake_game_turn_customizable_controls"
+      "source": "snake_game_turn_audio_engine",
+      "target": "snake_game_turn_audio_context_lifecycle"
     },
     {
       "relation": "implements",
@@ -2038,8 +2621,38 @@
       "source_file": "snake-game-turn.html",
       "source_location": null,
       "weight": 1.0,
-      "source": "snake_game_turn_input_system",
-      "target": "snake_game_turn_device_aware_controls"
+      "source": "snake_game_turn_audio_engine",
+      "target": "snake_game_turn_audio_wake"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_audio_engine",
+      "target": "snake_game_turn_contra_four_layer_audio_score"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_audio_engine",
+      "target": "snake_game_turn_contra_sound_effects"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_audio_engine",
+      "target": "snake_game_turn_theme_catalog"
     },
     {
       "relation": "calls",
@@ -2058,6 +2671,26 @@
       "source_file": "snake-game-turn.html",
       "source_location": null,
       "weight": 1.0,
+      "source": "snake_game_turn_input_system",
+      "target": "snake_game_turn_customizable_controls"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_input_system",
+      "target": "snake_game_turn_device_aware_controls"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
       "source": "snake_game_turn_control_method_tracking",
       "target": "snake_game_turn_mixed_control_policy"
     },
@@ -2068,8 +2701,8 @@
       "source_file": "snake-game-turn.html",
       "source_location": null,
       "weight": 1.0,
-      "source": "snake_game_turn_mode_aware_submission",
-      "target": "snake_game_turn_control_method_tracking"
+      "source": "snake_game_turn_control_method_tracking",
+      "target": "snake_game_turn_mode_aware_submission"
     },
     {
       "relation": "references",
@@ -2080,16 +2713,6 @@
       "weight": 1.0,
       "source": "snake_game_turn_mixed_control_policy",
       "target": "snake_game_turn_mode_aware_submission"
-    },
-    {
-      "relation": "shares_data_with",
-      "confidence": "INFERRED",
-      "confidence_score": 0.8,
-      "source_file": "snake-game-turn.html",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "snake_game_turn_leaderboard_filters",
-      "target": "supabase_leaderboard_ranking_indexes"
     },
     {
       "relation": "references",
@@ -2130,6 +2753,16 @@
       "weight": 1.0,
       "source": "snake_game_turn_leaderboard_filters",
       "target": "supabase_leaderboard_mode_theme_score_index"
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_leaderboard_filters",
+      "target": "supabase_leaderboard_ranking_indexes"
     },
     {
       "relation": "implements",
@@ -2199,6 +2832,36 @@
       "source_location": null,
       "weight": 1.0,
       "source": "snake_game_turn_frozen_run_mode",
+      "target": "snake_game_turn_mode_aware_sharing"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_frozen_run_mode",
+      "target": "snake_game_turn_mode_aware_submission"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_frozen_run_mode",
+      "target": "snake_game_turn_run_result"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_frozen_run_mode",
       "target": "snake_game_turn_sprint_countdown"
     },
     {
@@ -2210,36 +2873,6 @@
       "weight": 1.0,
       "source": "snake_game_turn_frozen_run_mode",
       "target": "snake_game_turn_sprint_timer"
-    },
-    {
-      "relation": "references",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "snake-game-turn.html",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "snake_game_turn_mode_aware_sharing",
-      "target": "snake_game_turn_frozen_run_mode"
-    },
-    {
-      "relation": "references",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "snake-game-turn.html",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "snake_game_turn_mode_aware_submission",
-      "target": "snake_game_turn_frozen_run_mode"
-    },
-    {
-      "relation": "references",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "snake-game-turn.html",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "snake_game_turn_run_result",
-      "target": "snake_game_turn_frozen_run_mode"
     },
     {
       "relation": "calls",
@@ -2320,6 +2953,526 @@
       "weight": 1.0,
       "source": "supabase_leaderboard_game_mode_migration",
       "target": "supabase_leaderboard_mode_theme_score_index"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_audio_context_lifecycle",
+      "target": "snake_game_turn_audio_graph_rebuild"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_audio_context_lifecycle",
+      "target": "snake_game_turn_audio_statechange_recovery"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_audio_wake",
+      "target": "snake_game_turn_audio_context_lifecycle"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_background_audio_wake_paths",
+      "target": "snake_game_turn_audio_wake"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_gesture_audio_wake_paths",
+      "target": "snake_game_turn_audio_wake"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_pause_aware_audio_restart",
+      "target": "snake_game_turn_audio_wake"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_audio_statechange_recovery",
+      "target": "snake_game_turn_music_sequencer"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_music_sequencer",
+      "target": "snake_game_turn_theme_catalog"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_pause_aware_audio_restart",
+      "target": "snake_game_turn_music_sequencer"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_contra_theme",
+      "target": "snake_game_turn_theme_catalog"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_halo_theme",
+      "target": "snake_game_turn_theme_catalog"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_tetris_theme",
+      "target": "snake_game_turn_theme_catalog"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_theme_options_grid",
+      "target": "snake_game_turn_theme_catalog"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_pixel_arcade_visual_system",
+      "target": "snake_game_turn_action_hierarchy"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_pixel_arcade_visual_system",
+      "target": "snake_game_turn_arcade_hud"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_pixel_arcade_visual_system",
+      "target": "snake_game_turn_board_frame"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_pixel_arcade_visual_system",
+      "target": "snake_game_turn_leaderboard_presentation"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_pixel_arcade_visual_system",
+      "target": "snake_game_turn_mobile_control_feedback"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_pixel_arcade_visual_system",
+      "target": "snake_game_turn_overlay_panel_hierarchy"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_pixel_arcade_visual_system",
+      "target": "snake_game_turn_theme_options_grid"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_reduced_motion",
+      "target": "snake_game_turn_pixel_arcade_visual_system"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_arcade_hud",
+      "target": "snake_game_turn_game_mode_badge"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_game_mode_hud_binding",
+      "target": "snake_game_turn_arcade_hud"
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_game_mode_hud_binding",
+      "target": "snake_game_turn_game_mode_badge"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_overlay_panel_hierarchy",
+      "target": "snake_game_turn_action_hierarchy"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_overlay_panel_hierarchy",
+      "target": "snake_game_turn_leaderboard_presentation"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_overlay_panel_hierarchy",
+      "target": "snake_game_turn_theme_options_grid"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_responsive_short_screen_layout",
+      "target": "snake_game_turn_overlay_panel_hierarchy"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_focus_visibility",
+      "target": "snake_game_turn_action_hierarchy"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_contra_theme_picker_entry",
+      "target": "snake_game_turn_theme_options_grid"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_responsive_short_screen_layout",
+      "target": "snake_game_turn_theme_options_grid"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "single_controls_menu_entry",
+      "target": "unified_controls_settings_panel"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "unified_controls_settings_panel",
+      "target": "accessible_controls_dialog"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "unified_controls_settings_panel",
+      "target": "dpad_turn_selection"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "unified_controls_settings_panel",
+      "target": "inactivity_control_fade"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "unified_controls_settings_panel",
+      "target": "nested_layout_customization_flow"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "accessible_controls_dialog",
+      "target": "dpad_turn_selection"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "dpad_turn_selection",
+      "target": "control_preference_persistence"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "dpad_turn_selection",
+      "target": "dpad_turn_input_customizable_controls"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "dpad_turn_selection",
+      "target": "input_wake_feedback"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "nested_layout_customization_flow",
+      "target": "dpad_turn_input_customizable_controls"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "nested_layout_customization_flow",
+      "target": "drag_layout_persistence"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.78,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "drag_layout_persistence",
+      "target": "control_preference_persistence"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "inactivity_control_fade",
+      "target": "dpad_turn_input_customizable_controls"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "input_wake_feedback",
+      "target": "inactivity_control_fade"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "input_wake_feedback",
+      "target": "dpad_turn_input_customizable_controls"
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "drag_layout_persistence",
+      "target": "dpad_turn_input_customizable_controls"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_contra_theme",
+      "target": "snake_game_turn_contra_four_layer_audio_score"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_contra_theme",
+      "target": "snake_game_turn_contra_power_up_capsule_sprite"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_contra_theme",
+      "target": "snake_game_turn_contra_sound_effects"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_contra_theme_picker_entry",
+      "target": "snake_game_turn_contra_theme"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "snake_game_turn_contra_four_layer_audio_score",
+      "target": "snake_game_turn_contra_tempo_progression"
     }
   ],
   "hyperedges": [
@@ -2330,8 +3483,7 @@
         "snake_game_turn_fixed_logical_board",
         "snake_game_turn_responsive_canvas_scaling",
         "snake_game_turn_visual_viewport",
-        "snake_game_turn_resize_safety",
-        "snake_game_turn_score_comparability"
+        "snake_game_turn_resize_safety"
       ],
       "relation": "form",
       "confidence": "INFERRED",
@@ -2462,6 +3614,84 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "supabase-leaderboard-game-mode.sql"
+    },
+    {
+      "id": "mobile_audio_recovery_paths",
+      "label": "Mobile Audio Recovery Paths",
+      "nodes": [
+        "snake_game_turn_audio_statechange_recovery",
+        "snake_game_turn_background_audio_wake_paths",
+        "snake_game_turn_gesture_audio_wake_paths",
+        "snake_game_turn_pause_aware_audio_restart"
+      ],
+      "relation": "implement",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html"
+    },
+    {
+      "id": "extended_theme_audio_catalog",
+      "label": "Extended Theme Audio Catalog",
+      "nodes": [
+        "snake_game_turn_theme_catalog",
+        "snake_game_turn_tetris_theme",
+        "snake_game_turn_halo_theme",
+        "snake_game_turn_audio_engine"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html"
+    },
+    {
+      "id": "pixel_arcade_game_shell",
+      "label": "Pixel Arcade Game Shell",
+      "nodes": [
+        "snake_game_turn_pixel_arcade_visual_system",
+        "snake_game_turn_arcade_hud",
+        "snake_game_turn_board_frame",
+        "snake_game_turn_overlay_panel_hierarchy"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html"
+    },
+    {
+      "id": "responsive_arcade_interaction_layer",
+      "label": "Responsive Arcade Interaction Layer",
+      "nodes": [
+        "snake_game_turn_action_hierarchy",
+        "snake_game_turn_mobile_control_feedback",
+        "snake_game_turn_responsive_short_screen_layout",
+        "snake_game_turn_reduced_motion",
+        "snake_game_turn_focus_visibility"
+      ],
+      "relation": "form",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "snake-game-turn.html"
+    },
+    {
+      "id": "contra_theme_integration",
+      "label": "Contra Theme Integration",
+      "nodes": [
+        "snake_game_turn_contra_theme",
+        "snake_game_turn_contra_four_layer_audio_score",
+        "snake_game_turn_contra_tempo_progression",
+        "snake_game_turn_contra_sound_effects",
+        "snake_game_turn_contra_power_up_capsule_sprite",
+        "snake_game_turn_contra_theme_picker_entry",
+        "snake_game_turn_theme_catalog",
+        "snake_game_turn_audio_engine",
+        "snake_game_turn_food_sprite_renderer",
+        "snake_game_turn_theme_options_grid"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "snake-game-turn.html"
     }
-  ]
+  ],
+  "built_at_commit": "2829cab7065385808747885d770ff2bd652d758e"
 }
