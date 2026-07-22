@@ -573,7 +573,121 @@
     text-transform: uppercase;
     vertical-align: 1px;
   }
-  .lb-table tr.you td { background: var(--accent-glow-soft); }
+  .lb-table tr.you td { background: var(--accent-glow-soft); }
+
+  #dailyArchivePanel {
+    width: 100%;
+    max-width: 520px;
+    margin: 0 0 16px;
+    font-family: var(--pixel-font);
+  }
+  #dailyArchivePanel[hidden] { display: none; }
+  .daily-archive-nav {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) 42px;
+    gap: 7px;
+    align-items: stretch;
+  }
+  .daily-day-btn,
+  #dailyTodayBtn {
+    border: 1px solid var(--accent-dim);
+    border-radius: 2px;
+    background: var(--panel);
+    color: var(--accent);
+    cursor: pointer;
+    font-family: var(--pixel-font);
+    font-size: 0.72rem;
+    font-weight: 800;
+    min-height: 38px;
+    text-transform: uppercase;
+  }
+  .daily-day-btn:disabled { cursor: default; opacity: 0.25; }
+  #dailyArchiveHeading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.025);
+    color: var(--text);
+    font-size: clamp(0.55rem, 2.4vw, 0.67rem);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    line-height: 1.35;
+    padding: 6px 8px;
+    text-align: center;
+    text-transform: uppercase;
+  }
+  #dailyTodayBtn {
+    display: block;
+    width: 100%;
+    margin-top: 7px;
+    min-height: 32px;
+  }
+  #dailyTodayBtn[hidden] { display: none; }
+  #dailyArchiveSummary {
+    min-height: 1.3em;
+    margin: 8px 0 0;
+    color: var(--muted);
+    font-size: 0.61rem;
+    line-height: 1.45;
+    text-align: center;
+    text-transform: uppercase;
+  }
+  .daily-legends-title {
+    margin: 15px 0 8px;
+    color: var(--accent);
+    font-size: 0.63rem;
+    letter-spacing: 0.16em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+  #dailyLegendCards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .daily-legend-card {
+    min-width: 0;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.025);
+    padding: 8px 5px;
+    text-align: center;
+  }
+  .daily-legend-label {
+    display: block;
+    color: var(--muted);
+    font-size: 0.48rem;
+    letter-spacing: 0.05em;
+    line-height: 1.35;
+    text-transform: uppercase;
+  }
+  .daily-legend-player {
+    display: block;
+    overflow: hidden;
+    margin-top: 4px;
+    color: #fff;
+    font-size: 0.64rem;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .daily-legend-value {
+    display: block;
+    margin-top: 3px;
+    color: var(--accent);
+    font-size: 0.58rem;
+  }
+  #dailyLegendsTable { margin-top: 7px; max-width: none; }
+  #dailyLegendsTable th,
+  #dailyLegendsTable td { padding-left: 6px; padding-right: 6px; }
+  #dailyLegendsEmpty {
+    display: none;
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 0.62rem;
+    text-align: center;
+  }
   .lb-pagination {
     display: none;
     align-items: center;
@@ -5624,7 +5738,10 @@ async function submitDailyAttempt() {
     scoreMethodLabel.textContent = `Verified • ${rankText} • ${dailyAttemptsRemainingLabel(dailyChallenge)}`;
     scoreMethodLabel.classList.remove('unranked');
     submitScoreBtn.textContent = 'Verified';
-    if (leaderboardOverlay.classList.contains('visible')) loadLeaderboard();
+    if (leaderboardOverlay.classList.contains('visible')) {
+      loadDailyArchiveData({ force: true });
+      loadLeaderboard();
+    }
     return data;
   } catch (error) {
     console.warn('Daily attempt submission failed:', error);
@@ -5839,8 +5956,182 @@ playerVerifyOtp.addEventListener('click', async () => {
   }
 });
 
+const dailyArchivePanel = document.createElement('section');
+dailyArchivePanel.id = 'dailyArchivePanel';
+dailyArchivePanel.hidden = true;
+dailyArchivePanel.setAttribute('aria-label', 'Daily Run archive and records');
+dailyArchivePanel.innerHTML = `
+  <div class="daily-archive-nav">
+    <button class="daily-day-btn" id="dailyDayPrev" type="button" aria-label="Older Daily Run">&#9664;</button>
+    <div id="dailyArchiveHeading" aria-live="polite">Today</div>
+    <button class="daily-day-btn" id="dailyDayNext" type="button" aria-label="Newer Daily Run">&#9654;</button>
+  </div>
+  <button id="dailyTodayBtn" type="button" hidden>Return to Today</button>
+  <p id="dailyArchiveSummary"></p>
+  <h3 class="daily-legends-title">Daily Legends</h3>
+  <div id="dailyLegendCards"></div>
+  <table class="lb-table" id="dailyLegendsTable">
+    <thead><tr><th>#</th><th>Player</th><th>Wins</th><th>Best Streak</th><th>Podiums</th></tr></thead>
+    <tbody id="dailyLegendsBody"></tbody>
+  </table>
+  <p id="dailyLegendsEmpty">Complete a ranked Daily Run to begin the legends table.</p>`;
+leaderboardOverlay.querySelector('.lb-filter-group').insertAdjacentElement('afterend', dailyArchivePanel);
+const dailyDayPrev = document.getElementById('dailyDayPrev');
+const dailyDayNext = document.getElementById('dailyDayNext');
+const dailyTodayBtn = document.getElementById('dailyTodayBtn');
+const dailyArchiveHeading = document.getElementById('dailyArchiveHeading');
+const dailyArchiveSummary = document.getElementById('dailyArchiveSummary');
+const dailyLegendCards = document.getElementById('dailyLegendCards');
+const dailyLegendsTable = document.getElementById('dailyLegendsTable');
+const dailyLegendsBody = document.getElementById('dailyLegendsBody');
+const dailyLegendsEmpty = document.getElementById('dailyLegendsEmpty');
+
 const LB_PAGE_SIZE = 10;
-const lbState = { gameMode: 'classic', control: 'all', theme: 'all', page: 0, total: 0, requestId: 0 };
+const lbState = {
+  gameMode: 'classic', control: 'all', theme: 'all', page: 0, total: 0, requestId: 0,
+  dailyDate: currentUtcDateKey(), dailyDays: [], dailyStats: [], dailyArchiveLoaded: false,
+  dailyArchiveError: false
+};
+
+function formatDailyArchiveDate(dateKey) {
+  const date = new Date(`${dateKey}T00:00:00Z`);
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short', day: 'numeric', timeZone: 'UTC'
+  }).format(date).toUpperCase();
+}
+
+function dailyArchiveMeta(dateKey = lbState.dailyDate) {
+  return lbState.dailyDays.find(day => day.challenge_date === dateKey) || null;
+}
+
+function dailyStatsPlayerLabel(row) {
+  return `${row.name || '---'}${row.player_code ? `\u00b7${row.player_code}` : ''}`;
+}
+
+function renderDailyLegends() {
+  const stats = lbState.dailyStats || [];
+  dailyLegendCards.innerHTML = '';
+  dailyLegendsBody.innerHTML = '';
+  dailyLegendsTable.style.display = stats.length ? 'table' : 'none';
+  dailyLegendsEmpty.style.display = stats.length ? 'none' : 'block';
+  if (!stats.length) return;
+
+  const byWins = [...stats].sort((a, b) =>
+    Number(b.wins) - Number(a.wins) ||
+    Number(b.podiums) - Number(a.podiums) ||
+    Number(b.days_played) - Number(a.days_played) ||
+    dailyStatsPlayerLabel(a).localeCompare(dailyStatsPlayerLabel(b))
+  );
+  const byWinStreak = [...stats].sort((a, b) =>
+    Number(b.longest_win_streak) - Number(a.longest_win_streak) || Number(b.wins) - Number(a.wins)
+  );
+  const byPlayStreak = [...stats].sort((a, b) =>
+    Number(b.longest_play_streak) - Number(a.longest_play_streak) || Number(b.days_played) - Number(a.days_played)
+  );
+  const records = [
+    ['Most Wins', byWins[0], `${Number(byWins[0].wins)} wins`],
+    ['Win Streak', byWinStreak[0], `${Number(byWinStreak[0].longest_win_streak)} days`],
+    ['Play Streak', byPlayStreak[0], `${Number(byPlayStreak[0].longest_play_streak)} days`]
+  ];
+  records.forEach(([label, row, value]) => {
+    const card = document.createElement('div');
+    card.className = 'daily-legend-card';
+    card.innerHTML = `<span class="daily-legend-label">${escHtml(label)}</span><span class="daily-legend-player">${escHtml(dailyStatsPlayerLabel(row))}</span><span class="daily-legend-value">${escHtml(value)}</span>`;
+    dailyLegendCards.appendChild(card);
+  });
+
+  byWins.slice(0, 5).forEach((row, index) => {
+    const tr = document.createElement('tr');
+    if (index === 0) tr.classList.add('top1');
+    else if (index === 1) tr.classList.add('top2');
+    else if (index === 2) tr.classList.add('top3');
+    if (currentUser && row.player_id === currentUser.id) tr.classList.add('you');
+    const you = currentUser && row.player_id === currentUser.id ? '<span class="lb-you-badge">YOU</span>' : '';
+    tr.innerHTML = `<td class="lb-rank">${index + 1}</td><td>${escHtml(dailyStatsPlayerLabel(row))}${you}</td><td>${Number(row.wins)}</td><td>${Number(row.longest_win_streak)}</td><td>${Number(row.podiums)}</td>`;
+    dailyLegendsBody.appendChild(tr);
+  });
+}
+
+function renderDailyArchive() {
+  if (lbState.gameMode !== 'daily') return;
+  const dateKey = lbState.dailyDate || currentUtcDateKey();
+  const today = currentUtcDateKey();
+  const meta = dailyArchiveMeta(dateKey);
+  const isToday = dateKey === today;
+  const challengeNumber = Number(meta?.challenge_number || (isToday ? dailyChallenge?.number : 0));
+  const themeId = meta?.theme || (isToday ? dailyChallenge?.theme : null);
+  const themeName = themeId && THEMES[themeId] ? THEMES[themeId].name : (themeId || 'Theme Pending');
+  dailyArchiveHeading.textContent = `${formatDailyArchiveDate(dateKey)} • ${challengeNumber ? `CHALLENGE #${challengeNumber}` : 'DAILY RUN'} • ${themeName}`;
+  dailyTodayBtn.hidden = isToday;
+
+  if (lbState.dailyArchiveError) {
+    dailyArchiveSummary.textContent = 'Archive update required in Supabase';
+  } else if (meta?.winner_name) {
+    const winner = `${meta.winner_name}${meta.winner_player_code ? `·${meta.winner_player_code}` : ''}`;
+    const players = Number(meta.participant_count || 0);
+    dailyArchiveSummary.textContent = `Winner ${winner} • Score ${Number(meta.winning_score)} • ${players} player${players === 1 ? '' : 's'}`;
+  } else if (isToday) {
+    const players = Number(meta?.participant_count || 0);
+    dailyArchiveSummary.textContent = `Today's race is open • ${players} player${players === 1 ? '' : 's'}`;
+  } else {
+    dailyArchiveSummary.textContent = 'No verified finishers';
+  }
+
+  const older = lbState.dailyDays.find(day => day.challenge_date < dateKey);
+  const newer = [...lbState.dailyDays].reverse().find(day => day.challenge_date > dateKey);
+  dailyDayPrev.disabled = !older;
+  dailyDayNext.disabled = !newer;
+  dailyDayPrev.dataset.date = older?.challenge_date || '';
+  dailyDayNext.dataset.date = newer?.challenge_date || '';
+  renderDailyLegends();
+}
+
+async function loadDailyArchiveData({ force = false } = {}) {
+  if (!sb || (lbState.dailyArchiveLoaded && !force)) {
+    renderDailyArchive();
+    return;
+  }
+  const [daysResult, statsResult] = await Promise.all([
+    sb.from('daily_leaderboard_days')
+      .select('challenge_date, challenge_number, theme, participant_count, winner_name, winner_player_code, winner_player_id, winning_score, winning_final_food_ms')
+      .order('challenge_date', { ascending: false })
+      .limit(400),
+    sb.from('daily_player_stats')
+      .select('player_id, name, player_code, days_played, wins, podiums, top_tens, best_finish, win_rate_pct, current_play_streak, longest_play_streak, current_win_streak, longest_win_streak')
+      .limit(500)
+  ]);
+  lbState.dailyArchiveError = !!daysResult.error || !!statsResult.error;
+  if (!daysResult.error) lbState.dailyDays = daysResult.data || [];
+  if (!statsResult.error) lbState.dailyStats = statsResult.data || [];
+  lbState.dailyArchiveLoaded = !lbState.dailyArchiveError;
+
+  const today = dailyChallenge?.date || currentUtcDateKey();
+  if (!lbState.dailyDays.some(day => day.challenge_date === today)) {
+    lbState.dailyDays.unshift({
+      challenge_date: today,
+      challenge_number: dailyChallenge?.number || null,
+      theme: dailyChallenge?.theme || null,
+      participant_count: 0
+    });
+  }
+  lbState.dailyDays.sort((a, b) => b.challenge_date.localeCompare(a.challenge_date));
+  renderDailyArchive();
+}
+
+async function prepareDailyLeaderboard() {
+  await refreshDailyChallenge({ force: true });
+  lbState.dailyDate = dailyChallenge?.date || currentUtcDateKey();
+  await loadDailyArchiveData({ force: true });
+  loadLeaderboard();
+}
+
+function selectDailyLeaderboardDate(dateKey) {
+  if (!dateKey || dateKey === lbState.dailyDate) return;
+  lbState.dailyDate = dateKey;
+  lbState.page = 0;
+  renderDailyArchive();
+  loadLeaderboard();
+}
 
 function buildFilterGroup(container, values, stateKey, labelFor) {
   container.innerHTML = '';
@@ -5862,7 +6153,7 @@ function buildFilterGroup(container, values, stateKey, labelFor) {
       });
       if (stateKey === 'gameMode') buildFilters();
       if (stateKey === 'gameMode' && value === 'daily') {
-        refreshDailyChallenge({ force: true }).then(loadLeaderboard);
+        prepareDailyLeaderboard();
       } else {
         loadLeaderboard();
       }
@@ -5891,10 +6182,12 @@ function buildFilters() {
     value => value === 'all' ? 'All' : value.charAt(0).toUpperCase() + value.slice(1)
   );
   const daily = lbState.gameMode === 'daily';
+  dailyArchivePanel.hidden = !daily;
   lbControlFilters.closest('.lb-filter-group').hidden = daily;
   lbThemeFilters.closest('.lb-filter-group').hidden = daily;
   const themeHeading = lbTable.querySelector('th.lb-theme-col');
   if (themeHeading) themeHeading.textContent = daily ? 'Final Food' : 'Theme';
+  if (daily) renderDailyArchive();
 }
 
 function updatePagination() {
@@ -5935,9 +6228,10 @@ async function loadLeaderboard() {
   let result;
   if (lbState.gameMode === 'daily') {
     const challenge = dailyChallenge || ensureDailyChallenge();
+    const leaderboardDate = lbState.dailyDate || challenge.date;
     result = await sb.from('daily_leaderboard')
       .select('challenge_date, name, player_code, player_id, score, final_food_ms, control_method, theme, attempt_number, completed_at, leaderboard_rank', { count: 'exact' })
-      .eq('challenge_date', challenge.date)
+      .eq('challenge_date', leaderboardDate)
       .order('leaderboard_rank', { ascending: true })
       .range(from, to);
   } else {
@@ -5955,7 +6249,9 @@ async function loadLeaderboard() {
       ? ((lbState.gameMode === 'daily' && ['42P01', 'PGRST205'].includes(error.code)) || error.code === '42703'
           ? 'Leaderboard update required'
           : 'Failed to load')
-      : 'No scores yet. Be the first!';
+      : (lbState.gameMode === 'daily' && lbState.dailyDate !== currentUtcDateKey()
+          ? 'No ranked scores for this day.'
+          : 'No scores yet. Be the first!');
     lbState.total = error ? 0 : (count || 0);
     updatePagination();
     return;
@@ -5994,20 +6290,25 @@ function escHtml(s) {
 
 function showLeaderboard() {
   lbState.gameMode = gameMode;
-  lbState.control = 'all';
-  lbState.theme = 'all';
-  lbState.page = 0;
-  buildFilters();
-  leaderboardOverlay.classList.add('visible');
-  loadLeaderboard();
+  lbState.control = 'all';
+  lbState.theme = 'all';
+  lbState.page = 0;
+  lbState.dailyDate = currentUtcDateKey();
+  buildFilters();
+  leaderboardOverlay.classList.add('visible');
+  if (lbState.gameMode === 'daily') prepareDailyLeaderboard();
+  else loadLeaderboard();
 }
 
 function hideLeaderboard() {
   leaderboardOverlay.classList.remove('visible');
 }
 
-lbBtn.addEventListener('click', showLeaderboard);
-lbBack.addEventListener('click', hideLeaderboard);
+lbBtn.addEventListener('click', showLeaderboard);
+lbBack.addEventListener('click', hideLeaderboard);
+dailyDayPrev.addEventListener('click', () => selectDailyLeaderboardDate(dailyDayPrev.dataset.date));
+dailyDayNext.addEventListener('click', () => selectDailyLeaderboardDate(dailyDayNext.dataset.date));
+dailyTodayBtn.addEventListener('click', () => selectDailyLeaderboardDate(currentUtcDateKey()));
 lbPrev.addEventListener('click', () => {
   if (lbState.page === 0) return;
   lbState.page--;
