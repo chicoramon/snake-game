@@ -647,6 +647,7 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
   }
+  #dailyLegendsSection[hidden] { display: none; }
   .daily-legend-card {
     min-width: 0;
     border: 1px solid var(--line);
@@ -681,13 +682,6 @@
   #dailyLegendsTable { margin-top: 7px; max-width: none; }
   #dailyLegendsTable th,
   #dailyLegendsTable td { padding-left: 6px; padding-right: 6px; }
-  #dailyLegendsEmpty {
-    display: none;
-    margin-top: 10px;
-    color: var(--muted);
-    font-size: 0.62rem;
-    text-align: center;
-  }
   .lb-pagination {
     display: none;
     align-items: center;
@@ -5968,23 +5962,24 @@ dailyArchivePanel.innerHTML = `
   </div>
   <button id="dailyTodayBtn" type="button" hidden>Return to Today</button>
   <p id="dailyArchiveSummary"></p>
-  <h3 class="daily-legends-title">Daily Legends</h3>
-  <div id="dailyLegendCards"></div>
-  <table class="lb-table" id="dailyLegendsTable">
-    <thead><tr><th>#</th><th>Player</th><th>Wins</th><th>Best Streak</th><th>Podiums</th></tr></thead>
-    <tbody id="dailyLegendsBody"></tbody>
-  </table>
-  <p id="dailyLegendsEmpty">Complete a ranked Daily Run to begin the legends table.</p>`;
+  <div id="dailyLegendsSection" hidden>
+    <h3 class="daily-legends-title">Daily Legends</h3>
+    <div id="dailyLegendCards"></div>
+    <table class="lb-table" id="dailyLegendsTable">
+      <thead><tr><th>#</th><th>Player</th><th>Wins</th><th>Best Streak</th><th>Podiums</th></tr></thead>
+      <tbody id="dailyLegendsBody"></tbody>
+    </table>
+  </div>`;
 leaderboardOverlay.querySelector('.lb-filter-group').insertAdjacentElement('afterend', dailyArchivePanel);
 const dailyDayPrev = document.getElementById('dailyDayPrev');
 const dailyDayNext = document.getElementById('dailyDayNext');
 const dailyTodayBtn = document.getElementById('dailyTodayBtn');
 const dailyArchiveHeading = document.getElementById('dailyArchiveHeading');
 const dailyArchiveSummary = document.getElementById('dailyArchiveSummary');
+const dailyLegendsSection = document.getElementById('dailyLegendsSection');
 const dailyLegendCards = document.getElementById('dailyLegendCards');
 const dailyLegendsTable = document.getElementById('dailyLegendsTable');
 const dailyLegendsBody = document.getElementById('dailyLegendsBody');
-const dailyLegendsEmpty = document.getElementById('dailyLegendsEmpty');
 
 const LB_PAGE_SIZE = 10;
 const lbState = {
@@ -5992,6 +5987,33 @@ const lbState = {
   dailyDate: currentUtcDateKey(), dailyDays: [], dailyStats: [], dailyArchiveLoaded: false,
   dailyArchiveError: false
 };
+let dailyArchiveCountdownTimer = null;
+
+function formatDailyRunTimeLeft() {
+  const now = new Date();
+  const nextUtcDay = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+  const totalSeconds = Math.max(0, Math.ceil((nextUtcDay - now.getTime()) / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function syncDailyArchiveCountdown() {
+  clearInterval(dailyArchiveCountdownTimer);
+  dailyArchiveCountdownTimer = null;
+  const shouldRun = leaderboardOverlay.classList.contains('visible') &&
+    lbState.gameMode === 'daily' && lbState.dailyDate === currentUtcDateKey();
+  if (!shouldRun) return;
+  dailyArchiveCountdownTimer = setInterval(() => {
+    if (lbState.dailyDate !== currentUtcDateKey()) {
+      renderDailyArchive();
+      syncDailyArchiveCountdown();
+      return;
+    }
+    renderDailyArchive();
+  }, 1000);
+}
 
 function formatDailyArchiveDate(dateKey) {
   const date = new Date(`${dateKey}T00:00:00Z`);
@@ -6010,10 +6032,9 @@ function dailyStatsPlayerLabel(row) {
 
 function renderDailyLegends() {
   const stats = lbState.dailyStats || [];
+  dailyLegendsSection.hidden = stats.length === 0;
   dailyLegendCards.innerHTML = '';
   dailyLegendsBody.innerHTML = '';
-  dailyLegendsTable.style.display = stats.length ? 'table' : 'none';
-  dailyLegendsEmpty.style.display = stats.length ? 'none' : 'block';
   if (!stats.length) return;
 
   const byWins = [...stats].sort((a, b) =>
@@ -6066,13 +6087,17 @@ function renderDailyArchive() {
 
   if (lbState.dailyArchiveError) {
     dailyArchiveSummary.textContent = 'Archive update required in Supabase';
+  } else if (isToday && meta?.winner_name) {
+    const leader = `${meta.winner_name}${meta.winner_player_code ? `·${meta.winner_player_code}` : ''}`;
+    const players = Number(meta.participant_count || 0);
+    dailyArchiveSummary.textContent = `Current leader ${leader} • Score ${Number(meta.winning_score)} • ${players} player${players === 1 ? '' : 's'} • Ends in ${formatDailyRunTimeLeft()}`;
+  } else if (isToday) {
+    const players = Number(meta?.participant_count || 0);
+    dailyArchiveSummary.textContent = `Today's race is open • ${players} player${players === 1 ? '' : 's'} • Ends in ${formatDailyRunTimeLeft()}`;
   } else if (meta?.winner_name) {
     const winner = `${meta.winner_name}${meta.winner_player_code ? `·${meta.winner_player_code}` : ''}`;
     const players = Number(meta.participant_count || 0);
     dailyArchiveSummary.textContent = `Winner ${winner} • Score ${Number(meta.winning_score)} • ${players} player${players === 1 ? '' : 's'}`;
-  } else if (isToday) {
-    const players = Number(meta?.participant_count || 0);
-    dailyArchiveSummary.textContent = `Today's race is open • ${players} player${players === 1 ? '' : 's'}`;
   } else {
     dailyArchiveSummary.textContent = 'No verified finishers';
   }
@@ -6122,6 +6147,7 @@ async function prepareDailyLeaderboard() {
   await refreshDailyChallenge({ force: true });
   lbState.dailyDate = dailyChallenge?.date || currentUtcDateKey();
   await loadDailyArchiveData({ force: true });
+  syncDailyArchiveCountdown();
   loadLeaderboard();
 }
 
@@ -6130,6 +6156,7 @@ function selectDailyLeaderboardDate(dateKey) {
   lbState.dailyDate = dateKey;
   lbState.page = 0;
   renderDailyArchive();
+  syncDailyArchiveCountdown();
   loadLeaderboard();
 }
 
@@ -6188,6 +6215,7 @@ function buildFilters() {
   const themeHeading = lbTable.querySelector('th.lb-theme-col');
   if (themeHeading) themeHeading.textContent = daily ? 'Final Food' : 'Theme';
   if (daily) renderDailyArchive();
+  syncDailyArchiveCountdown();
 }
 
 function updatePagination() {
@@ -6301,7 +6329,8 @@ function showLeaderboard() {
 }
 
 function hideLeaderboard() {
-  leaderboardOverlay.classList.remove('visible');
+  leaderboardOverlay.classList.remove('visible');
+  syncDailyArchiveCountdown();
 }
 
 lbBtn.addEventListener('click', showLeaderboard);
