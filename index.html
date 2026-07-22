@@ -32,7 +32,8 @@
 <meta name="twitter:image:alt" content="Pixel-art Snake Game artwork with a green snake and red apple">
 
 <title>Snake Game</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="./snake-core.js"></script>
 <style>
   :root {
     --accent: #4ecca3;
@@ -292,7 +293,111 @@
     color: #000;
     box-shadow: 0 0 14px var(--accent-glow);
   }
-  #countdownDisplay {
+  #dailyChallengeInfo {
+    margin: -7px 0 14px;
+    color: var(--accent-dim);
+    font-family: var(--pixel-font);
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    line-height: 1.45;
+    text-align: center;
+    text-transform: uppercase;
+  }
+  #dailyChallengeInfo[hidden] { display: none; }
+
+  #dailyRulesDialog {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.96);
+  }
+  #dailyRulesDialog.visible { display: flex; }
+  .daily-rules-card {
+    position: relative;
+    width: min(100%, 410px);
+    max-height: calc(100dvh - 40px);
+    overflow-y: auto;
+    padding: 31px 25px 24px;
+    border: 3px solid #fff;
+    background: #000;
+    box-shadow: 0 0 0 4px #000, 0 0 0 6px var(--accent), 0 0 30px var(--accent-glow);
+    color: #fff;
+    font-family: var(--pixel-font);
+    text-align: center;
+  }
+  .daily-rules-card::before,
+  .daily-rules-card::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: #000;
+  }
+  .daily-rules-card::before { top: -3px; left: -3px; border-right: 3px solid #fff; border-bottom: 3px solid #fff; }
+  .daily-rules-card::after { right: -3px; bottom: -3px; border-top: 3px solid #fff; border-left: 3px solid #fff; }
+  .daily-rules-icon {
+    display: block;
+    width: 54px;
+    height: 54px;
+    margin: 0 auto 13px;
+    color: var(--accent);
+    filter: drop-shadow(0 0 8px var(--accent-glow));
+  }
+  .daily-rules-kicker {
+    color: var(--accent);
+    font-size: 0.58rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .daily-rules-card h2 {
+    margin: 8px 0 9px;
+    color: #fff;
+    font-size: 1.42rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .daily-rules-lead {
+    margin: 0 0 18px;
+    color: var(--accent);
+    font-size: 0.76rem;
+    letter-spacing: 0.06em;
+    line-height: 1.55;
+    text-transform: uppercase;
+  }
+  .daily-rule-list { display: grid; gap: 9px; margin: 0 0 18px; text-align: left; }
+  .daily-rule {
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    gap: 9px;
+    align-items: start;
+    color: #e8ecea;
+    font-size: 0.69rem;
+    line-height: 1.5;
+  }
+  .daily-rule-number { color: var(--accent); font-weight: 800; }
+  .daily-rules-preview { margin: 0 0 17px; color: var(--muted); font-size: 0.6rem; line-height: 1.5; }
+  #dailyRulesBegin,
+  #dailyRulesLater {
+    width: 100%;
+    min-height: 43px;
+    border-radius: 0;
+    cursor: pointer;
+    font-family: var(--pixel-font);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    padding: 10px 12px;
+    text-transform: uppercase;
+  }
+  #dailyRulesBegin { border: 1px solid var(--accent); background: var(--accent); color: #000; }
+  #dailyRulesLater { margin-top: 9px; border: 1px solid #777; background: transparent; color: #bbb; }
+
+  #countdownDisplay {
     display: none;
     position: fixed;
     inset: 0;
@@ -1386,9 +1491,11 @@
   <span class="menu-kicker">Game Mode</span>
   <div class="game-mode-toggle" aria-label="Game mode">
     <button class="game-mode-btn active" data-game-mode="classic" type="button">Classic</button>
-    <button class="game-mode-btn" data-game-mode="sprint" type="button">Sprint 60</button>
-  </div>
-  <button id="startBtn">Play</button>
+    <button class="game-mode-btn" data-game-mode="sprint" type="button">Sprint 60</button>
+    <button class="game-mode-btn" data-game-mode="daily" type="button">Daily Run</button>
+  </div>
+  <div id="dailyChallengeInfo" hidden></div>
+  <button id="startBtn">Play</button>
   <div id="namePrompt">
     <span class="np-label">Enter your initials</span>
     <span id="scoreMethodLabel"></span>
@@ -1404,7 +1511,31 @@
   </div>
 </div>
 
-<div id="leaderboardOverlay">
+<div id="dailyRulesDialog" role="dialog" aria-modal="true" aria-labelledby="dailyRulesTitle" aria-hidden="true">
+  <div class="daily-rules-card">
+    <svg class="daily-rules-icon" viewBox="0 0 16 16" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true">
+      <rect x="6" y="1" width="4" height="2"/><rect x="4" y="3" width="8" height="2"/>
+      <rect x="3" y="5" width="3" height="2"/><rect x="10" y="5" width="3" height="2"/>
+      <rect x="5" y="7" width="6" height="2"/><rect x="6" y="9" width="4" height="2"/>
+      <rect x="5" y="11" width="6" height="2"/><rect x="3" y="13" width="10" height="2"/>
+    </svg>
+    <span class="daily-rules-kicker">Today's Challenge</span>
+    <h2 id="dailyRulesTitle">Daily Run</h2>
+    <p class="daily-rules-lead">One seed. One board. One minute.</p>
+    <div class="daily-rule-list">
+      <div class="daily-rule"><span class="daily-rule-number">01</span><span>Collect as much food as possible before the 60-second clock expires.</span></div>
+      <div class="daily-rule"><span class="daily-rule-number">02</span><span>Everyone receives the same seeded challenge and locked theme for the day.</span></div>
+      <div class="daily-rule"><span class="daily-rule-number">03</span><span id="daily-attempt-rule">You receive three ranked attempts each UTC day. Extra runs are unranked practice.</span></div>
+      <div class="daily-rule"><span class="daily-rule-number">04</span><span>More food ranks higher. Ties favor the player who reached their final food sooner.</span></div>
+      <div class="daily-rule"><span class="daily-rule-number">05</span><span>A collision ends the attempt immediately. Stay alive and keep moving.</span></div>
+    </div>
+    <p id="dailyRulesFootnote" class="daily-rules-preview">Preview phase: results remain on this device. The three-attempt limit activates with ranked Daily Run.</p>
+    <button id="dailyRulesBegin" type="button">Begin Daily Run</button>
+    <button id="dailyRulesLater" type="button">Not Now</button>
+  </div>
+</div>
+
+<div id="leaderboardOverlay">
   <h2><svg width="18" height="18" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="#ffd700"><rect x="4" y="0" width="2" height="2"/><rect x="2" y="2" width="6" height="2"/><rect x="3" y="4" width="4" height="1"/><rect x="3" y="5" width="1" height="3"/><rect x="6" y="5" width="1" height="3"/><rect x="4" y="5" width="2" height="4"/></svg> Leaderboard</h2>
   <div class="lb-filter-group">
     <span class="lb-filter-label">Mode</span>
@@ -1537,7 +1668,12 @@ const lbBtn = document.getElementById('lbBtn');
 const namePrompt = document.getElementById('namePrompt');
 const nameInput = document.getElementById('nameInput');
 const submitScoreBtn = document.getElementById('submitScoreBtn');
-const scoreMethodLabel = document.getElementById('scoreMethodLabel');
+const scoreMethodLabel = document.getElementById('scoreMethodLabel');
+const dailyChallengeInfo = document.getElementById('dailyChallengeInfo');
+const dailyRulesDialog = document.getElementById('dailyRulesDialog');
+const dailyRulesBegin = document.getElementById('dailyRulesBegin');
+const dailyRulesLater = document.getElementById('dailyRulesLater');
+const dailyRulesFootnote = document.getElementById('dailyRulesFootnote');
 const leaderboardOverlay = document.getElementById('leaderboardOverlay');
 const lbGameModeFilters = document.getElementById('lbGameModeFilters');
 const lbControlFilters = document.getElementById('lbControlFilters');
@@ -1633,10 +1769,15 @@ if (window.visualViewport) {
 }
 
 // --- State ---
-let snake, dir, nextDir, food, score, best, speed, alive, paused;
+let snake, dir, nextDir, food, score, best, speed, alive, paused;
 let runControlMethod = null;
 let runUsesMixedControls = false;
 let currentRunId = null;
+const GAME_RULESET_VERSION = SnakeCore.RULESET_VERSION;
+let gameplayRandom = SnakeCore.createNativeRandom();
+let runSeed = null;
+let runTick = 0;
+let runReplay = null;
 let recordTargets = Object.create(null);
 let recordTargetScore = null;
 let recordTargetMethod = null;
@@ -1648,17 +1789,26 @@ let recordCelebrationShown = false;
 let lastTick = 0, tickAccum = 0;
 let animationFrameId = null;
 let gameMode = localStorage.getItem('snake_game_mode') || 'classic';
-if (!['classic', 'sprint'].includes(gameMode)) gameMode = 'classic';
+if (!['classic', 'sprint', 'daily'].includes(gameMode)) gameMode = 'classic';
 let runGameMode = gameMode;
 let countdownActive = false;
 let countdownRemainingMs = 0;
 let sprintRemainingMs = 60000;
-let lastTimerSecond = 60;
+let lastTimerSecond = 60;
+let dailyChallenge = null;
+let dailyTickElapsedMs = 0;
+let dailyLastFoodElapsedMs = null;
+let dailyAttempt = null;
+let dailyStartPending = false;
+let dailyChallengeRequest = 0;
+let dailyReservationRequestId = null;
+const DAILY_RULES_SEEN_KEY = 'snake_daily_rules_seen_v2';
 
 const BEST_KEYS = { classic: 'snakeBest120', sprint: 'snakeBest120_sprint' };
 const bestScores = {
   classic: parseInt(localStorage.getItem(BEST_KEYS.classic)) || 0,
-  sprint: parseInt(localStorage.getItem(BEST_KEYS.sprint)) || 0
+  sprint: parseInt(localStorage.getItem(BEST_KEYS.sprint)) || 0,
+  daily: 0
 };
 best = bestScores[gameMode];
 bestEl.textContent = best;
@@ -2526,7 +2676,7 @@ let currentTheme = themeSelection === 'random'
   : themeSelection;
 let controlMode = localStorage.getItem('snake_control_mode') || 'dpad'; // 'dpad' or 'turn'
 const TURN_ORDER = ['up','right','down','left']; // clockwise
-const CONTROL_LABELS = { dpad: 'D-PAD', turn: 'TURN', keyboard: 'KEYBOARD', legacy: 'LEGACY' };
+const CONTROL_LABELS = { dpad: 'D-PAD', turn: 'TURN', keyboard: 'KEYBOARD', mixed: 'MIXED', legacy: 'LEGACY' };
 
 function registerControlMethod(method) {
   if (!alive || countdownActive) return;
@@ -2610,10 +2760,159 @@ function applyTheme(id, { updateSelection = true } = {}) {
   overlayTitle.textContent = id === 'got' ? 'DRAGON' : 'SNAKE';
 }
 
-// Initialize theme
+// Initialize theme
 applyTheme(currentTheme, { updateSelection: false });
-
-function formatSprintTime(ms) {
+
+function modeHudLabel(mode) {
+  if (mode === 'daily') return 'DAILY';
+  return mode === 'sprint' ? 'SPRINT' : 'CLASSIC';
+}
+
+function isTimedMode(mode) {
+  return mode === 'sprint' || mode === 'daily';
+}
+
+function currentUtcDateKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function ensureDailyChallenge() {
+  if (dailyChallenge?.authoritative) return dailyChallenge;
+  const date = currentUtcDateKey();
+  if (dailyChallenge?.date === date) return dailyChallenge;
+
+  const seed = SnakeCore.normalizeSeed(`snake-daily-preview:${date}`);
+  const themeIds = Object.keys(THEMES).sort();
+  const theme = themeIds[seed % themeIds.length];
+  const challengeEpoch = Date.UTC(2026, 0, 1);
+  const challengeDate = Date.parse(`${date}T00:00:00Z`);
+  const number = Math.max(1, Math.floor((challengeDate - challengeEpoch) / 86400000) + 1);
+  const bestKey = `snake_daily_preview_best_${date}`;
+
+  dailyChallenge = { date, seed, theme, number, bestKey, durationMs: SPRINT_DURATION_MS, authoritative: false, attemptsRemaining: null };
+  bestScores.daily = parseInt(localStorage.getItem(bestKey), 10) || 0;
+  return dailyChallenge;
+}
+
+function mapDailyChallenge(row, authoritative = true) {
+  if (!row) return null;
+  const date = String(row.challenge_date || row.date || currentUtcDateKey());
+  const theme = THEMES[row.theme] ? row.theme : 'default';
+  const bestKey = `snake_daily_best_${date}`;
+  return {
+    id: row.challenge_id == null ? null : Number(row.challenge_id),
+    date,
+    number: Number(row.challenge_number) || 1,
+    seed: Number(row.seed) >>> 0,
+    theme,
+    durationMs: Number(row.duration_ms) || SPRINT_DURATION_MS,
+    boardCols: Number(row.board_cols) || BOARD_COLS,
+    boardRows: Number(row.board_rows) || BOARD_ROWS,
+    rulesetVersion: row.ruleset_version || GAME_RULESET_VERSION,
+    attemptsUsed: Number(row.attempts_used) || 0,
+    attemptsRemaining: Number(row.attempts_remaining) < 0
+      ? -1
+      : Math.max(0, Number(row.attempts_remaining) || 0),
+    bestKey,
+    authoritative
+  };
+}
+
+function hasUnlimitedDailyAttempts(challenge = dailyChallenge) {
+  return challenge?.authoritative === true && challenge.attemptsRemaining < 0;
+}
+
+function dailyAttemptLabel(number, challenge = dailyChallenge) {
+  return hasUnlimitedDailyAttempts(challenge)
+    ? `Ranked debug attempt ${number}`
+    : `Ranked attempt ${number}/3`;
+}
+
+function dailyAttemptsRemainingLabel(challenge = dailyChallenge) {
+  return hasUnlimitedDailyAttempts(challenge)
+    ? 'DEBUG • Unlimited ranked attempts'
+    : `${challenge?.attemptsRemaining ?? 0}/3 ranked attempts left`;
+}
+
+function renderDailyChallengeInfo() {
+  if (gameMode !== 'daily') return;
+  const challenge = dailyChallenge || ensureDailyChallenge();
+  const themeName = THEMES[challenge.theme]?.name || challenge.theme;
+  dailyChallengeInfo.textContent = challenge.authoritative
+    ? `Challenge #${challenge.number} • ${themeName} • ${dailyAttemptsRemainingLabel(challenge)}`
+    : `Challenge #${challenge.number} • ${themeName} • Local preview`;
+  const attemptRule = document.getElementById('daily-attempt-rule');
+  if (attemptRule) {
+    attemptRule.textContent = hasUnlimitedDailyAttempts(challenge)
+      ? 'Debug mode is active, so ranked attempts are temporarily unlimited.'
+      : 'You receive three ranked attempts each UTC day. Extra runs are unranked practice.';
+  }
+}
+
+async function refreshDailyChallenge({ force = false } = {}) {
+  const requestId = ++dailyChallengeRequest;
+  if (!force && dailyChallenge?.authoritative && dailyChallenge.date === currentUtcDateKey()) {
+    renderDailyChallengeInfo();
+    return dailyChallenge;
+  }
+  try {
+    await playerIdentityPromise;
+    if (!sb || !currentUser) throw new Error('Player session unavailable');
+    const { data, error } = await sb.rpc('get_daily_challenge');
+    if (error) throw error;
+    if (requestId !== dailyChallengeRequest) return dailyChallenge;
+    const row = Array.isArray(data) ? data[0] : data;
+    const challenge = mapDailyChallenge(row, true);
+    if (!challenge || challenge.rulesetVersion !== GAME_RULESET_VERSION || challenge.boardCols !== BOARD_COLS || challenge.boardRows !== BOARD_ROWS) {
+      throw new Error('Daily challenge uses an unsupported ruleset or board');
+    }
+    dailyChallenge = challenge;
+    bestScores.daily = parseInt(localStorage.getItem(challenge.bestKey), 10) || 0;
+    if (gameMode === 'daily') {
+      best = bestScores.daily;
+      bestEl.textContent = best;
+      applyTheme(challenge.theme, { updateSelection: false });
+      renderDailyChallengeInfo();
+    }
+    return challenge;
+  } catch (error) {
+    if (!isSchemaError(error)) console.warn('Authoritative Daily challenge unavailable; using local preview.', error);
+    if (!dailyChallenge?.authoritative) dailyChallenge = null;
+    const preview = ensureDailyChallenge();
+    renderDailyChallengeInfo();
+    return preview;
+  }
+}
+
+function formatDailyFoodTime(ms) {
+  return Number.isFinite(ms) ? `${(ms / 1000).toFixed(2)}s` : '—';
+}
+
+function shouldShowDailyRules() {
+  if (new URLSearchParams(location.search).get('dailyIntro') === '1') return true;
+  try {
+    return localStorage.getItem(DAILY_RULES_SEEN_KEY) !== '1';
+  } catch (_) {
+    return true;
+  }
+}
+
+function showDailyRules() {
+  dailyRulesFootnote.textContent = dailyChallenge?.authoritative
+    ? 'Your ranked attempt is reserved after you press Begin, immediately before the countdown.'
+    : 'Preview phase: results remain on this device. The three-attempt limit activates with ranked Daily Run.';
+  dailyRulesDialog.classList.add('visible');
+  dailyRulesDialog.setAttribute('aria-hidden', 'false');
+  setTimeout(() => dailyRulesBegin.focus(), 0);
+}
+
+function hideDailyRules({ restoreFocus = false } = {}) {
+  dailyRulesDialog.classList.remove('visible');
+  dailyRulesDialog.setAttribute('aria-hidden', 'true');
+  if (restoreFocus) startBtn.focus();
+}
+
+function formatSprintTime(ms) {
   const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
   return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, '0')}`;
 }
@@ -2627,18 +2926,26 @@ function updateSprintTimer(force = false) {
 }
 
 function applyGameMode(mode) {
-  gameMode = mode;
-  localStorage.setItem('snake_game_mode', mode);
+  if (!['classic', 'sprint', 'daily'].includes(mode)) mode = 'classic';
+  gameMode = mode;
+  localStorage.setItem('snake_game_mode', mode);
+  const challenge = mode === 'daily' ? ensureDailyChallenge() : null;
+  if (challenge) applyTheme(challenge.theme, { updateSelection: false });
+  else if (themeSelection !== 'random') applyTheme(themeSelection, { updateSelection: false });
   best = bestScores[mode];
   bestEl.textContent = best;
-  hudMode.textContent = mode === 'sprint' ? 'SPRINT' : 'CLASSIC';
+  hudMode.textContent = modeHudLabel(mode);
+  dailyChallengeInfo.hidden = mode !== 'daily';
+  if (challenge) renderDailyChallengeInfo();
   const randomThemeBtn = document.getElementById('random-theme-btn');
+  const themesButton = document.getElementById('options-btn');
   if (randomThemeBtn) {
     const dailyThemeIsLocked = mode === 'daily';
     randomThemeBtn.hidden = dailyThemeIsLocked;
     randomThemeBtn.disabled = dailyThemeIsLocked;
   }
-  document.querySelectorAll('.game-mode-btn').forEach(btn => {
+  if (themesButton) themesButton.hidden = mode === 'daily';
+  document.querySelectorAll('.game-mode-btn').forEach(btn => {
     const selected = btn.dataset.gameMode === mode;
     btn.classList.toggle('active', selected);
     btn.setAttribute('aria-pressed', String(selected));
@@ -2648,26 +2955,46 @@ function applyGameMode(mode) {
 document.querySelectorAll('.game-mode-btn').forEach(btn => {
   btn.addEventListener('click', () => applyGameMode(btn.dataset.gameMode));
 });
-applyGameMode(gameMode);
-
-function reset(startingRun = false) {
-  const cx = Math.floor(COLS / 2);
-  const cy = Math.floor(ROWS / 2);
-  snake = [{x: cx, y: cy}, {x: cx-1, y: cy}, {x: cx-2, y: cy}];
-  dir = {x: 1, y: 0};
-  nextDir = {x: 1, y: 0};
+applyGameMode(gameMode);
+
+function prepareGameplayRun(seed = null) {
+  runSeed = seed == null ? null : SnakeCore.normalizeSeed(seed);
+  gameplayRandom = runSeed == null
+    ? SnakeCore.createNativeRandom()
+    : SnakeCore.createSeededRandom(runSeed);
+  runTick = 0;
+  runReplay = SnakeCore.createReplay({
+    rulesetVersion: GAME_RULESET_VERSION,
+    seed: runSeed,
+    mode: runGameMode,
+    theme: currentTheme,
+    cols: COLS,
+    rows: ROWS
+  });
+  if (runGameMode === 'daily') setTimeout(() => refreshDailyChallenge(), 0);
+}
+
+function reset(startingRun = false) {
+  snake = SnakeCore.createInitialSnake(COLS, ROWS);
+  dir = {x: 1, y: 0};
+  nextDir = {x: 1, y: 0};
+  runTick = 0;
   score = 0;
   speed = BASE_INTERVAL;
   alive = startingRun;
   paused = false;
-  tickAccum = 0;
-  sprintRemainingMs = SPRINT_DURATION_MS;
-  lastTimerSecond = 60;
-  countdownActive = startingRun && runGameMode === 'sprint';
-  countdownRemainingMs = countdownActive ? SPRINT_COUNTDOWN_MS : 0;
-  countdownDisplay.textContent = countdownActive ? '3' : '';
-  countdownDisplay.classList.toggle('visible', countdownActive);
-  timerBlock.classList.toggle('visible', startingRun && runGameMode === 'sprint');
+  tickAccum = 0;
+  sprintRemainingMs = runGameMode === 'daily'
+    ? (dailyChallenge?.durationMs || SPRINT_DURATION_MS)
+    : SPRINT_DURATION_MS;
+  lastTimerSecond = 60;
+  dailyTickElapsedMs = 0;
+  dailyLastFoodElapsedMs = null;
+  countdownActive = startingRun && isTimedMode(runGameMode);
+  countdownRemainingMs = countdownActive ? SPRINT_COUNTDOWN_MS : 0;
+  countdownDisplay.textContent = countdownActive ? '3' : '';
+  countdownDisplay.classList.toggle('visible', countdownActive);
+  timerBlock.classList.toggle('visible', startingRun && isTimedMode(runGameMode));
   updateSprintTimer(true);
   scoreEl.textContent = 0;
   // Clear effects
@@ -2691,13 +3018,17 @@ function reset(startingRun = false) {
   placeFood();
 }
 
-function placeFood() {
-  let pos;
-  do {
-    pos = {x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS)};
-  } while (snake.some(s => s.x === pos.x && s.y === pos.y));
-  food = pos;
-}
+function placeFood() {
+  const placement = runGameMode === 'daily'
+    ? SnakeCore.placeFoodFromFreeCells
+    : SnakeCore.placeFood;
+  food = placement({
+    cols: COLS,
+    rows: ROWS,
+    snake,
+    random: gameplayRandom
+  });
+}
 
 // --- Haptics ---
 function haptic(style) {
@@ -3428,10 +3759,15 @@ function roundRect(x, y, w, h, r) {
 }
 
 // --- Game logic ---
-function gameTick() {
-  if (!alive || paused) return;
-  dir = nextDir;
-  prevSnake = snake.map(s => ({...s}));
+function gameTick() {
+  if (!alive || paused) return;
+  const appliedDirection = SnakeCore.acceptDirection(dir, nextDir);
+  if (!SnakeCore.directionsEqual(dir, appliedDirection)) {
+    SnakeCore.recordDirection(runReplay, runTick, appliedDirection);
+  }
+  dir = appliedDirection;
+  runTick++;
+  prevSnake = snake.map(s => ({...s}));
 
   // Record trail point at head position before moving
   const oldHead = snake[0];
@@ -3448,8 +3784,9 @@ function gameTick() {
 
   snake.unshift(head);
 
-  if (head.x === food.x && head.y === food.y) {
-    score++;
+  if (head.x === food.x && head.y === food.y) {
+    score++;
+    if (runGameMode === 'daily') dailyLastFoodElapsedMs = dailyTickElapsedMs;
     scoreEl.textContent = score;
     updateRecordChase();
     haptic('eat');
@@ -3474,9 +3811,12 @@ function gameTick() {
     foodScale = 0.3;
     if (score > best) {
       best = score;
-      bestScores[runGameMode] = best;
-      bestEl.textContent = best;
-      localStorage.setItem(BEST_KEYS[runGameMode], best);
+      bestScores[runGameMode] = best;
+      bestEl.textContent = best;
+      const bestKey = runGameMode === 'daily'
+        ? ensureDailyChallenge().bestKey
+        : BEST_KEYS[runGameMode];
+      localStorage.setItem(bestKey, best);
     }
     placeFood();
     speed = Math.max(MIN_INTERVAL, BASE_INTERVAL - score * 2);
@@ -3486,32 +3826,50 @@ function gameTick() {
 }
 
 function showRunResult(reason) {
-  const isSprint = runGameMode === 'sprint';
+  const isSprint = runGameMode === 'sprint';
+  const isDaily = runGameMode === 'daily';
   overlayTitle.innerHTML = reason === 'time'
     ? 'TIME UP!'
     : '<svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="#ff003c"><rect x="2" y="1" width="6" height="2"/><rect x="1" y="3" width="8" height="2"/><rect x="1" y="5" width="2" height="2"/><rect x="7" y="5" width="2" height="2"/><rect x="3" y="5" width="4" height="2" fill="rgba(0,0,0,0.3)"/><rect x="2" y="7" width="2" height="2"/><rect x="6" y="7" width="2" height="2"/><rect x="3" y="9" width="4" height="1"/></svg> Game Over';
-  overlayMsg.textContent = `${isSprint ? 'Sprint ' : ''}Score: ${score}`;
+  overlayMsg.textContent = isDaily
+    ? `Daily Score: ${score} • Final food: ${formatDailyFoodTime(dailyLastFoodElapsedMs)}`
+    : `${isSprint ? 'Sprint ' : ''}Score: ${score}`;
   startBtn.textContent = 'Play Again';
   shareBtn.style.display = 'block';
   lbBtn.style.display = 'block';
   const scoreMethod = runControlMethod || controlMode;
   recordTargetMethod = scoreMethod;
-  scoreMethodLabel.textContent = runUsesMixedControls
-    ? 'Mixed controls — this run is unranked'
-    : `${runGameMode === 'sprint' ? 'SPRINT' : 'CLASSIC'} • ${CONTROL_LABELS[scoreMethod]} leaderboard`;
-  scoreMethodLabel.classList.toggle('unranked', runUsesMixedControls);
+  scoreMethodLabel.textContent = runUsesMixedControls
+    ? (isDaily ? 'Mixed controls • Daily ranking checks all control methods together' : 'Mixed controls — this run is unranked')
+    : `${modeHudLabel(runGameMode)} • ${CONTROL_LABELS[scoreMethod]}${isDaily ? (dailyAttempt?.ranked ? ` • ${dailyAttemptLabel(dailyAttempt.number)}` : ' • practice') : ' leaderboard'}`;
+  scoreMethodLabel.classList.toggle('unranked', runUsesMixedControls && !isDaily);
   prepareRunSubmission();
   overlay.classList.remove('hidden');
   overlay.setAttribute('aria-hidden', 'false');
   recordResultVisible = true;
   hideRecordChase();
-  maybeCelebrateRecordAtGameOver();
-}
+  if (!isDaily) maybeCelebrateRecordAtGameOver();
+}
 
-function finishRun(reason) {
-  if (!alive) return;
-  alive = false;
-  countdownActive = false;
+function finishRun(reason) {
+  if (!alive) return;
+  alive = false;
+  SnakeCore.finalizeReplay(runReplay, { tick: runTick, score, reason });
+  if (runGameMode === 'daily' && runReplay) {
+    try {
+      const replayCheck = SnakeCore.simulateReplay(runReplay, {
+        baseInterval: BASE_INTERVAL,
+        minInterval: MIN_INTERVAL,
+        foodPlacement: 'free-cells'
+      });
+      runReplay.localVerification = replayCheck.verified ? 'verified' : 'failed';
+      if (!replayCheck.verified) console.warn('Daily Run replay did not reproduce the local result.', replayCheck);
+    } catch (error) {
+      runReplay.localVerification = 'error';
+      console.warn('Daily Run replay verification failed.', error);
+    }
+  }
+  countdownActive = false;
   countdownDisplay.classList.remove('visible');
   haptic('die');
   AudioEngine.stop();
@@ -3533,15 +3891,98 @@ function finishRun(reason) {
   setTimeout(() => showRunResult(reason), reason === 'collision' ? 600 : 250);
 }
 
-function die() {
-  finishRun('collision');
-}
-
-function startGame() {
+function die() {
+  finishRun('collision');
+}
+
+function showDailyPlayerSetup() {
+  setPlayerMessage(hasUnlimitedDailyAttempts()
+    ? 'Choose initials to unlock unlimited ranked debug attempts. Email is not required.'
+    : 'Choose initials to unlock today\'s three ranked attempts. Email is not required.');
+  renderPlayerIdentity();
+  playerPanel.classList.add('visible');
+  setTimeout(() => playerInitialsInput.focus(), 0);
+}
+
+async function reserveDailyAttempt() {
+  const challenge = await refreshDailyChallenge({ force: true });
+  if (!challenge.authoritative) {
+    dailyAttempt = { ranked: false, preview: true, attemptsRemaining: null };
+    return challenge;
+  }
+
+  if (!playerProfile) {
+    showDailyPlayerSetup();
+    return null;
+  }
+
+  dailyReservationRequestId ||= createRunId();
+  const { data, error } = await sb.rpc('start_daily_attempt', {
+    p_request_id: dailyReservationRequestId
+  });
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) throw new Error('Daily attempt reservation returned no data');
+
+  const reservedChallenge = mapDailyChallenge({
+    ...row,
+    attempts_used: Number(row.attempts_remaining) < 0
+      ? Number(row.attempt_number) || 0
+      : (row.ranked ? 3 - Number(row.attempts_remaining) : 3)
+  }, true);
+  dailyChallenge = reservedChallenge;
+  bestScores.daily = parseInt(localStorage.getItem(reservedChallenge.bestKey), 10) || 0;
+  dailyAttempt = {
+    ranked: row.ranked === true,
+    preview: false,
+    id: row.attempt_id || null,
+    number: row.attempt_number == null ? null : Number(row.attempt_number),
+    attemptsRemaining: Number(row.attempts_remaining) < 0
+      ? -1
+      : Math.max(0, Number(row.attempts_remaining) || 0),
+    runToken: row.run_token || null,
+    submitted: false,
+    result: null
+  };
+  dailyReservationRequestId = null;
+  renderDailyChallengeInfo();
+  return reservedChallenge;
+}
+
+async function startGame(options = {}) {
+  if (gameMode === 'daily' && !options.skipDailyRules && shouldShowDailyRules()) {
+    showDailyRules();
+    return;
+  }
+  if (dailyStartPending) return;
+  let challenge = null;
+  if (gameMode === 'daily') {
+    dailyStartPending = true;
+    startBtn.disabled = true;
+    startBtn.textContent = 'Preparing...';
+    try {
+      await playerIdentityPromise;
+      challenge = await reserveDailyAttempt();
+      if (!challenge) return;
+    } catch (error) {
+      console.warn('Daily attempt could not start:', error);
+      overlayMsg.textContent = isSchemaError(error)
+        ? 'Daily ranking database update required. Local preview is still available after refresh.'
+        : (error.message || 'Could not reserve a Daily attempt. Try again.');
+      return;
+    } finally {
+      dailyStartPending = false;
+      startBtn.disabled = false;
+      if (!challenge) startBtn.textContent = 'Play';
+    }
+  }
   if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
   stopRecordCelebration();
   recordResultVisible = false;
-  if (themeSelection === 'random') {
+  challenge ||= gameMode === 'daily' ? ensureDailyChallenge() : null;
+  if (challenge) {
+    applyTheme(challenge.theme, { updateSelection: false });
+  } else if (themeSelection === 'random') {
     const nextTheme = pickRandomThemeId(Object.keys(THEMES), currentTheme);
     if (nextTheme) applyTheme(nextTheme, { updateSelection: false });
   }
@@ -3554,13 +3995,20 @@ function startGame() {
   runControlMethod = null;
   runUsesMixedControls = false;
   nameInput.disabled = false;
-  scoreMethodLabel.classList.remove('unranked');
+  scoreMethodLabel.classList.remove('unranked');
   runGameMode = gameMode;
-  hudMode.textContent = runGameMode === 'sprint' ? 'SPRINT' : 'CLASSIC';
-  best = bestScores[runGameMode];
-  bestEl.textContent = best;
-  reset(true);
-  beginRecordChase();
+  if (runGameMode === 'daily') {
+    startBtn.textContent = dailyAttempt?.ranked
+      ? dailyAttemptLabel(dailyAttempt.number, challenge)
+      : 'Practice Run';
+  }
+  hudMode.textContent = modeHudLabel(runGameMode);
+  best = bestScores[runGameMode];
+  bestEl.textContent = best;
+  prepareGameplayRun(challenge?.seed ?? null);
+  reset(true);
+  if (runGameMode === 'daily') disableRecordChase();
+  else beginRecordChase();
   AudioEngine.start();
   prevSnake = null;
   lastTick = performance.now();
@@ -3614,21 +4062,37 @@ function loop(now) {
         const countdownLabel = String(Math.ceil(countdownRemainingMs / 1000));
         if (countdownDisplay.textContent !== countdownLabel) countdownDisplay.textContent = countdownLabel;
       }
-    } else {
-      if (runGameMode === 'sprint') {
-        sprintRemainingMs -= rawDt;
-        updateSprintTimer();
-        if (sprintRemainingMs <= 0) finishRun('time');
-      }
-      if (alive) {
-        tickAccum += dt;
-        while (alive && tickAccum >= speed) {
-          prevSnake = snake.map(s => ({...s}));
-          gameTick();
-          tickAccum -= speed;
-        }
-      }
-    }
+    } else {
+      if (runGameMode === 'daily') {
+        const durationMs = dailyChallenge?.durationMs || SPRINT_DURATION_MS;
+        const activeElapsedMs = dailyTickElapsedMs + tickAccum;
+        tickAccum += Math.min(dt, Math.max(0, durationMs - activeElapsedMs));
+        while (alive && tickAccum >= speed && dailyTickElapsedMs + speed <= durationMs) {
+          const stepInterval = speed;
+          dailyTickElapsedMs += stepInterval;
+          prevSnake = snake.map(s => ({...s}));
+          gameTick();
+          tickAccum -= stepInterval;
+        }
+        sprintRemainingMs = Math.max(0, durationMs - dailyTickElapsedMs - tickAccum);
+        updateSprintTimer();
+        if (alive && sprintRemainingMs <= 0) finishRun('time');
+      } else {
+        if (runGameMode === 'sprint') {
+          sprintRemainingMs -= rawDt;
+          updateSprintTimer();
+          if (sprintRemainingMs <= 0) finishRun('time');
+        }
+        if (alive) {
+          tickAccum += dt;
+          while (alive && tickAccum >= speed) {
+            prevSnake = snake.map(s => ({...s}));
+            gameTick();
+            tickAccum -= speed;
+          }
+        }
+      }
+    }
   }
 
   // Update effects
@@ -4657,7 +5121,7 @@ function hideRecordChase() {
   recordChaseEl.classList.remove('visible', 'record-pace');
   recordChaseEl.textContent = '';
   hudMode.classList.remove('record-warning', 'record-pace');
-  hudMode.textContent = (alive ? runGameMode : gameMode) === 'sprint' ? 'SPRINT' : 'CLASSIC';
+  hudMode.textContent = modeHudLabel(alive ? runGameMode : gameMode);
   canvas.classList.remove('record-warning', 'record-pace');
   canvas.style.removeProperty('--record-pulse-speed');
 }
@@ -4957,6 +5421,7 @@ async function syncPlayerSession(session) {
   currentUser = session?.user || null;
   await loadPlayerProfile();
   retryPendingScores();
+  if (gameMode === 'daily') refreshDailyChallenge({ force: true });
 }
 
 async function initPlayerIdentity() {
@@ -5117,9 +5582,83 @@ function currentScorePayload() {
   };
 }
 
+async function submitDailyAttempt() {
+  if (!dailyAttempt?.ranked || dailyAttempt.submitted || !runReplay) return dailyAttempt?.result || null;
+  const replayVerified = runReplay.localVerification === 'verified';
+  if (!replayVerified) {
+    scoreMethodLabel.textContent = 'Replay check failed • ranked result not submitted';
+    scoreMethodLabel.classList.add('unranked');
+    submitScoreBtn.textContent = 'Verification Failed';
+    submitScoreBtn.disabled = true;
+    return null;
+  }
+
+  submitScoreBtn.textContent = 'Verifying...';
+  submitScoreBtn.disabled = true;
+  try {
+    const controlMethod = runUsesMixedControls ? 'mixed' : (runControlMethod || controlMode);
+    const { data, error } = await sb.functions.invoke('submit-daily-attempt', {
+      body: {
+        attemptId: dailyAttempt.id,
+        runToken: dailyAttempt.runToken,
+        replay: runReplay,
+        finalFoodMs: dailyLastFoodElapsedMs,
+        controlMethod
+      }
+    });
+    if (error) {
+      let details = null;
+      try { details = await error.context?.json(); } catch (_) {}
+      throw new Error(details?.error || error.message || 'Daily submission failed');
+    }
+    if (!data?.verified) throw new Error(data?.error || 'Daily replay was not verified');
+    dailyAttempt.submitted = true;
+    dailyAttempt.result = data;
+    dailyAttempt.attemptsRemaining = Number(data.attemptsRemaining) < 0
+      ? -1
+      : Math.max(0, Number(data.attemptsRemaining) || 0);
+    if (dailyChallenge) dailyChallenge.attemptsRemaining = dailyAttempt.attemptsRemaining;
+    renderDailyChallengeInfo();
+    submittedThisRound = true;
+    const rankText = data.leaderboardRank ? `rank #${data.leaderboardRank}` : 'rank pending';
+    scoreMethodLabel.textContent = `Verified • ${rankText} • ${dailyAttemptsRemainingLabel(dailyChallenge)}`;
+    scoreMethodLabel.classList.remove('unranked');
+    submitScoreBtn.textContent = 'Verified';
+    if (leaderboardOverlay.classList.contains('visible')) loadLeaderboard();
+    return data;
+  } catch (error) {
+    console.warn('Daily attempt submission failed:', error);
+    scoreMethodLabel.textContent = `${error.message || 'Submission failed'} • retry before the run token expires`;
+    scoreMethodLabel.classList.add('unranked');
+    submitScoreBtn.textContent = navigator.onLine ? 'Retry Submission' : 'Retry When Online';
+    submitScoreBtn.disabled = !navigator.onLine;
+    return null;
+  }
+}
+
 async function prepareRunSubmission() {
   namePrompt.style.setProperty('display', 'flex', 'important');
   const promptLabel = namePrompt.querySelector('.np-label');
+  if (runGameMode === 'daily') {
+    const challenge = ensureDailyChallenge();
+    const ranked = dailyAttempt?.ranked === true;
+    promptLabel.textContent = ranked
+      ? `Daily #${challenge.number} • ${dailyAttemptLabel(dailyAttempt.number, challenge)}`
+      : `Daily #${challenge.number} • ${dailyAttempt?.preview ? 'Local preview' : 'Practice run'}`;
+    nameInput.style.display = 'none';
+    nameInput.disabled = true;
+    const replayStatus = runReplay?.localVerification === 'verified' ? 'replay verified' : 'replay check failed';
+    scoreMethodLabel.textContent = `${score} food${score === 1 ? '' : 's'} • final food ${formatDailyFoodTime(dailyLastFoodElapsedMs)} • ${replayStatus}${ranked ? '' : ' • unranked'}`;
+    scoreMethodLabel.classList.toggle('unranked', runReplay?.localVerification !== 'verified');
+    if (ranked) {
+      await submitDailyAttempt();
+    } else {
+      submitScoreBtn.textContent = dailyAttempt?.preview ? 'Ranking Setup Required' : 'Practice Complete';
+      submitScoreBtn.disabled = true;
+      scoreMethodLabel.classList.add('unranked');
+    }
+    return;
+  }
   if (runUsesMixedControls) {
     promptLabel.textContent = 'Score submission';
     nameInput.style.display = 'none';
@@ -5163,6 +5702,10 @@ nameInput.addEventListener('keydown', (e) => {
 });
 
 async function submitScore() {
+  if (runGameMode === 'daily') {
+    await submitDailyAttempt();
+    return;
+  }
   if (!sb || submittedThisRound || runUsesMixedControls) return;
   await playerIdentityPromise;
   if (!playerProfile) {
@@ -5308,29 +5851,34 @@ function buildFilterGroup(container, values, stateKey, labelFor) {
     btn.textContent = labelFor(value);
     btn.type = 'button';
     btn.setAttribute('aria-pressed', String(active));
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', () => {
       if (lbState[stateKey] === value) return;
       lbState[stateKey] = value;
       lbState.page = 0;
-      container.querySelectorAll('.lb-filter').forEach(b => {
+      container.querySelectorAll('.lb-filter').forEach(b => {
         const selected = b === btn;
         b.classList.toggle('active', selected);
-        b.setAttribute('aria-pressed', String(selected));
-      });
-      loadLeaderboard();
+        b.setAttribute('aria-pressed', String(selected));
+      });
+      if (stateKey === 'gameMode') buildFilters();
+      if (stateKey === 'gameMode' && value === 'daily') {
+        refreshDailyChallenge({ force: true }).then(loadLeaderboard);
+      } else {
+        loadLeaderboard();
+      }
     });
     container.appendChild(btn);
   });
 }
 
 function buildFilters() {
-  buildFilterGroup(
-    lbGameModeFilters,
-    ['classic', 'sprint'],
-    'gameMode',
-    value => value === 'sprint' ? 'Sprint 60' : 'Classic'
+  buildFilterGroup(
+    lbGameModeFilters,
+    ['classic', 'sprint', 'daily'],
+    'gameMode',
+    value => value === 'sprint' ? 'Sprint 60' : (value === 'daily' ? 'Daily Run' : 'Classic')
   );
-  buildFilterGroup(
+  buildFilterGroup(
     lbControlFilters,
     ['all', 'dpad', 'turn', 'keyboard'],
     'control',
@@ -5340,9 +5888,14 @@ function buildFilters() {
     lbThemeFilters,
     ['all', ...Object.keys(THEMES)],
     'theme',
-    value => value === 'all' ? 'All' : value.charAt(0).toUpperCase() + value.slice(1)
-  );
-}
+    value => value === 'all' ? 'All' : value.charAt(0).toUpperCase() + value.slice(1)
+  );
+  const daily = lbState.gameMode === 'daily';
+  lbControlFilters.closest('.lb-filter-group').hidden = daily;
+  lbThemeFilters.closest('.lb-filter-group').hidden = daily;
+  const themeHeading = lbTable.querySelector('th.lb-theme-col');
+  if (themeHeading) themeHeading.textContent = daily ? 'Final Food' : 'Theme';
+}
 
 function updatePagination() {
   const pageCount = Math.max(1, Math.ceil(lbState.total / LB_PAGE_SIZE));
@@ -5379,18 +5932,30 @@ async function loadLeaderboard() {
     if (lbState.theme !== 'all') query = query.eq('theme', lbState.theme);
     return query;
   };
-  let result = await runQuery('name, score, theme, control_method, game_mode, created_at, player_id, player_code');
-  if (['42703', 'PGRST204'].includes(result.error?.code)) {
-    result = await runQuery('name, score, theme, control_method, game_mode, created_at');
+  let result;
+  if (lbState.gameMode === 'daily') {
+    const challenge = dailyChallenge || ensureDailyChallenge();
+    result = await sb.from('daily_leaderboard')
+      .select('challenge_date, name, player_code, player_id, score, final_food_ms, control_method, theme, attempt_number, completed_at, leaderboard_rank', { count: 'exact' })
+      .eq('challenge_date', challenge.date)
+      .order('leaderboard_rank', { ascending: true })
+      .range(from, to);
+  } else {
+    result = await runQuery('name, score, theme, control_method, game_mode, created_at, player_id, player_code');
+    if (['42703', 'PGRST204'].includes(result.error?.code)) {
+      result = await runQuery('name, score, theme, control_method, game_mode, created_at');
+    }
   }
   const { data, error, count } = result;
   if (requestId !== lbState.requestId) return;
   lbLoading.style.display = 'none';
   if (error || !data || data.length === 0) {
-    lbEmpty.style.display = 'block';
-    lbEmpty.textContent = error
-      ? (error.code === '42703' ? 'Leaderboard update required' : 'Failed to load')
-      : 'No scores yet. Be the first!';
+    lbEmpty.style.display = 'block';
+    lbEmpty.textContent = error
+      ? ((lbState.gameMode === 'daily' && ['42P01', 'PGRST205'].includes(error.code)) || error.code === '42703'
+          ? 'Leaderboard update required'
+          : 'Failed to load')
+      : 'No scores yet. Be the first!';
     lbState.total = error ? 0 : (count || 0);
     updatePagination();
     return;
@@ -5399,7 +5964,7 @@ async function loadLeaderboard() {
   lbTable.style.display = 'table';
   lbBody.innerHTML = '';
   data.forEach((row, i) => {
-    const rank = from + i + 1;
+    const rank = Number(row.leaderboard_rank) || from + i + 1;
     const tr = document.createElement('tr');
     if (rank === 1) tr.classList.add('top1');
     else if (rank === 2) tr.classList.add('top2');
@@ -5407,9 +5972,15 @@ async function loadLeaderboard() {
     const isOwnRow = !!currentUser && row.player_id === currentUser.id;
     if (isOwnRow) tr.classList.add('you');
     const method = CONTROL_LABELS[row.control_method] || CONTROL_LABELS.legacy;
+    const methodLabel = lbState.gameMode === 'daily' && row.attempt_number
+      ? `TRY ${row.attempt_number} • ${method}`
+      : method;
     const code = row.player_code ? `\u00b7${escHtml(row.player_code)}` : '';
     const you = isOwnRow ? '<span class="lb-you-badge">YOU</span>' : '';
-    tr.innerHTML = `<td class="lb-rank">${rank}</td><td>${escHtml(row.name)}${code}${you}<span class="lb-method-tag">${escHtml(method)}</span></td><td class="lb-theme-col">${escHtml(row.theme)}</td><td class="lb-score">${row.score}</td>`;
+    const detail = lbState.gameMode === 'daily'
+      ? formatDailyFoodTime(row.final_food_ms == null ? null : Number(row.final_food_ms))
+      : escHtml(row.theme);
+    tr.innerHTML = `<td class="lb-rank">${rank}</td><td>${escHtml(row.name)}${code}${you}<span class="lb-method-tag">${escHtml(methodLabel)}</span></td><td class="lb-theme-col">${detail}</td><td class="lb-score">${row.score}</td>`;
     lbBody.appendChild(tr);
   });
   updatePagination();
@@ -5472,11 +6043,23 @@ overlay.addEventListener('touchend', event => {
   button.click();
 }, { passive: false });
 
-startBtn.addEventListener('click', startGame);
+dailyRulesBegin.addEventListener('click', () => {
+  try { localStorage.setItem(DAILY_RULES_SEEN_KEY, '1'); } catch (_) {}
+  hideDailyRules();
+  startGame({ skipDailyRules: true });
+});
+
+dailyRulesLater.addEventListener('click', () => hideDailyRules({ restoreFocus: true }));
+dailyRulesDialog.addEventListener('keydown', event => {
+  if (event.key === 'Escape') hideDailyRules({ restoreFocus: true });
+});
+
+startBtn.addEventListener('click', () => startGame());
 
-shareBtn.addEventListener('click', async () => {
-  const modeName = runGameMode === 'sprint' ? 'Sprint 60' : 'Classic';
-  const text = `I scored ${score} in Snake ${modeName}! Can you beat me?\nhttps://chicoramon.github.io/snake-game/`;
+shareBtn.addEventListener('click', async () => {
+  const modeName = runGameMode === 'daily' ? `Daily #${ensureDailyChallenge().number}` : (runGameMode === 'sprint' ? 'Sprint 60' : 'Classic');
+  const timing = runGameMode === 'daily' ? ` (final food ${formatDailyFoodTime(dailyLastFoodElapsedMs)})` : '';
+  const text = `I scored ${score}${timing} in Snake ${modeName}! Can you beat me?\nhttps://chicoramon.github.io/snake-game/`;
   if (navigator.share) {
     try { await navigator.share({ title: 'Snake Score', text }); } catch {}
   } else {
