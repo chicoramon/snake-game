@@ -1443,7 +1443,7 @@
     letter-spacing: 1px;
     text-transform: uppercase;
   }
-  #overlay #mute-btn, #overlay #options-btn, #overlay #controls-btn, #overlay #player-btn,
+  #overlay #mute-btn, #overlay #options-btn, #overlay #controls-btn, #overlay #player-btn, #overlay #whats-new-btn,
   #overlay #shareBtn, #overlay #lbBtn {
     width: min(100%, 228px);
     min-height: 42px;
@@ -1460,7 +1460,7 @@
     pointer-events: auto;
     touch-action: manipulation;
   }
-  #overlay #mute-btn:hover, #overlay #options-btn:hover, #overlay #controls-btn:hover, #overlay #player-btn:hover,
+  #overlay #mute-btn:hover, #overlay #options-btn:hover, #overlay #controls-btn:hover, #overlay #player-btn:hover, #overlay #whats-new-btn:hover,
   #overlay #shareBtn:hover, #overlay #lbBtn:hover {
     border-color: var(--accent-dim);
     background: var(--accent-glow-soft);
@@ -1468,7 +1468,112 @@
   #overlay #mute-btn { margin-top: 16px; }
   #overlay #shareBtn { display: none; }
   #overlay #lbBtn { display: block; }
-  #overlay #options-btn, #overlay #controls-btn, #overlay #player-btn { margin-top: 7px; }
+  #overlay #options-btn, #overlay #controls-btn, #overlay #player-btn, #overlay #whats-new-btn { margin-top: 7px; }
+  #whats-new-btn { position: relative; }
+  #whats-new-badge {
+    position: absolute;
+    top: -7px;
+    right: -8px;
+    padding: 3px 5px;
+    background: var(--food);
+    border: 1px solid #fff;
+    color: #fff;
+    font-family: var(--pixel-font);
+    font-size: 0.5rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    box-shadow: 0 0 12px var(--food-glow);
+  }
+  #whats-new-badge[hidden] { display: none; }
+  #whats-new-panel {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    align-items: center;
+    justify-content: center;
+    padding: max(env(safe-area-inset-top), 20px) 18px max(env(safe-area-inset-bottom), 20px);
+    overflow-y: auto;
+    background: rgba(0,0,0,0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    touch-action: auto;
+  }
+  #whats-new-panel.visible { display: flex; }
+  .whats-new-card {
+    width: calc(100vw - 36px);
+    max-width: 430px;
+    max-height: calc(100dvh - 40px);
+    overflow-y: auto;
+    padding: 26px 22px 22px;
+    background: linear-gradient(135deg, var(--accent-glow-soft), transparent 42%), var(--panel-strong);
+    border: 1px solid var(--accent-dim);
+    box-shadow: 0 0 0 4px #000, 0 0 28px var(--accent-glow);
+  }
+  .whats-new-card h2 {
+    margin: 4px 0 5px;
+    color: var(--accent);
+    font-family: var(--pixel-font);
+    font-size: 1.35rem;
+    letter-spacing: 0.14em;
+    text-align: center;
+    text-transform: uppercase;
+    text-shadow: 0 0 14px var(--accent-glow);
+  }
+  #whats-new-current {
+    margin-bottom: 18px;
+    color: var(--muted);
+    font-family: var(--pixel-font);
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+  .whats-new-release + .whats-new-release {
+    margin-top: 19px;
+    padding-top: 17px;
+    border-top: 1px solid var(--line);
+  }
+  .whats-new-release h3 {
+    margin: 0 0 4px;
+    color: var(--text);
+    font-family: var(--pixel-font);
+    font-size: 0.86rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+  .whats-new-release-meta {
+    margin-bottom: 9px;
+    color: var(--accent-dim);
+    font-family: var(--pixel-font);
+    font-size: 0.56rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .whats-new-release ul {
+    margin: 0;
+    padding-left: 1.25rem;
+    color: var(--text);
+    font-size: 0.78rem;
+    line-height: 1.55;
+  }
+  .whats-new-release li + li { margin-top: 6px; }
+  #whats-new-close {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 22px;
+    border: 1px solid var(--accent);
+    border-radius: 0;
+    background: var(--accent);
+    color: #020504;
+    cursor: pointer;
+    font-family: var(--pixel-font);
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
   #overlay .control-mode-toggle { margin-top: 0; }
   #namePrompt {
     width: 100%;
@@ -1618,9 +1723,20 @@
   <button id="options-btn" title="Themes"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="1" y="1" width="2" height="2"/><rect x="7" y="1" width="2" height="2"/><rect x="4" y="3" width="2" height="2"/><rect x="1" y="5" width="2" height="2"/><rect x="7" y="5" width="2" height="2"/><rect x="4" y="7" width="2" height="2"/></svg> Themes</button>
   <button id="controls-btn" title="Choose and customize controls"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="3" y="0" width="4" height="2"/><rect x="1" y="2" width="2" height="2"/><rect x="7" y="2" width="2" height="2"/><rect x="3" y="2" width="4" height="2"/><rect x="3" y="4" width="4" height="2"/><rect x="1" y="6" width="2" height="2"/><rect x="7" y="6" width="2" height="2"/><rect x="3" y="6" width="4" height="2"/><rect x="3" y="8" width="4" height="2"/></svg> Controls</button>
   <button id="player-btn" title="Player identity and score saving"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="3" y="1" width="4" height="2"/><rect x="2" y="3" width="6" height="3"/><rect x="1" y="7" width="8" height="2"/></svg> <span id="player-menu-label">Player: Guest</span></button>
+  <button id="whats-new-btn" title="See recent game updates"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true"><rect x="4" y="0" width="2" height="2"/><rect x="4" y="8" width="2" height="2"/><rect x="0" y="4" width="2" height="2"/><rect x="8" y="4" width="2" height="2"/><rect x="2" y="2" width="6" height="6"/></svg> What's New <span id="whats-new-badge">NEW!</span></button>
   </div>
 </div>
 
+<div id="whats-new-panel" role="dialog" aria-modal="true" aria-labelledby="whats-new-title" aria-hidden="true">
+  <div class="whats-new-card">
+    <span class="menu-kicker">Update Bulletin</span>
+    <h2 id="whats-new-title">What's New</h2>
+    <div id="whats-new-current"></div>
+    <div id="whats-new-releases"></div>
+    <button id="whats-new-close" type="button">Got It</button>
+  </div>
+</div>
+
 <div id="dailyRulesDialog" role="dialog" aria-modal="true" aria-labelledby="dailyRulesTitle" aria-hidden="true">
   <div class="daily-rules-card">
     <svg class="daily-rules-icon" viewBox="0 0 16 16" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true">
@@ -1815,7 +1931,13 @@ const playerOtpInput = document.getElementById('player-otp-input');
 const playerVerifyOtp = document.getElementById('player-verify-otp');
 const playerMessage = document.getElementById('player-message');
 const playerBack = document.getElementById('player-back');
-const overlayTitle = document.getElementById('overlayTitle');
+const whatsNewBtn = document.getElementById('whats-new-btn');
+const whatsNewBadge = document.getElementById('whats-new-badge');
+const whatsNewPanel = document.getElementById('whats-new-panel');
+const whatsNewCurrent = document.getElementById('whats-new-current');
+const whatsNewReleases = document.getElementById('whats-new-releases');
+const whatsNewClose = document.getElementById('whats-new-close');
+const overlayTitle = document.getElementById('overlayTitle');
 const themeLabel = document.getElementById('themeLabel');
 const overlayMsg = document.getElementById('overlayMsg');
 const scoreEl = document.getElementById('score');
@@ -1828,8 +1950,96 @@ const recordChaseEl = document.getElementById('record-chase');
 const recordCelebrationEl = document.getElementById('record-celebration');
 const recordFireworksCanvas = document.getElementById('record-fireworks');
 const recordBannerCopy = document.getElementById('record-banner-copy');
-
-// --- Responsive canvas ---
+
+// Add the newest release first and change its id whenever a deployment should
+// trigger the one-time update bulletin.
+const WHATS_NEW_RELEASES = Object.freeze([
+  {
+    id: '2026-07-23-tap-turn',
+    version: 'Update 2026.07.23',
+    title: 'Tap Turn & Daily Challenges',
+    items: [
+      'New TAP controls: tap the left or right half of the board to turn with no buttons covering the action.',
+      'Daily Run now shows the time remaining in today’s worldwide challenge.',
+      'The record chase warns when the undisputed top score is within reach and celebrates a new number one at game over.'
+    ]
+  },
+  {
+    id: '2026-07-21-random-pwa',
+    version: 'Update 2026.07.21',
+    title: 'Fresh Games, Fresh Builds',
+    items: [
+      'RANDOM theme mode rolls a different complete theme whenever you press Play.',
+      'A network-first service worker helps Safari receive new game deployments without stale menus.',
+      'New marquee themes expanded the game’s visuals, characters, food, and evolving 8-bit music.'
+    ]
+  }
+]);
+const CURRENT_RELEASE_ID = WHATS_NEW_RELEASES[0].id;
+const WHATS_NEW_SEEN_KEY = 'snake_whats_new_seen';
+const FORCE_WHATS_NEW = new URLSearchParams(location.search).has('whatsnew');
+
+function hasSeenCurrentRelease() {
+  try { return localStorage.getItem(WHATS_NEW_SEEN_KEY) === CURRENT_RELEASE_ID; }
+  catch { return false; }
+}
+
+function markCurrentReleaseSeen() {
+  try { localStorage.setItem(WHATS_NEW_SEEN_KEY, CURRENT_RELEASE_ID); } catch {}
+  whatsNewBadge.hidden = true;
+}
+
+function renderWhatsNew() {
+  whatsNewCurrent.textContent = `Latest release • ${WHATS_NEW_RELEASES[0].version}`;
+  whatsNewReleases.replaceChildren();
+  WHATS_NEW_RELEASES.forEach(release => {
+    const section = document.createElement('section');
+    section.className = 'whats-new-release';
+    const heading = document.createElement('h3');
+    heading.textContent = release.title;
+    const meta = document.createElement('div');
+    meta.className = 'whats-new-release-meta';
+    meta.textContent = release.version;
+    const list = document.createElement('ul');
+    release.items.forEach(item => {
+      const entry = document.createElement('li');
+      entry.textContent = item;
+      list.appendChild(entry);
+    });
+    section.append(heading, meta, list);
+    whatsNewReleases.appendChild(section);
+  });
+}
+
+function openWhatsNew() {
+  if (alive || overlay.classList.contains('hidden')) return;
+  renderWhatsNew();
+  whatsNewPanel.classList.add('visible');
+  whatsNewPanel.setAttribute('aria-hidden', 'false');
+  whatsNewClose.focus();
+}
+
+function closeWhatsNew({ restoreFocus = true } = {}) {
+  markCurrentReleaseSeen();
+  whatsNewPanel.classList.remove('visible');
+  whatsNewPanel.setAttribute('aria-hidden', 'true');
+  if (restoreFocus) whatsNewBtn.focus();
+}
+
+whatsNewBadge.hidden = !FORCE_WHATS_NEW && hasSeenCurrentRelease();
+whatsNewBtn.addEventListener('click', () => openWhatsNew());
+whatsNewClose.addEventListener('click', () => closeWhatsNew());
+whatsNewPanel.addEventListener('click', event => {
+  if (event.target === whatsNewPanel) closeWhatsNew();
+});
+whatsNewPanel.addEventListener('keydown', event => {
+  if (event.key === 'Escape') closeWhatsNew();
+});
+setTimeout(() => {
+  if (FORCE_WHATS_NEW || !hasSeenCurrentRelease()) openWhatsNew();
+}, 350);
+
+// --- Responsive canvas ---
 const CELL = 20;
 const BOARD_COLS = 20;
 const BOARD_ROWS = 32;
