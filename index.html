@@ -1114,9 +1114,11 @@
   #controls-settings-panel .control-mode-toggle {
     justify-content: center;
     margin: 0 0 18px;
+    width: 100%;
   }
   #controls-settings-panel .control-mode-btn {
-    min-width: 112px;
+    flex: 1 1 0;
+    min-width: 0;
     background: rgba(255,255,255,0.04);
     border: 1px solid var(--line);
     color: var(--muted);
@@ -1124,7 +1126,7 @@
     font-family: var(--pixel-font);
     font-size: 0.74rem;
     letter-spacing: 0.1em;
-    padding: 11px 14px;
+    padding: 11px 8px;
     text-transform: uppercase;
   }
   #controls-settings-panel .control-mode-btn.active {
@@ -1748,6 +1750,7 @@
     <div class="control-mode-toggle" aria-label="Touch control method">
       <button class="control-mode-btn active" data-mode="dpad" type="button" aria-pressed="true">D-PAD</button>
       <button class="control-mode-btn" data-mode="turn" type="button" aria-pressed="false">TURN</button>
+      <button class="control-mode-btn" data-mode="tap" type="button" aria-pressed="false">TAP</button>
     </div>
     <button id="controls-customize-btn" type="button">Customize Layout</button>
     <p class="controls-note">Move the selected control's buttons to comfortable positions.</p>
@@ -2782,9 +2785,9 @@ const savedActiveTheme = localStorage.getItem('snakeThemeActive');
 let currentTheme = themeSelection === 'random'
   ? (THEMES[savedActiveTheme] ? savedActiveTheme : 'default')
   : themeSelection;
-let controlMode = localStorage.getItem('snake_control_mode') || 'dpad'; // 'dpad' or 'turn'
+let controlMode = localStorage.getItem('snake_control_mode') || 'dpad'; // 'dpad', 'turn', or 'tap'
 const TURN_ORDER = ['up','right','down','left']; // clockwise
-const CONTROL_LABELS = { dpad: 'D-PAD', turn: 'TURN', keyboard: 'KEYBOARD', mixed: 'MIXED', legacy: 'LEGACY' };
+const CONTROL_LABELS = { dpad: 'D-PAD', turn: 'TURN', tap: 'TAP', keyboard: 'KEYBOARD', mixed: 'MIXED', legacy: 'LEGACY' };
 
 function registerControlMethod(method) {
   if (!alive || countdownActive) return;
@@ -4249,20 +4252,20 @@ document.addEventListener('keydown', e => {
     case 'ArrowRight': case 'd': case 'D':
       e.preventDefault();
       registerControlMethod('keyboard');
-      if (controlMode === 'turn') { turnClockwise(); } else { setDir(1, 0); }
+      if (controlMode === 'turn' || controlMode === 'tap') { turnClockwise(); } else { setDir(1, 0); }
       break;
     case 'ArrowLeft': case 'a': case 'A':
       e.preventDefault();
       registerControlMethod('keyboard');
-      if (controlMode === 'turn') { turnCounterClockwise(); } else { setDir(-1, 0); }
+      if (controlMode === 'turn' || controlMode === 'tap') { turnCounterClockwise(); } else { setDir(-1, 0); }
       break;
     case 'ArrowUp': case 'w': case 'W':
       e.preventDefault();
-      if (controlMode !== 'turn') { registerControlMethod('keyboard'); setDir(0, -1); }
+      if (controlMode !== 'turn' && controlMode !== 'tap') { registerControlMethod('keyboard'); setDir(0, -1); }
       break;
     case 'ArrowDown': case 's': case 'S':
       e.preventDefault();
-      if (controlMode !== 'turn') { registerControlMethod('keyboard'); setDir(0, 1); }
+      if (controlMode !== 'turn' && controlMode !== 'tap') { registerControlMethod('keyboard'); setDir(0, 1); }
       break;
     case 'p': case 'P':
       togglePause();
@@ -4301,14 +4304,29 @@ window.addEventListener('blur', () => {
   if (alive && !paused) setPaused(true);
 });
 
-// --- Touch swipe (full canvas) ---
-let touchStart = null;
-canvas.addEventListener('touchstart', e => {
-  e.preventDefault();
-  touchStart = {x: e.touches[0].clientX, y: e.touches[0].clientY};
-}, {passive: false});
+// --- Touch swipe (full canvas) ---
+let touchStart = null;
+let lastTapTouchAt = 0;
+
+function tapTurnAt(clientX) {
+  const bounds = canvas.getBoundingClientRect();
+  registerControlMethod('tap');
+  if (clientX < bounds.left + bounds.width / 2) turnCounterClockwise();
+  else turnClockwise();
+}
+
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (controlMode === 'tap') {
+    lastTapTouchAt = performance.now();
+    touchStart = null;
+    tapTurnAt(e.touches[0].clientX);
+    return;
+  }
+  touchStart = {x: e.touches[0].clientX, y: e.touches[0].clientY};
+}, {passive: false});
 canvas.addEventListener('touchmove', e => e.preventDefault(), {passive: false});
-canvas.addEventListener('touchend', e => {
+canvas.addEventListener('touchend', e => {
   if (!touchStart) return;
   const dx = e.changedTouches[0].clientX - touchStart.x;
   const dy = e.changedTouches[0].clientY - touchStart.y;
@@ -4323,10 +4341,17 @@ canvas.addEventListener('touchend', e => {
     registerControlMethod('dpad');
     if (Math.abs(dx) > Math.abs(dy)) setDir(dx > 0 ? 1 : -1, 0);
     else setDir(0, dy > 0 ? 1 : -1);
-  }
-});
-
-// ============================================================
+  }
+});
+
+canvas.addEventListener('mousedown', e => {
+  if (controlMode !== 'tap' || e.button !== 0) return;
+  if (performance.now() - lastTapTouchAt < 700) return;
+  e.preventDefault();
+  tapTurnAt(e.clientX);
+});
+
+// ============================================================
 // 8-BIT CHIPTUNE ENGINE  —  Theme-aware, adaptive to snake length
 // ============================================================
 const AudioEngine = (() => {
@@ -4819,21 +4844,38 @@ function wakeTouchControls(delay = CONTROL_FADE_DELAY_MS) {
 }
 
 function applyControlMode(mode) {
-  if (mode !== 'dpad' && mode !== 'turn') mode = 'dpad';
+  if (!['dpad', 'turn', 'tap'].includes(mode)) mode = 'dpad';
   controlMode = mode;
-  localStorage.setItem('snake_control_mode', mode);
-  if (mode === 'turn') {
-    dpad.style.display = 'none';
-    turnControls.style.display = 'flex';
-  } else {
-    dpad.style.display = '';
-    turnControls.style.display = 'none';
+  localStorage.setItem('snake_control_mode', mode);
+  if (mode === 'turn') {
+    dpad.style.display = 'none';
+    turnControls.style.display = 'flex';
+  } else if (mode === 'tap') {
+    dpad.style.display = 'none';
+    turnControls.style.display = 'none';
+  } else {
+    dpad.style.display = '';
+    turnControls.style.display = 'none';
   }
   document.querySelectorAll('.control-mode-btn').forEach(b => {
     const selected = b.dataset.mode === mode;
     b.classList.toggle('active', selected);
     b.setAttribute('aria-pressed', String(selected));
   });
+  const controlsCopy = document.querySelector('#controls-settings-panel .controls-copy');
+  const controlsNote = document.querySelector('#controls-settings-panel .controls-note');
+  const customizeButton = document.getElementById('controls-customize-btn');
+  if (controlsCopy) {
+    controlsCopy.textContent = mode === 'tap'
+      ? 'Tap the left or right half of the game board to turn.'
+      : 'Choose the touch control used during play.';
+  }
+  if (controlsNote) {
+    controlsNote.textContent = mode === 'tap'
+      ? 'Left turns counter-clockwise. Right turns clockwise. No buttons appear during play.'
+      : "Move the selected control's buttons to comfortable positions.";
+  }
+  if (customizeButton) customizeButton.hidden = mode === 'tap';
   wakeTouchControls(2200);
 }
 applyControlMode(controlMode);
@@ -5067,6 +5109,7 @@ function closeControlsSettings() {
 }
 
 function startControlsEdit() {
+  if (controlMode === 'tap') return;
   controlsOverlay.classList.add('visible', 'customizing');
   overlay.style.display = 'none';
   clearTimeout(controlFadeTimeout);
@@ -5202,7 +5245,7 @@ let sb = null;
 try { sb = supabase.createClient(SB_URL, SB_KEY); } catch(e) { console.warn('Supabase init failed:', e); }
 
 // --- Leaderboard record chase ---
-const RECORD_METHODS = ['dpad', 'turn', 'keyboard'];
+const RECORD_METHODS = ['dpad', 'turn', 'tap', 'keyboard'];
 const RECORD_WARNING_MIN_POINTS = 3;
 const RECORD_WARNING_PERCENT = 0.10;
 let recordCelebrationCheckStarted = false;
@@ -6198,7 +6241,7 @@ function buildFilters() {
   );
   buildFilterGroup(
     lbControlFilters,
-    ['all', 'dpad', 'turn', 'keyboard'],
+    ['all', 'dpad', 'turn', 'tap', 'keyboard'],
     'control',
     value => value === 'all' ? 'All' : CONTROL_LABELS[value]
   );
