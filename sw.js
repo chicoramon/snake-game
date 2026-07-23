@@ -6,22 +6,34 @@
  * online player to an outdated version of the game.
  */
 const CACHE_PREFIX = 'snake-';
-const CACHE_VERSION = 'shell-v2';
+const CACHE_VERSION = 'shell-v3';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const OFFLINE_PAGE = './';
+const CORE_ASSET = './snake-core.js';
 
-async function cacheFreshGameShell() {
-  const response = await fetch(new Request(OFFLINE_PAGE, {
+async function fetchFreshAsset(asset) {
+  const response = await fetch(new Request(asset, {
     cache: 'no-store',
     credentials: 'same-origin'
   }));
 
   if (!response.ok) {
-    throw new Error(`Unable to cache the Snake game shell: ${response.status}`);
+    throw new Error(`Unable to cache ${asset}: ${response.status}`);
   }
 
+  return response;
+}
+
+async function cacheFreshGameShell() {
   const cache = await caches.open(CACHE_NAME);
-  await cache.put(OFFLINE_PAGE, response);
+  const [pageResponse, coreResponse] = await Promise.all([
+    fetchFreshAsset(OFFLINE_PAGE),
+    fetchFreshAsset(CORE_ASSET)
+  ]);
+  await Promise.all([
+    cache.put(OFFLINE_PAGE, pageResponse),
+    cache.put(CORE_ASSET, coreResponse)
+  ]);
 }
 
 self.addEventListener('install', event => {
@@ -45,27 +57,30 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   const { request } = event;
+  const requestUrl = new URL(request.url);
+  const coreUrl = new URL(CORE_ASSET, self.registration.scope);
 
-  // Leave assets, non-GET requests, cross-origin resources, Supabase, auth,
-  // and every other API request to the browser/network unchanged.
-  if (
-    request.method !== 'GET' ||
-    request.mode !== 'navigate' ||
-    new URL(request.url).origin !== self.location.origin
-  ) {
+  // Leave cross-origin resources, Supabase, auth, and every other API request
+  // to the browser/network unchanged.
+  if (request.method !== 'GET' || requestUrl.origin !== self.location.origin) {
     return;
   }
 
+  const isNavigation = request.mode === 'navigate';
+  const isCoreRequest = requestUrl.pathname === coreUrl.pathname;
+  if (!isNavigation && !isCoreRequest) return;
+
   event.respondWith((async () => {
+    const cacheKey = isNavigation ? OFFLINE_PAGE : CORE_ASSET;
     try {
       const response = await fetch(request, { cache: 'no-store' });
       if (response.ok) {
         const cache = await caches.open(CACHE_NAME);
-        await cache.put(OFFLINE_PAGE, response.clone());
+        await cache.put(cacheKey, response.clone());
       }
       return response;
     } catch (error) {
-      const cached = await caches.match(OFFLINE_PAGE, { cacheName: CACHE_NAME });
+      const cached = await caches.match(cacheKey, { cacheName: CACHE_NAME });
       if (cached) return cached;
       throw error;
     }

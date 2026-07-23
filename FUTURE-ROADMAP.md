@@ -32,11 +32,52 @@ Replace the current inline, fixed `snake-v1` cache-first service worker with a d
 
 Implemented with `sw.js`, external registration in `snake-game-turn.html`, and deployment support in `deploy-gh-pages.ps1`. The generated manifest behavior remains unchanged.
 
+## Tap Turn Control — Implemented
+
+Implemented locally on 2026-07-23 as **Tap Turn**, with the compact in-game and leaderboard label **TAP**.
+
+- Split the fixed game board into invisible left and right input zones.
+- A tap on the left half turns counter-clockwise; a tap on the right half turns clockwise.
+- Keep the zones completely invisible so they never cover, resize, or distract from the board.
+- Hide both D-PAD and TURN buttons while TAP is selected.
+- Exclude TAP from control-layout customization because it has no movable controls.
+- Persist TAP as a normal control preference and identify TAP runs separately in results and leaderboards.
+- Support Classic, Sprint, and verified Daily Run replay capture with the same deterministic movement rules.
+
+Supabase activation requires running `supabase-tap-control-method.sql` and redeploying the updated `submit-daily-attempt` Edge Function before ranked TAP submissions are enabled in production.
+
+## Junior Mode
+
+Planned as an inviting, clearly separate mode for children and first-time players. It must preserve the fixed board dimensions and should never weaken or contaminate the existing competitive leaderboards.
+
+Recommended first version:
+
+- Start substantially slower than Classic and accelerate more gently.
+- Allow wall wrapping instead of ending the run at the board edge.
+- Give the player three hearts; a self-collision consumes one heart and resumes from a safe state.
+- Add a subtle, optional food-direction hint that does not obscure the board.
+- Keep the same controls and themes, including TAP, so children can choose the simplest input method.
+- Explain the rules once in a short 8-bit onboarding dialog.
+- Store a separate local Junior best and launch without ranked Supabase submissions.
+- Keep Daily Run, Classic, Sprint, records, and their leaderboards unchanged.
+
+Before implementation, finalize how much snake length is lost after a self-collision, whether score is preserved, and whether Junior eventually receives its own participation-focused leaderboard.
+
 ## Competitive Play Roadmap
 
 The competitive roadmap should build on the game's existing fixed board, persistent player identity, Supabase leaderboard, per-run game-mode freezing, and authenticated score-submission flow. The shared foundation for Daily Run and Vs mode is a deterministic, versioned gameplay core: given the same ruleset, seed, and input events, the browser and server must reproduce the same run.
 
-### Daily Run
+### Daily Run — Backend Deployed; End-to-End Verification Pending
+
+Implementation started on 2026-07-22. The deterministic foundation is in place: `snake-core.js` defines the permanent `snake-rules-v1` ruleset identifier, seeded gameplay PRNG, shared initial-state and food-placement operations, deterministic state advancement, and the versioned replay/input format. Classic and Sprint consume food randomness through this core while retaining native unseeded behavior. The core is packaged by the GitHub Pages deployment script, cached network-first for offline launches, and covered by deterministic reproduction tests.
+
+The authoritative ranked implementation was staged locally and deployed to Supabase on 2026-07-22. `supabase-daily-run.sql` defines server-owned UTC challenges, atomic and idempotent three-attempt reservation, private attempt/replay storage, and a best-per-player Daily leaderboard. The deployed `submit-daily-attempt` Edge Function independently reproduces submitted runs before marking them verified. The client retrieves the authoritative challenge, displays remaining attempts, reserves immediately before countdown, submits ranked replays automatically, falls back to explicitly unranked preview/practice, and renders the dedicated Daily leaderboard. The live Edge endpoint passed its CORS/availability check; end-to-end ranked-run verification and website deployment remain.
+
+Historical Daily leaderboards and Daily Legends were implemented locally on 2026-07-22. The leaderboard now keeps its archive date separate from today's playable challenge, provides older/newer day navigation plus a return-to-today action, and displays each challenge's winner, score, theme, and participation count. The companion `daily_leaderboard_days` and `daily_player_stats` views power all-time wins, podiums, top-ten finishes, win rate, longest/current participation streaks, and longest/current winning streaks. Daily Legends excludes the still-open current UTC challenge and remains hidden until at least one completed day has ranked results. The in-game presentation then highlights the headline record holders and top five players by daily wins. — **Implemented; Supabase archive SQL and website deployment pending**
+
+Local gameplay preview added on 2026-07-22. The main menu now exposes **Daily Run** using a UTC-date-derived preview seed, deterministic one-value-per-food placement, a locked daily theme, local daily best, replay capture, and final-food timing. Preview results are deliberately excluded from Supabase and clearly labeled unranked until the authoritative challenge and attempt backend is implemented.
+
+Daily Run onboarding and local replay verification added on 2026-07-22. The first attempt on a device now pauses before the countdown for an original cave-dialog-style 8-bit rules screen explaining the 60-second objective, shared seeded challenge, three ranked attempts per UTC day, unranked practice, tie-break rule, and collision rule. The preview explicitly states that ranked-attempt enforcement is not active yet. Completed preview replays are immediately re-simulated through `snake-core.js`; forged or divergent results fail the local verification check.
 
 Launch Daily Run first as a seeded **Sprint 60** challenge. A short, fixed-duration run is easy to understand, encourages repeat competition, and prevents one attempt from demanding an unpredictable amount of time.
 
@@ -45,6 +86,8 @@ Recommended rules:
 - Use the same logical board, food sequence, ruleset version, and theme for every player that day.
 - Define each challenge by UTC date so it changes simultaneously worldwide and cannot be changed by the device clock.
 - Give each authenticated player three ranked attempts per day; additional attempts can remain available as unranked practice.
+- Initial launch policy: allow anonymous device-bound players with saved initials to use ranked attempts, with the allowance keyed to their current Supabase Auth UUID. This deliberately favors low-friction adoption even though clearing site data can create a new device identity.
+- Future competitive hardening: require a persistent, email-restorable player for ranked attempts. Keep device-bound players eligible for unranked practice after this requirement is activated.
 - Maintain one undisputed daily leaderboard regardless of control method. Continue displaying control method as metadata and optionally provide filters, but do not divide the primary ranking.
 - Use score first and earliest achievement as the tie-break order.
 - Lock the Daily theme to the server-provided theme so the challenge has one shared visual and musical identity.
@@ -55,6 +98,7 @@ Competitive presentation:
 - Show the daily challenge number, remaining ranked attempts, current rank, percentile, and time until the next challenge.
 - Show the closest rivals immediately above and below the player instead of only the global top ten.
 - Track daily participation streaks, best daily finish, podium finishes, and daily wins.
+- Browse read-only past-day standings without changing or replaying the current UTC challenge. — **Implemented locally 2026-07-22**
 - Adapt the existing heartbeat and border-warning experience to the daily #1 score without covering or resizing the board.
 - At game over, show score, rank movement, personal daily best, and the score needed to pass the next rival.
 - Provide a compact share result containing challenge number, score, rank, streak, and a challenge link without revealing a replay that could be trivially copied.
@@ -66,6 +110,8 @@ Backend model:
 - Add a unique constraint for one numbered attempt per player and challenge, plus ranking indexes by challenge and score.
 - Add `get_daily_challenge()` to return the authoritative current UTC challenge.
 - Add `start_daily_attempt()` to atomically reserve an official attempt and issue a short-lived run token.
+- Consume a ranked attempt only after the player confirms the rules and the backend authorizes the run, immediately before countdown. Use a client-generated idempotency key so retrying a lost response returns the same reservation instead of consuming another attempt. Once countdown begins, quitting, reloading, disconnecting, or colliding still consumes that attempt.
+- Rank each player's best verified result from their three official attempts; preserve all attempts for audit and show later runs as unranked practice after the allowance is exhausted.
 - Add a submission function or Supabase Edge Function that validates the replay, records the result, and returns authoritative rank and rival information.
 - Keep Daily results separate from the existing personal-best leaderboard rows; a dated challenge is not the same entity as a permanent Classic or Sprint personal best.
 
@@ -141,10 +187,10 @@ Suggested Vs data model:
 
 ### Recommended Implementation Order
 
-1. Extract deterministic gameplay operations into a versioned core shared by normal play, seeded play, replay simulation, and validation.
+1. Extract deterministic gameplay operations into a versioned core shared by normal play, seeded play, replay simulation, and validation. — **Foundation implemented 2026-07-22; full browser/server integration in progress**
 2. Add the Random Theme button as an isolated low-risk improvement. — **Implemented 2026-07-21**
-3. Add seeded local runs and prove that identical seeds plus inputs reproduce identical scores.
-4. Implement Daily Sprint 60 with challenge retrieval, three ranked attempts, and a dedicated leaderboard.
+3. Add seeded local runs and prove that identical seeds plus inputs reproduce identical scores. — **Local Daily Run preview and replay round-trip implemented 2026-07-22**
+4. Implement Daily Run with authoritative challenge retrieval, three ranked attempts, and a dedicated leaderboard. — **Backend deployed to Supabase 2026-07-22; end-to-end ranked-run verification and website deployment pending**
 5. Add server-side replay verification, streaks, nearby rivals, rank feedback, and sharing.
 6. Implement asynchronous duel links using the Daily foundation.
 7. Add ghost progress races.

@@ -2,7 +2,7 @@
 param(
   [string]$Source = 'snake-game-turn.html',
   [string]$ServiceWorker = 'sw.js',
-  [string[]]$StaticAssets = @('manifest.webmanifest', 'assets'),
+  [string[]]$StaticAssets = @('manifest.webmanifest', 'assets', 'snake-core.js'),
   [string]$Remote = 'origin',
   [string]$Branch = 'gh-pages',
   [string]$CommitMessage = 'Deploy Snake game',
