@@ -1040,6 +1040,91 @@
   }
   #player-message.error { color: #ff8b8b; }
   #player-back { width: 100%; margin-top: 16px; }
+  #player-display-setup { margin-top: 16px; }
+  #player-display-name-save { width: 100%; margin-top: 8px; }
+  .lb-player-link {
+    appearance: none;
+    -webkit-appearance: none;
+    display: inline;
+    border: 0;
+    border-bottom: 1px dotted currentColor;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    font-weight: inherit;
+    letter-spacing: inherit;
+    padding: 0 0 1px;
+    text-align: inherit;
+    touch-action: manipulation;
+  }
+  .lb-player-link:hover { color: var(--accent); border-bottom-style: solid; }
+  .lb-player-link:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  #public-player-card-panel {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0,0,0,0.9);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  #public-player-card-panel.visible { display: flex; }
+  .public-player-card {
+    width: min(100%, 350px);
+    padding: 28px 24px 24px;
+    border: 1px solid var(--accent-dim);
+    background:
+      linear-gradient(135deg, var(--accent-glow-soft), transparent 42%),
+      var(--panel-strong);
+    box-shadow:
+      4px 4px 0 rgba(0,0,0,0.9),
+      0 0 28px var(--accent-glow);
+    font-family: var(--pixel-font);
+    text-align: center;
+  }
+  .public-player-card h2 {
+    overflow-wrap: anywhere;
+    margin: 8px 0 12px;
+    color: var(--accent);
+    font-size: 1.3rem;
+    line-height: 1.3;
+  }
+  #public-player-arcade-id {
+    color: var(--text);
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+  }
+  #public-player-card-message {
+    min-height: 1.4em;
+    margin: 14px 0 0;
+    color: var(--muted);
+    font-size: 0.68rem;
+    line-height: 1.5;
+  }
+  #public-player-card-close {
+    width: 100%;
+    min-height: 42px;
+    margin-top: 18px;
+    border: 1px solid var(--accent);
+    border-radius: 0;
+    background: var(--accent);
+    color: #020504;
+    cursor: pointer;
+    font-family: var(--pixel-font);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
   .lb-you-badge {
     display: inline-block;
     margin-left: 6px;
@@ -1823,6 +1908,13 @@
       <p class="player-help">Initials may be shared. Your four-character player code makes your identity unique.</p>
     </div>
 
+    <div id="player-display-setup">
+      <label class="player-field-label" for="player-display-name-input">Display name (public)</label>
+      <input id="player-display-name-input" type="text" maxlength="20" placeholder="Your public name" autocomplete="nickname" />
+      <button id="player-display-name-save" class="primary" type="button">Save Display Name</button>
+      <p class="player-help">Shown only when someone opens your player card. Leave blank to remove it.</p>
+    </div>
+
     <label class="player-toggle" for="auto-submit-toggle">
       <span>Auto-submit personal bests</span>
       <input id="auto-submit-toggle" type="checkbox" checked />
@@ -1848,8 +1940,18 @@
     <button id="player-back" type="button">Back</button>
   </div>
 </div>
-
-<div id="fps-counter">-- FPS</div>
+
+<div id="public-player-card-panel" role="dialog" aria-modal="true" aria-labelledby="public-player-card-name" aria-hidden="true">
+  <div class="public-player-card">
+    <span class="menu-kicker">Player Card</span>
+    <h2 id="public-player-card-name">Loading...</h2>
+    <div id="public-player-arcade-id"></div>
+    <p id="public-player-card-message" aria-live="polite"></p>
+    <button id="public-player-card-close" type="button">Back to Leaderboard</button>
+  </div>
+</div>
+
+<div id="fps-counter">-- FPS</div>
 
 <div id="dpad">
   <div class="btn up" data-dir="up"><svg viewBox="0 0 24 24"><polyline points="6 15 12 9 18 15"/></svg></div>
@@ -1921,6 +2023,9 @@ const playerIdentityStatus = document.getElementById('player-identity-status');
 const playerProfileSetup = document.getElementById('player-profile-setup');
 const playerInitialsInput = document.getElementById('player-initials-input');
 const playerInitialsSave = document.getElementById('player-initials-save');
+const playerDisplaySetup = document.getElementById('player-display-setup');
+const playerDisplayNameInput = document.getElementById('player-display-name-input');
+const playerDisplayNameSave = document.getElementById('player-display-name-save');
 const autoSubmitToggle = document.getElementById('auto-submit-toggle');
 const playerAccountSetup = document.getElementById('player-account-setup');
 const playerEmailInput = document.getElementById('player-email-input');
@@ -1931,6 +2036,11 @@ const playerOtpInput = document.getElementById('player-otp-input');
 const playerVerifyOtp = document.getElementById('player-verify-otp');
 const playerMessage = document.getElementById('player-message');
 const playerBack = document.getElementById('player-back');
+const publicPlayerCardPanel = document.getElementById('public-player-card-panel');
+const publicPlayerCardName = document.getElementById('public-player-card-name');
+const publicPlayerArcadeId = document.getElementById('public-player-arcade-id');
+const publicPlayerCardMessage = document.getElementById('public-player-card-message');
+const publicPlayerCardClose = document.getElementById('public-player-card-close');
 const whatsNewBtn = document.getElementById('whats-new-btn');
 const whatsNewBadge = document.getElementById('whats-new-badge');
 const whatsNewPanel = document.getElementById('whats-new-panel');
@@ -1951,9 +2061,21 @@ const recordCelebrationEl = document.getElementById('record-celebration');
 const recordFireworksCanvas = document.getElementById('record-fireworks');
 const recordBannerCopy = document.getElementById('record-banner-copy');
 
-// Add the newest release first and change its id whenever a deployment should
-// trigger the one-time update bulletin.
+// Add the newest release first and change its id whenever a release should
+// trigger the one-time update bulletin. Keep every item player-facing: new
+// features, modes, controls, themes, options, and competitive experiences only.
+// Do not include bugs, fixes, caching, builds, deployments, or backend details.
 const WHATS_NEW_RELEASES = Object.freeze([
+  {
+    id: '2026-07-24-player-cards',
+    version: 'Update 2026.07.24',
+    title: 'Player Cards & Fairer Rankings',
+    items: [
+      'Add an optional public display name from the Player menu.',
+      'Tap a player’s initials in any leaderboard to see their public player card.',
+      'The ALL leaderboard now shows every player once, using their strongest score across control methods.'
+    ]
+  },
   {
     id: '2026-07-23-tap-turn',
     version: 'Update 2026.07.23',
@@ -1967,11 +2089,11 @@ const WHATS_NEW_RELEASES = Object.freeze([
   {
     id: '2026-07-21-random-pwa',
     version: 'Update 2026.07.21',
-    title: 'Fresh Games, Fresh Builds',
+    title: 'Random Mode & New Worlds',
     items: [
       'RANDOM theme mode rolls a different complete theme whenever you press Play.',
-      'A network-first service worker helps Safari receive new game deployments without stale menus.',
-      'New marquee themes expanded the game’s visuals, characters, food, and evolving 8-bit music.'
+      'New Simpsons, LEGO, and Game of Thrones themes bring distinct characters, food, visuals, and evolving 8-bit music.',
+      'The Game of Thrones theme transforms the snake into a fire-breathing dragon.'
     ]
   }
 ]);
@@ -5738,6 +5860,14 @@ function cleanInitials(value) {
   return value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
 }
 
+function cleanDisplayName(value) {
+  const cleaned = String(value || '')
+    .replace(/[<>\u0000-\u001f\u007f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return Array.from(cleaned).slice(0, 20).join('');
+}
+
 function playerDisplayName(profile = playerProfile) {
   return profile ? `${profile.initials}\u00b7${profile.player_code}` : '';
 }
@@ -5759,6 +5889,10 @@ function renderPlayerIdentity() {
     ? `<span class="player-tag">${escHtml(displayName)}</span><br>${permanent ? 'Saved player \u2022 restorable by email' : 'Guest player \u2022 saved on this device'}`
     : currentUser ? 'Guest connected<br>Choose your arcade initials' : 'Connecting...';
   playerProfileSetup.style.display = playerProfile ? 'none' : 'block';
+  playerDisplaySetup.style.display = playerProfile ? 'block' : 'none';
+  if (playerProfile && document.activeElement !== playerDisplayNameInput) {
+    playerDisplayNameInput.value = playerProfile.display_name || '';
+  }
   playerAccountSetup.style.display = permanent ? 'none' : 'block';
 }
 
@@ -5766,10 +5900,17 @@ async function loadPlayerProfile() {
   playerProfile = null;
   if (!sb || !currentUser) return;
   try {
-    const { data, error } = await sb.from('player_profiles')
-      .select('initials, player_code')
+    let result = await sb.from('player_profiles')
+      .select('initials, player_code, display_name')
       .eq('id', currentUser.id)
       .maybeSingle();
+    if (['42703', 'PGRST204'].includes(result.error?.code)) {
+      result = await sb.from('player_profiles')
+        .select('initials, player_code')
+        .eq('id', currentUser.id)
+        .maybeSingle();
+    }
+    const { data, error } = result;
     if (!error && data) playerProfile = data;
     else if (error && !['42P01', 'PGRST205'].includes(error.code)) console.warn('Player profile load failed:', error);
   } catch (error) {
@@ -5838,9 +5979,24 @@ async function savePlayerInitials(value) {
   if (!initials || !sb || !currentUser) throw new Error('Enter 1 to 3 letters or numbers');
   const { data, error } = await sb.rpc('set_player_initials', { p_initials: initials });
   if (error) throw error;
-  playerProfile = Array.isArray(data) ? data[0] : data;
+  const savedProfile = Array.isArray(data) ? data[0] : data;
+  playerProfile = { ...(playerProfile || {}), ...(savedProfile || {}) };
   renderPlayerIdentity();
   return playerProfile;
+}
+
+async function savePlayerDisplayName(value) {
+  if (!sb || !currentUser || !playerProfile) throw new Error('Choose your arcade initials first');
+  const displayName = cleanDisplayName(value);
+  if (displayName && Array.from(displayName).length < 2) throw new Error('Display name must contain 2 to 20 characters');
+  const { data, error } = await sb.rpc('set_player_display_name', {
+    p_display_name: displayName || null
+  });
+  if (error) throw error;
+  const saved = Array.isArray(data) ? data[0] : data;
+  playerProfile = { ...playerProfile, display_name: saved?.display_name || null };
+  renderPlayerIdentity();
+  return playerProfile.display_name;
 }
 
 function getPendingScores() {
@@ -6121,6 +6277,36 @@ playerInitialsSave.addEventListener('click', async () => {
   }
 });
 
+playerDisplayNameInput.addEventListener('input', () => {
+  const caretAtEnd = playerDisplayNameInput.selectionStart === playerDisplayNameInput.value.length;
+  playerDisplayNameInput.value = Array.from(
+    playerDisplayNameInput.value.replace(/[<>\u0000-\u001f\u007f]/g, '')
+  ).slice(0, 20).join('');
+  if (caretAtEnd) {
+    const end = playerDisplayNameInput.value.length;
+    playerDisplayNameInput.setSelectionRange(end, end);
+  }
+});
+
+playerDisplayNameSave.addEventListener('click', async () => {
+  playerDisplayNameSave.disabled = true;
+  setPlayerMessage('Saving public display name...');
+  try {
+    await playerIdentityPromise;
+    const displayName = await savePlayerDisplayName(playerDisplayNameInput.value);
+    if (currentUser) publicPlayerCardCache.delete(currentUser.id);
+    setPlayerMessage(displayName
+      ? `Display name saved as ${displayName}`
+      : 'Public display name removed');
+  } catch (error) {
+    setPlayerMessage(isSchemaError(error)
+      ? 'Display-name database update required'
+      : (error.message || 'Could not save display name'), true);
+  } finally {
+    playerDisplayNameSave.disabled = false;
+  }
+});
+
 autoSubmitToggle.addEventListener('change', () => {
   autoSubmitEnabled = autoSubmitToggle.checked;
   localStorage.setItem(AUTO_SUBMIT_KEY, String(autoSubmitEnabled));
@@ -6201,6 +6387,80 @@ playerVerifyOtp.addEventListener('click', async () => {
   } finally {
     playerVerifyOtp.disabled = false;
   }
+});
+
+const publicPlayerCardCache = new Map();
+let publicPlayerCardTrigger = null;
+let publicPlayerCardRequestId = 0;
+
+function leaderboardPlayerLabel(row) {
+  const initials = row?.name || row?.initials || '---';
+  return `${initials}${row?.player_code ? `\u00b7${row.player_code}` : ''}`;
+}
+
+function leaderboardPlayerIdentity(row) {
+  const label = leaderboardPlayerLabel(row);
+  if (!row?.player_id) return `<span>${escHtml(label)}</span>`;
+  const playerId = escHtml(String(row.player_id));
+  const safeLabel = escHtml(label);
+  return `<button class="lb-player-link" type="button" data-player-id="${playerId}" data-player-label="${safeLabel}" aria-label="View player card for ${safeLabel}">${safeLabel}</button>`;
+}
+
+function hidePublicPlayerCard({ restoreFocus = true } = {}) {
+  publicPlayerCardRequestId++;
+  publicPlayerCardPanel.classList.remove('visible');
+  publicPlayerCardPanel.setAttribute('aria-hidden', 'true');
+  if (restoreFocus && publicPlayerCardTrigger?.isConnected) publicPlayerCardTrigger.focus();
+  publicPlayerCardTrigger = null;
+}
+
+async function showPublicPlayerCard(playerId, trigger) {
+  if (!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(playerId || '')) return;
+  const requestId = ++publicPlayerCardRequestId;
+  publicPlayerCardTrigger = trigger || null;
+  publicPlayerCardName.textContent = 'Loading...';
+  publicPlayerArcadeId.textContent = trigger?.dataset.playerLabel || '';
+  publicPlayerCardMessage.textContent = 'Retrieving public player identity...';
+  publicPlayerCardPanel.classList.add('visible');
+  publicPlayerCardPanel.setAttribute('aria-hidden', 'false');
+  publicPlayerCardClose.focus();
+
+  try {
+    let card = publicPlayerCardCache.get(playerId);
+    if (!card) {
+      if (!sb) throw new Error('Player cards are unavailable offline');
+      const { data, error } = await sb.rpc('get_public_player_card', { p_player_id: playerId });
+      if (error) throw error;
+      card = Array.isArray(data) ? data[0] : data;
+      if (!card) throw new Error('Player card unavailable');
+      publicPlayerCardCache.set(playerId, card);
+    }
+    if (requestId !== publicPlayerCardRequestId) return;
+    publicPlayerCardName.textContent = card.display_name || 'No Display Name Set';
+    publicPlayerArcadeId.textContent = leaderboardPlayerLabel(card);
+    publicPlayerCardMessage.textContent = card.display_name
+      ? 'Public player identity'
+      : 'This player has not added a public display name.';
+  } catch (error) {
+    if (requestId !== publicPlayerCardRequestId) return;
+    publicPlayerCardName.textContent = 'Player Card Unavailable';
+    publicPlayerCardMessage.textContent = isSchemaError(error)
+      ? 'Player-card database update required'
+      : (error.message || 'Could not load this player card');
+  }
+}
+
+publicPlayerCardClose.addEventListener('click', () => hidePublicPlayerCard());
+publicPlayerCardPanel.addEventListener('click', event => {
+  if (event.target === publicPlayerCardPanel) hidePublicPlayerCard();
+});
+publicPlayerCardPanel.addEventListener('keydown', event => {
+  if (event.key === 'Escape') hidePublicPlayerCard();
+});
+leaderboardOverlay.addEventListener('click', event => {
+  const trigger = event.target.closest('.lb-player-link[data-player-id]');
+  if (!trigger || !leaderboardOverlay.contains(trigger)) return;
+  showPublicPlayerCard(trigger.dataset.playerId, trigger);
 });
 
 const dailyArchivePanel = document.createElement('section');
@@ -6310,7 +6570,7 @@ function renderDailyLegends() {
   records.forEach(([label, row, value]) => {
     const card = document.createElement('div');
     card.className = 'daily-legend-card';
-    card.innerHTML = `<span class="daily-legend-label">${escHtml(label)}</span><span class="daily-legend-player">${escHtml(dailyStatsPlayerLabel(row))}</span><span class="daily-legend-value">${escHtml(value)}</span>`;
+    card.innerHTML = `<span class="daily-legend-label">${escHtml(label)}</span><span class="daily-legend-player">${leaderboardPlayerIdentity(row)}</span><span class="daily-legend-value">${escHtml(value)}</span>`;
     dailyLegendCards.appendChild(card);
   });
 
@@ -6321,7 +6581,7 @@ function renderDailyLegends() {
     else if (index === 2) tr.classList.add('top3');
     if (currentUser && row.player_id === currentUser.id) tr.classList.add('you');
     const you = currentUser && row.player_id === currentUser.id ? '<span class="lb-you-badge">YOU</span>' : '';
-    tr.innerHTML = `<td class="lb-rank">${index + 1}</td><td>${escHtml(dailyStatsPlayerLabel(row))}${you}</td><td>${Number(row.wins)}</td><td>${Number(row.longest_win_streak)}</td><td>${Number(row.podiums)}</td>`;
+    tr.innerHTML = `<td class="lb-rank">${index + 1}</td><td>${leaderboardPlayerIdentity(row)}${you}</td><td>${Number(row.wins)}</td><td>${Number(row.longest_win_streak)}</td><td>${Number(row.podiums)}</td>`;
     dailyLegendsBody.appendChild(tr);
   });
 }
@@ -6341,16 +6601,24 @@ function renderDailyArchive() {
   if (lbState.dailyArchiveError) {
     dailyArchiveSummary.textContent = 'Archive update required in Supabase';
   } else if (isToday && meta?.winner_name) {
-    const leader = `${meta.winner_name}${meta.winner_player_code ? `·${meta.winner_player_code}` : ''}`;
+    const leader = leaderboardPlayerIdentity({
+      name: meta.winner_name,
+      player_code: meta.winner_player_code,
+      player_id: meta.winner_player_id
+    });
     const players = Number(meta.participant_count || 0);
-    dailyArchiveSummary.textContent = `Current leader ${leader} • Score ${Number(meta.winning_score)} • ${players} player${players === 1 ? '' : 's'} • Ends in ${formatDailyRunTimeLeft()}`;
+    dailyArchiveSummary.innerHTML = `Current leader ${leader} • Score ${Number(meta.winning_score)} • ${players} player${players === 1 ? '' : 's'} • Ends in ${escHtml(formatDailyRunTimeLeft())}`;
   } else if (isToday) {
     const players = Number(meta?.participant_count || 0);
     dailyArchiveSummary.textContent = `Today's race is open • ${players} player${players === 1 ? '' : 's'} • Ends in ${formatDailyRunTimeLeft()}`;
   } else if (meta?.winner_name) {
-    const winner = `${meta.winner_name}${meta.winner_player_code ? `·${meta.winner_player_code}` : ''}`;
+    const winner = leaderboardPlayerIdentity({
+      name: meta.winner_name,
+      player_code: meta.winner_player_code,
+      player_id: meta.winner_player_id
+    });
     const players = Number(meta.participant_count || 0);
-    dailyArchiveSummary.textContent = `Winner ${winner} • Score ${Number(meta.winning_score)} • ${players} player${players === 1 ? '' : 's'}`;
+    dailyArchiveSummary.innerHTML = `Winner ${winner} • Score ${Number(meta.winning_score)} • ${players} player${players === 1 ? '' : 's'}`;
   } else {
     dailyArchiveSummary.textContent = 'No verified finishers';
   }
@@ -6568,12 +6836,12 @@ async function loadLeaderboard() {
     const methodLabel = lbState.gameMode === 'daily' && row.attempt_number
       ? `TRY ${row.attempt_number} • ${method}`
       : method;
-    const code = row.player_code ? `\u00b7${escHtml(row.player_code)}` : '';
+    const identity = leaderboardPlayerIdentity(row);
     const you = isOwnRow ? '<span class="lb-you-badge">YOU</span>' : '';
     const detail = lbState.gameMode === 'daily'
       ? formatDailyFoodTime(row.final_food_ms == null ? null : Number(row.final_food_ms))
       : escHtml(row.theme);
-    tr.innerHTML = `<td class="lb-rank">${rank}</td><td>${escHtml(row.name)}${code}${you}<span class="lb-method-tag">${escHtml(methodLabel)}</span></td><td class="lb-theme-col">${detail}</td><td class="lb-score">${row.score}</td>`;
+    tr.innerHTML = `<td class="lb-rank">${rank}</td><td>${identity}${you}<span class="lb-method-tag">${escHtml(methodLabel)}</span></td><td class="lb-theme-col">${detail}</td><td class="lb-score">${row.score}</td>`;
     lbBody.appendChild(tr);
   });
   updatePagination();
