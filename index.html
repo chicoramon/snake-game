@@ -1554,7 +1554,65 @@
   #overlay #shareBtn { display: none; }
   #overlay #lbBtn { display: block; }
   #overlay #options-btn, #overlay #controls-btn, #overlay #player-btn, #overlay #whats-new-btn { margin-top: 7px; }
-  #whats-new-btn { position: relative; }
+  #player-btn, #whats-new-btn { position: relative; }
+  #player-add-name-badge {
+    position: absolute;
+    top: -7px;
+    right: -8px;
+    padding: 3px 5px;
+    background: var(--accent);
+    border: 1px solid #fff;
+    color: #020504;
+    font-family: var(--pixel-font);
+    font-size: 0.46rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    box-shadow: 0 0 12px var(--accent-glow);
+  }
+  #player-add-name-badge[hidden] { display: none; }
+  #display-name-invite {
+    width: min(100%, 228px);
+    margin-top: 7px;
+    padding: 10px;
+    background: linear-gradient(135deg, var(--accent-glow-soft), transparent 55%), var(--panel);
+    border: 1px solid var(--accent-dim);
+    border-left: 3px solid var(--accent);
+    color: var(--text);
+    font-family: var(--pixel-font);
+    text-align: left;
+    box-shadow: 0 0 14px var(--accent-glow-soft);
+  }
+  #display-name-invite[hidden] { display: none; }
+  #overlay #display-name-invite p {
+    margin: 0 0 9px;
+    color: var(--text);
+    font-size: 0.66rem;
+    line-height: 1.45;
+  }
+  #display-name-invite-id { color: var(--accent); font-weight: 800; }
+  .display-name-invite-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+  }
+  #overlay .display-name-invite-actions button {
+    width: 100%;
+    min-height: 32px;
+    margin: 0;
+    padding: 7px 6px;
+    border: 1px solid var(--accent-dim);
+    border-radius: 0;
+    background: transparent;
+    color: var(--accent);
+    font-size: 0.56rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  #overlay .display-name-invite-actions #display-name-invite-add {
+    background: var(--accent);
+    color: #020504;
+  }
   #whats-new-badge {
     position: absolute;
     top: -7px;
@@ -1864,7 +1922,14 @@
   <button id="mute-btn" title="Toggle music"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="1" y="3" width="2" height="4"/><rect x="3" y="2" width="2" height="6"/><rect x="5" y="1" width="1" height="8"/><rect x="7" y="3" width="1" height="4"/><rect x="9" y="2" width="1" height="6"/></svg> Music</button>
   <button id="options-btn" title="Themes"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="1" y="1" width="2" height="2"/><rect x="7" y="1" width="2" height="2"/><rect x="4" y="3" width="2" height="2"/><rect x="1" y="5" width="2" height="2"/><rect x="7" y="5" width="2" height="2"/><rect x="4" y="7" width="2" height="2"/></svg> Themes</button>
   <button id="controls-btn" title="Choose and customize controls"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="3" y="0" width="4" height="2"/><rect x="1" y="2" width="2" height="2"/><rect x="7" y="2" width="2" height="2"/><rect x="3" y="2" width="4" height="2"/><rect x="3" y="4" width="4" height="2"/><rect x="1" y="6" width="2" height="2"/><rect x="7" y="6" width="2" height="2"/><rect x="3" y="6" width="4" height="2"/><rect x="3" y="8" width="4" height="2"/></svg> Controls</button>
-  <button id="player-btn" title="Player identity and score saving"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="3" y="1" width="4" height="2"/><rect x="2" y="3" width="6" height="3"/><rect x="1" y="7" width="8" height="2"/></svg> <span id="player-menu-label">Player: Guest</span></button>
+  <button id="player-btn" title="Player identity and score saving"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="3" y="1" width="4" height="2"/><rect x="2" y="3" width="6" height="3"/><rect x="1" y="7" width="8" height="2"/></svg> <span id="player-menu-label">Player: Guest</span><span id="player-add-name-badge" hidden>ADD NAME</span></button>
+  <div id="display-name-invite" role="status" aria-live="polite" hidden>
+    <p>Give <span id="display-name-invite-id"></span> a public name?</p>
+    <div class="display-name-invite-actions">
+      <button id="display-name-invite-add" type="button">Add Name</button>
+      <button id="display-name-invite-later" type="button">Later</button>
+    </div>
+  </div>
   <button id="whats-new-btn" title="See recent game updates"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true"><rect x="4" y="0" width="2" height="2"/><rect x="4" y="8" width="2" height="2"/><rect x="0" y="4" width="2" height="2"/><rect x="8" y="4" width="2" height="2"/><rect x="2" y="2" width="6" height="6"/></svg> What's New <span id="whats-new-badge">NEW!</span></button>
   </div>
 </div>
@@ -1893,11 +1958,11 @@
     <div class="daily-rule-list">
       <div class="daily-rule"><span class="daily-rule-number">01</span><span>Collect as much food as possible before the 60-second clock expires.</span></div>
       <div class="daily-rule"><span class="daily-rule-number">02</span><span>Everyone receives the same seeded challenge and locked theme for the day.</span></div>
-      <div class="daily-rule"><span class="daily-rule-number">03</span><span id="daily-attempt-rule">You receive three ranked attempts each UTC day. Extra runs are unranked practice.</span></div>
+      <div class="daily-rule"><span class="daily-rule-number">03</span><span id="daily-attempt-rule">Every run is ranked. Play as many times as you like before the UTC day ends.</span></div>
       <div class="daily-rule"><span class="daily-rule-number">04</span><span>More food ranks higher. Ties favor the player who reached their final food sooner.</span></div>
       <div class="daily-rule"><span class="daily-rule-number">05</span><span>A collision ends the attempt immediately. Stay alive and keep moving.</span></div>
     </div>
-    <p id="dailyRulesFootnote" class="daily-rules-preview">Preview phase: results remain on this device. The three-attempt limit activates with ranked Daily Run.</p>
+    <p id="dailyRulesFootnote" class="daily-rules-preview">Preview results remain on this device until ranked Daily Run is available.</p>
     <button id="dailyRulesBegin" type="button">Begin Daily Run</button>
     <button id="dailyRulesLater" type="button">Not Now</button>
   </div>
@@ -2075,6 +2140,11 @@ const lbPageInfo = document.getElementById('lbPageInfo');
 const lbBack = document.getElementById('lbBack');
 const playerBtn = document.getElementById('player-btn');
 const playerMenuLabel = document.getElementById('player-menu-label');
+const playerAddNameBadge = document.getElementById('player-add-name-badge');
+const displayNameInvite = document.getElementById('display-name-invite');
+const displayNameInviteId = document.getElementById('display-name-invite-id');
+const displayNameInviteAdd = document.getElementById('display-name-invite-add');
+const displayNameInviteLater = document.getElementById('display-name-invite-later');
 const playerPanel = document.getElementById('player-panel');
 const playerIdentityStatus = document.getElementById('player-identity-status');
 const playerProfileSetup = document.getElementById('player-profile-setup');
@@ -2130,7 +2200,8 @@ const WHATS_NEW_RELEASES = Object.freeze([
     items: [
       'Add an optional public display name from the Player menu.',
       'Tap a player’s initials in any leaderboard to see their public player card.',
-      'The ALL leaderboard now shows every player once, using their strongest score across control methods.'
+      'The ALL leaderboard now shows every player once, using their strongest score across control methods.',
+      'Daily Run now offers unlimited ranked runs until the UTC day ends.'
     ]
   },
   {
@@ -2157,6 +2228,10 @@ const WHATS_NEW_RELEASES = Object.freeze([
 const CURRENT_RELEASE_ID = WHATS_NEW_RELEASES[0].id;
 const WHATS_NEW_SEEN_KEY = 'snake_whats_new_seen';
 const FORCE_WHATS_NEW = new URLSearchParams(location.search).has('whatsnew');
+const DISPLAY_NAME_INVITE_KEY = 'snake_display_name_invite_v1';
+const DISPLAY_NAME_INVITE_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
+const DISPLAY_NAME_INVITE_MAX_DISMISSALS = 2;
+let displayNameInviteSuppressedThisSession = FORCE_WHATS_NEW || !hasSeenCurrentRelease();
 
 function hasSeenCurrentRelease() {
   try { return localStorage.getItem(WHATS_NEW_SEEN_KEY) === CURRENT_RELEASE_ID; }
@@ -2231,8 +2306,69 @@ function renderWhatsNew() {
   whatsNewReleases.append(toggle, archive);
 }
 
-function openWhatsNew() {
+function readDisplayNameInviteState() {
+  try {
+    const key = `${DISPLAY_NAME_INVITE_KEY}:${currentUser?.id || 'device'}`;
+    const saved = JSON.parse(localStorage.getItem(key) || '{}');
+    return {
+      dismissals: Math.max(0, Number(saved.dismissals) || 0),
+      snoozedUntil: Math.max(0, Number(saved.snoozedUntil) || 0),
+      completed: saved.completed === true
+    };
+  } catch {
+    return { dismissals: 0, snoozedUntil: 0, completed: false };
+  }
+}
+
+function writeDisplayNameInviteState(state) {
+  try {
+    const key = `${DISPLAY_NAME_INVITE_KEY}:${currentUser?.id || 'device'}`;
+    localStorage.setItem(key, JSON.stringify(state));
+  } catch {}
+}
+
+function isDisplayNameMissing() {
+  return !!playerProfile && !(playerProfile.display_name || '').trim();
+}
+
+function renderDisplayNameInvitation() {
+  const missingName = isDisplayNameMissing();
+  playerAddNameBadge.hidden = !missingName;
+  if (missingName) displayNameInviteId.textContent = playerDisplayName();
+
+  const state = readDisplayNameInviteState();
+  const canInvite = missingName
+    && !state.completed
+    && state.dismissals < DISPLAY_NAME_INVITE_MAX_DISMISSALS
+    && state.snoozedUntil <= Date.now()
+    && !displayNameInviteSuppressedThisSession
+    && !alive
+    && !overlay.classList.contains('hidden')
+    && !whatsNewPanel.classList.contains('visible')
+    && !playerPanel.classList.contains('visible');
+  displayNameInvite.hidden = !canInvite;
+}
+
+function snoozeDisplayNameInvitation() {
+  const state = readDisplayNameInviteState();
+  state.dismissals = Math.min(DISPLAY_NAME_INVITE_MAX_DISMISSALS, state.dismissals + 1);
+  state.snoozedUntil = Date.now() + DISPLAY_NAME_INVITE_SNOOZE_MS;
+  writeDisplayNameInviteState(state);
+  displayNameInvite.hidden = true;
+}
+
+function completeDisplayNameInvitation() {
+  const state = readDisplayNameInviteState();
+  state.completed = true;
+  state.snoozedUntil = 0;
+  writeDisplayNameInviteState(state);
+  displayNameInvite.hidden = true;
+}
+
+function openWhatsNew({ suppressDisplayNameInvite = false } = {}) {
   if (alive || overlay.classList.contains('hidden')) return;
+  if (suppressDisplayNameInvite) displayNameInviteSuppressedThisSession = true;
+  displayNameInvite.hidden = true;
   renderWhatsNew();
   whatsNewPanel.classList.add('visible');
   whatsNewPanel.setAttribute('aria-hidden', 'false');
@@ -2243,6 +2379,7 @@ function closeWhatsNew({ restoreFocus = true } = {}) {
   markCurrentReleaseSeen();
   whatsNewPanel.classList.remove('visible');
   whatsNewPanel.setAttribute('aria-hidden', 'true');
+  renderDisplayNameInvitation();
   if (restoreFocus) whatsNewBtn.focus();
 }
 
@@ -2256,7 +2393,11 @@ whatsNewPanel.addEventListener('keydown', event => {
   if (event.key === 'Escape') closeWhatsNew();
 });
 setTimeout(() => {
-  if (FORCE_WHATS_NEW || !hasSeenCurrentRelease()) openWhatsNew();
+  if (FORCE_WHATS_NEW || !hasSeenCurrentRelease()) {
+    openWhatsNew({ suppressDisplayNameInvite: true });
+  } else {
+    renderDisplayNameInvitation();
+  }
 }, 350);
 
 // --- Responsive canvas ---
@@ -3363,16 +3504,14 @@ function hasUnlimitedDailyAttempts(challenge = dailyChallenge) {
   return challenge?.authoritative === true && challenge.attemptsRemaining < 0;
 }
 
-function dailyAttemptLabel(number, challenge = dailyChallenge) {
-  return hasUnlimitedDailyAttempts(challenge)
-    ? `Ranked debug attempt ${number}`
-    : `Ranked attempt ${number}/3`;
+function dailyAttemptLabel(number) {
+  return `Ranked run #${number}`;
 }
 
 function dailyAttemptsRemainingLabel(challenge = dailyChallenge) {
   return hasUnlimitedDailyAttempts(challenge)
-    ? 'DEBUG • Unlimited ranked attempts'
-    : `${challenge?.attemptsRemaining ?? 0}/3 ranked attempts left`;
+    ? 'Unlimited ranked runs'
+    : `${challenge?.attemptsRemaining ?? 0} ranked runs left`;
 }
 
 function renderDailyChallengeInfo() {
@@ -3385,8 +3524,8 @@ function renderDailyChallengeInfo() {
   const attemptRule = document.getElementById('daily-attempt-rule');
   if (attemptRule) {
     attemptRule.textContent = hasUnlimitedDailyAttempts(challenge)
-      ? 'Debug mode is active, so ranked attempts are temporarily unlimited.'
-      : 'You receive three ranked attempts each UTC day. Extra runs are unranked practice.';
+      ? 'Every run is ranked. Play as many times as you like before the UTC day ends.'
+      : `${challenge.attemptsRemaining} ranked runs remain today.`;
   }
 }
 
@@ -3440,8 +3579,8 @@ function shouldShowDailyRules() {
 
 function showDailyRules() {
   dailyRulesFootnote.textContent = dailyChallenge?.authoritative
-    ? 'Your ranked attempt is reserved after you press Begin, immediately before the countdown.'
-    : 'Preview phase: results remain on this device. The three-attempt limit activates with ranked Daily Run.';
+    ? 'Your ranked run is reserved after you press Begin, immediately before the countdown.'
+    : 'Preview results remain on this device until ranked Daily Run is available.';
   dailyRulesDialog.classList.add('visible');
   dailyRulesDialog.setAttribute('aria-hidden', 'false');
   setTimeout(() => dailyRulesBegin.focus(), 0);
@@ -4437,9 +4576,11 @@ function die() {
 }
 
 function showDailyPlayerSetup() {
+  displayNameInviteSuppressedThisSession = true;
+  displayNameInvite.hidden = true;
   setPlayerMessage(hasUnlimitedDailyAttempts()
-    ? 'Choose initials to unlock unlimited ranked debug attempts. Email is not required.'
-    : 'Choose initials to unlock today\'s three ranked attempts. Email is not required.');
+    ? 'Choose initials to unlock unlimited ranked Daily runs. Email is not required.'
+    : 'Choose initials to unlock ranked Daily runs. Email is not required.');
   renderPlayerIdentity();
   playerPanel.classList.add('visible');
   setTimeout(() => playerInitialsInput.focus(), 0);
@@ -4527,6 +4668,8 @@ async function startGame(options = {}) {
     const nextTheme = pickRandomThemeId(Object.keys(THEMES), currentTheme);
     if (nextTheme) applyTheme(nextTheme, { updateSelection: false });
   }
+  displayNameInviteSuppressedThisSession = true;
+  displayNameInvite.hidden = true;
   overlay.classList.add('hidden');
   overlay.setAttribute('aria-hidden', 'true');
   shareBtn.style.display = 'none';
@@ -4540,7 +4683,7 @@ async function startGame(options = {}) {
   runGameMode = gameMode;
   if (runGameMode === 'daily') {
     startBtn.textContent = dailyAttempt?.ranked
-      ? dailyAttemptLabel(dailyAttempt.number, challenge)
+      ? dailyAttemptLabel(dailyAttempt.number)
       : 'Practice Run';
   }
   hudMode.textContent = modeHudLabel(runGameMode);
@@ -5992,6 +6135,7 @@ function renderPlayerIdentity() {
     playerDisplayNameInput.value = playerProfile.display_name || '';
   }
   playerAccountSetup.style.display = permanent ? 'none' : 'block';
+  renderDisplayNameInvitation();
 }
 
 async function loadPlayerProfile() {
@@ -6093,6 +6237,7 @@ async function savePlayerDisplayName(value) {
   if (error) throw error;
   const saved = Array.isArray(data) ? data[0] : data;
   playerProfile = { ...playerProfile, display_name: saved?.display_name || null };
+  if (playerProfile.display_name) completeDisplayNameInvitation();
   renderPlayerIdentity();
   return playerProfile.display_name;
 }
@@ -6261,7 +6406,7 @@ async function prepareRunSubmission() {
     const challenge = ensureDailyChallenge();
     const ranked = dailyAttempt?.ranked === true;
     promptLabel.textContent = ranked
-      ? `Daily #${challenge.number} • ${dailyAttemptLabel(dailyAttempt.number, challenge)}`
+      ? `Daily #${challenge.number} • ${dailyAttemptLabel(dailyAttempt.number)}`
       : `Daily #${challenge.number} • ${dailyAttempt?.preview ? 'Local preview' : 'Practice run'}`;
     nameInput.style.display = 'none';
     nameInput.disabled = true;
@@ -6344,15 +6489,32 @@ async function submitScore() {
 submitScoreBtn.addEventListener('click', submitScore);
 window.addEventListener('online', retryPendingScores);
 
-playerBtn.addEventListener('click', () => {
+function openPlayerPanel({ focusDisplayName = false } = {}) {
+  displayNameInviteSuppressedThisSession = true;
+  displayNameInvite.hidden = true;
   setPlayerMessage('');
   renderPlayerIdentity();
   playerPanel.classList.add('visible');
-});
+  if (focusDisplayName) {
+    requestAnimationFrame(() => {
+      playerDisplayNameInput.focus({ preventScroll: true });
+      playerDisplayNameInput.select();
+    });
+  }
+}
 
-playerBack.addEventListener('click', () => playerPanel.classList.remove('visible'));
+function closePlayerPanel() {
+  playerPanel.classList.remove('visible');
+  renderDisplayNameInvitation();
+}
+
+playerBtn.addEventListener('click', () => openPlayerPanel());
+displayNameInviteAdd.addEventListener('click', () => openPlayerPanel({ focusDisplayName: true }));
+displayNameInviteLater.addEventListener('click', snoozeDisplayNameInvitation);
+
+playerBack.addEventListener('click', closePlayerPanel);
 playerPanel.addEventListener('click', event => {
-  if (event.target === playerPanel) playerPanel.classList.remove('visible');
+  if (event.target === playerPanel) closePlayerPanel();
 });
 
 playerInitialsInput.addEventListener('input', () => {
