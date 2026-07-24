@@ -2483,6 +2483,7 @@ let dailyLastFoodElapsedMs = null;
 let dailyAttempt = null;
 let dailyStartPending = false;
 let dailyChallengeRequest = 0;
+let dailyChallengeLoading = false;
 let dailyReservationRequestId = null;
 const DAILY_RULES_SEEN_KEY = 'snake_daily_rules_seen_v2';
 
@@ -3517,6 +3518,10 @@ function dailyAttemptsRemainingLabel(challenge = dailyChallenge) {
 function renderDailyChallengeInfo() {
   if (gameMode !== 'daily') return;
   const challenge = dailyChallenge || ensureDailyChallenge();
+  if (dailyChallengeLoading && !challenge.authoritative) {
+    dailyChallengeInfo.textContent = 'Loading live Daily Run…';
+    return;
+  }
   const themeName = THEMES[challenge.theme]?.name || challenge.theme;
   dailyChallengeInfo.textContent = challenge.authoritative
     ? `Challenge #${challenge.number} • ${themeName} • ${dailyAttemptsRemainingLabel(challenge)}`
@@ -3532,9 +3537,12 @@ function renderDailyChallengeInfo() {
 async function refreshDailyChallenge({ force = false } = {}) {
   const requestId = ++dailyChallengeRequest;
   if (!force && dailyChallenge?.authoritative && dailyChallenge.date === currentUtcDateKey()) {
+    dailyChallengeLoading = false;
     renderDailyChallengeInfo();
     return dailyChallenge;
   }
+  dailyChallengeLoading = true;
+  renderDailyChallengeInfo();
   try {
     await playerIdentityPromise;
     if (!sb || !currentUser) throw new Error('Player session unavailable');
@@ -3556,13 +3564,37 @@ async function refreshDailyChallenge({ force = false } = {}) {
     }
     return challenge;
   } catch (error) {
+    // An older request must never replace a newer authoritative response with
+    // the local preview merely because the older request failed later.
+    if (requestId !== dailyChallengeRequest) return dailyChallenge || ensureDailyChallenge();
     if (!isSchemaError(error)) console.warn('Authoritative Daily challenge unavailable; using local preview.', error);
     if (!dailyChallenge?.authoritative) dailyChallenge = null;
     const preview = ensureDailyChallenge();
     renderDailyChallengeInfo();
     return preview;
+  } finally {
+    if (requestId === dailyChallengeRequest) {
+      dailyChallengeLoading = false;
+      renderDailyChallengeInfo();
+    }
   }
 }
+
+function refreshVisibleDailyMenu() {
+  if (gameMode !== 'daily' || alive || dailyStartPending) return;
+  refreshDailyChallenge({ force: true });
+}
+
+// Safari may restore the page from its back-forward cache, or regain network
+// access after the initial live request failed. Reconcile the visible menu in
+// both cases instead of leaving the local preview in place until a reload.
+window.addEventListener('online', refreshVisibleDailyMenu);
+window.addEventListener('pageshow', event => {
+  if (event.persisted) refreshVisibleDailyMenu();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') refreshVisibleDailyMenu();
+});
 
 function formatDailyFoodTime(ms) {
   return Number.isFinite(ms) ? `${(ms / 1000).toFixed(2)}s` : '—';
@@ -3633,7 +3665,13 @@ function applyGameMode(mode) {
 }
 
 document.querySelectorAll('.game-mode-btn').forEach(btn => {
-  btn.addEventListener('click', () => applyGameMode(btn.dataset.gameMode));
+  btn.addEventListener('click', () => {
+    const selectedMode = btn.dataset.gameMode;
+    applyGameMode(selectedMode);
+    // Daily Run starts with a deterministic offline preview. Selecting it
+    // must always replace that preview with today's authoritative live state.
+    if (selectedMode === 'daily') refreshDailyChallenge({ force: true });
+  });
 });
 applyGameMode(gameMode);
 
