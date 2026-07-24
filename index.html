@@ -2641,12 +2641,22 @@ const THEMES = {
   },
   streetfighter: {
     name: 'Street Fighter',
-    bg: '#1a0a0a', grid: 'rgba(255,100,50,0.03)',
-    snakeHead: '#e83030', snakeTail: [232, 48, 48],
-    food: '#40a0ff', foodGlow: 'rgba(64,160,255,0.5)', foodAccent: '#ffffff',
-    accent: '#e83030',
-    deathFlash: 'rgba(255,80,30,',
-    trail: '#e83030', deathParticle: '#ff6030',
+    bg: '#070a12', grid: 'rgba(74,153,214,0.065)',
+    boardPattern: 'kenstage', snakeStyle: 'fighter',
+
+    snakeHead: '#ef3d32', snakeTail: [220, 43, 38],
+
+    snakePalette: ['#ef3d32', '#bd2028', '#f0c08a', '#15151b'],
+
+    fighterGi: '#ef3d32', fighterGiShadow: '#9d1822',
+
+    fighterSkin: '#f0c08a', fighterHair: '#f4c849', fighterBand: '#16161d',
+
+    fighterSpark: '#ffe56a',
+    food: '#43b8ff', foodGlow: 'rgba(67,184,255,0.62)', foodAccent: '#ffffff',
+    accent: '#ef3d32',
+    deathFlash: 'rgba(255,63,42,',
+    trail: '#ef3d32', deathParticle: '#ffe56a',
     music: {
       bass: [
         [164.81,164.81,164.81,164.81,0,0,0,0,0,0,0,0,0,0,0,0,164.81,164.81,164.81,164.81,0,0,0,0,0,0,0,0,0,0,0,0,146.83,146.83,146.83,146.83,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -2677,9 +2687,11 @@ const THEMES = {
       baseBPM: 140, maxBPM: 220, bpmPerLen: 2,
     },
     sfxEat: [
-      { type: 'square', freqs: [330, 440, 660, 880], times: [0, 0.04, 0.08, 0.12], dur: 0.2, vol: 0.15 }
+      { type: 'square', freqs: [329.63, 493.88, 659.25, 987.77], times: [0, 0.035, 0.075, 0.12], dur: 0.22, vol: 0.13 },
+
+      { type: 'triangle', freqs: [146.83, 110, 82.41], times: [0, 0.045, 0.09], dur: 0.16, vol: 0.065 }
     ],
-    sfxDie: { type: 'sawtooth', freqStart: 440, freqEnd: 55, dur: 0.7, vol: 0.15 },
+    sfxDie: { type: 'square', freqStart: 493.88, freqEnd: 55, dur: 0.78, vol: 0.16 },
   },
   dk: {
     name: 'Donkey Kong',
@@ -3349,6 +3361,135 @@ Object.assign(THEMES.got.music, {
   swing: 0,
 });
 
+// Premium 8-bit arcade-rock suite for Street Fighter. Its syncopated E-minor
+// lead, climbing power-chord contour, and driving bass evoke the energy of
+// Ken's famous stage while using a fresh four-movement chiptune arrangement.
+// Every intensity gets a full 128-step arc instead of repeating its peak loop.
+Object.assign(THEMES.streetfighter.music, {
+  bass: [
+    buildMusicArc(
+      [82.41,0,0,0,123.47,0,0,0,82.41,0,0,0,146.83,0,123.47,0],
+      [82.41,0,123.47,0,82.41,0,146.83,0,98,0,146.83,0,110,0,123.47,0],
+      [82.41,0,82.41,123.47,82.41,0,146.83,123.47,98,0,98,146.83,110,0,123.47,146.83],
+      [82.41,0,123.47,0,146.83,0,123.47,0,98,0,110,0,82.41,0,0,0]
+    ),
+    buildMusicArc(
+      [82.41,0,123.47,82.41,0,146.83,123.47,0,98,0,146.83,98,0,110,123.47,0],
+      [82.41,82.41,123.47,0,82.41,146.83,123.47,0,98,98,146.83,0,110,123.47,146.83,0],
+      [82.41,123.47,164.81,123.47,82.41,123.47,146.83,123.47,98,146.83,196,146.83,110,146.83,123.47,146.83],
+      [82.41,82.41,123.47,146.83,164.81,146.83,123.47,0,98,110,123.47,110,82.41,0,0,0]
+    ),
+    buildMusicArc(
+      [82.41,123.47,164.81,123.47,82.41,146.83,164.81,123.47,98,146.83,196,146.83,110,146.83,164.81,146.83],
+      [82.41,164.81,123.47,164.81,196,164.81,146.83,123.47,98,196,146.83,196,220,196,164.81,146.83],
+      [82.41,123.47,164.81,196,246.94,196,164.81,123.47,98,146.83,196,220,246.94,220,196,146.83],
+      [82.41,164.81,196,164.81,146.83,123.47,110,0,98,123.47,146.83,123.47,82.41,0,0,0]
+    ),
+    buildMusicArc(
+      [82.41,164.81,196,246.94,196,164.81,146.83,123.47,98,196,220,246.94,220,196,164.81,146.83],
+      [82.41,123.47,164.81,196,246.94,196,164.81,123.47,98,146.83,196,220,261.63,220,196,146.83],
+      [82.41,164.81,196,246.94,329.63,246.94,196,164.81,98,196,246.94,293.66,329.63,293.66,246.94,196],
+      [82.41,164.81,196,164.81,146.83,123.47,110,0,98,123.47,146.83,123.47,82.41,0,0,0]
+    ),
+  ],
+  melody: [
+    buildMusicArc(
+      [0,0,0,0,0,0,0,0,329.63,0,392,0,440,0,0,0],
+      [329.63,0,392,329.63,0,293.66,0,246.94,329.63,0,440,392,329.63,0,293.66,0],
+      [329.63,392,440,0,493.88,440,392,0,329.63,440,493.88,0,440,392,329.63,0],
+      [329.63,0,392,329.63,293.66,0,246.94,0,329.63,0,293.66,0,246.94,0,0,0]
+    ),
+    buildMusicArc(
+      [329.63,0,392,329.63,440,0,493.88,0,440,392,329.63,0,293.66,329.63,0,0],
+      [329.63,392,440,0,493.88,440,392,329.63,440,493.88,587.33,0,493.88,440,392,0],
+      [392,440,493.88,0,587.33,493.88,440,392,493.88,587.33,659.25,0,587.33,493.88,440,0],
+      [329.63,392,440,493.88,440,392,329.63,0,293.66,329.63,392,329.63,246.94,0,0,0]
+    ),
+    buildMusicArc(
+      [329.63,392,440,493.88,587.33,493.88,440,392,493.88,587.33,659.25,587.33,493.88,440,392,0],
+      [392,440,493.88,587.33,659.25,587.33,493.88,440,587.33,659.25,783.99,659.25,587.33,493.88,440,0],
+      [493.88,587.33,659.25,783.99,880,783.99,659.25,587.33,493.88,659.25,783.99,880,987.77,880,783.99,659.25],
+      [659.25,587.33,493.88,440,392,329.63,293.66,0,329.63,392,440,392,329.63,0,0,0]
+    ),
+    buildMusicArc(
+      [659.25,0,783.99,659.25,587.33,0,493.88,0,659.25,783.99,880,783.99,659.25,0,587.33,0],
+      [659.25,783.99,880,987.77,880,783.99,659.25,587.33,783.99,880,987.77,1174.66,987.77,880,783.99,659.25],
+      [783.99,880,987.77,1174.66,1318.51,1174.66,987.77,880,783.99,987.77,1174.66,1318.51,1174.66,987.77,880,783.99],
+      [659.25,783.99,880,783.99,659.25,587.33,493.88,0,440,493.88,587.33,493.88,329.63,0,0,0]
+    ),
+  ],
+  arpeggio: [
+    buildMusicArc(
+      [0],
+      [164.81,0,196,0,246.94,0,196,0,146.83,0,196,0,220,0,196,0],
+      [164.81,0,196,0,246.94,0,293.66,0,146.83,0,196,0,220,0,246.94,0],
+      [164.81,0,196,0,246.94,0,196,0,146.83,0,196,0,164.81,0,0,0]
+    ),
+    buildMusicArc(
+      [164.81,0,196,0,246.94,0,293.66,0,146.83,0,196,0,246.94,0,293.66,0],
+      [164.81,196,246.94,293.66,246.94,196,164.81,196,146.83,196,246.94,293.66,246.94,196,146.83,196],
+      [196,246.94,293.66,329.63,293.66,246.94,196,246.94,220,246.94,293.66,369.99,293.66,246.94,220,246.94],
+      [164.81,196,246.94,293.66,246.94,196,164.81,0,146.83,196,246.94,196,164.81,0,0,0]
+    ),
+    buildMusicArc(
+      [164.81,246.94,329.63,392,329.63,246.94,196,246.94,196,293.66,392,493.88,392,293.66,246.94,293.66],
+      [196,293.66,392,493.88,587.33,493.88,392,293.66,220,329.63,440,554.37,659.25,554.37,440,329.63],
+      [246.94,329.63,392,493.88,659.25,493.88,392,329.63,293.66,369.99,493.88,587.33,739.99,587.33,493.88,369.99],
+      [164.81,246.94,329.63,392,329.63,246.94,196,0,146.83,196,246.94,196,164.81,0,0,0]
+    ),
+    buildMusicArc(
+      [329.63,392,493.88,659.25,783.99,659.25,493.88,392,293.66,369.99,493.88,587.33,739.99,587.33,493.88,369.99],
+      [392,493.88,659.25,783.99,987.77,783.99,659.25,493.88,440,554.37,739.99,880,1108.73,880,739.99,554.37],
+      [493.88,659.25,783.99,987.77,1318.51,987.77,783.99,659.25,587.33,739.99,987.77,1174.66,1479.98,1174.66,987.77,739.99],
+      [329.63,392,493.88,659.25,493.88,392,329.63,0,246.94,293.66,369.99,293.66,164.81,0,0,0]
+    ),
+  ],
+  drums: [
+    buildMusicArc(
+      [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+      [1,0,0,0,0,0,2,0,1,0,0,0,0,0,2,0],
+      [1,0,0,0,2,0,2,0,1,0,0,0,2,0,2,0],
+      [1,0,0,0,0,0,2,0,1,0,0,0,0,0,0,0]
+    ),
+    buildMusicArc(
+      [1,0,0,0,2,0,2,0,1,0,0,0,2,0,2,0],
+      [1,0,3,0,2,0,2,0,1,0,3,0,2,0,2,0],
+      [1,0,3,0,2,2,2,0,1,0,3,0,2,2,2,0],
+      [1,0,3,0,2,0,2,0,1,0,0,0,2,0,0,0]
+    ),
+    buildMusicArc(
+      [1,0,3,0,2,2,2,0,1,0,3,0,2,2,2,0],
+      [1,2,3,0,2,2,3,0,1,2,3,0,2,2,3,0],
+      [1,2,3,2,2,2,3,0,1,2,3,2,2,2,3,0],
+      [1,0,3,0,2,0,2,0,1,0,3,0,0,0,0,0]
+    ),
+    buildMusicArc(
+      [1,2,3,0,2,2,3,0,1,2,3,0,2,2,3,0],
+      [1,2,3,2,2,2,3,0,1,2,3,2,2,2,3,0],
+      [1,2,3,2,1,2,3,2,1,2,3,2,1,2,3,2],
+      [1,0,3,0,2,0,2,0,1,0,0,0,0,0,0,0]
+    ),
+  ],
+  bassType: 'triangle',
+  melodyType: 'square',
+  arpType: 'square',
+  bassVol: 0.29,
+  melodyVol: 0.115,
+  arpVol: 0.05,
+  baseBPM: 104,
+  maxBPM: 176,
+  bpmPerLen: 1.75,
+  tempoGrowth: 34,
+  intensityThresholds: [8, 17, 29],
+  minStepsPerIntensity: 64,
+  percussion: 'arcade-rock',
+  swing: 0,
+  audioUrl: 'assets/audio/ken-stage-96.mp3',
+  audioGain: 0.82,
+  midiUrl: 'audio themes/street_fighter_ii_-_ken.mid',
+  midiGain: 0.72,
+});
+
 const savedThemeSelection = localStorage.getItem('snakeTheme') || 'default';
 let themeSelection = savedThemeSelection === 'random' || THEMES[savedThemeSelection]
   ? savedThemeSelection
@@ -3723,6 +3864,7 @@ function reset(startingRun = false) {
   deathFlash = 0;
   foodScale = 1; foodScaleTarget = 1;
   dragonFireBurst = 0;
+  fighterImpactBurst = 0;
   // Reset pause button
   const pauseBtn = document.getElementById('pause-btn');
   pauseBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="2" y="1" width="2" height="8"/><rect x="6" y="1" width="2" height="8"/></svg>';
@@ -3764,6 +3906,7 @@ let deathFlash = 0;
 let fpsFrames = 0, fpsLast = performance.now(), fpsDisplay = 0;
 let foodScale = 1, foodScaleTarget = 1;
 let dragonFireBurst = 0;
+let fighterImpactBurst = 0;
 let screenShake = 0, shakeX = 0, shakeY = 0;
 
 // --- Particle System (from game-engine: object pooling for perf) ---
@@ -4315,6 +4458,50 @@ function draw(interp) {
       ctx.fillRect(sx, sy, i % 3 === 0 ? 2 : 1, i % 3 === 0 ? 2 : 1);
     }
     ctx.restore();
+  } else if (T.boardPattern === 'kenstage') {
+    // Moonlit harbor, yacht silhouette, and red dock railings nod to Ken's
+    // classic arena while remaining subtle enough for competitive play.
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    const horizon = canvasH - 116;
+
+    ctx.fillStyle = '#183650';
+    ctx.fillRect(0, horizon, canvasW, 116);
+    ctx.fillStyle = '#3d81a5';
+    for (let y = horizon + 10; y < canvasH - 38; y += 13) {
+      const offset = ((y - horizon) / 13) % 2 ? 16 : 0;
+      for (let x = -offset; x < canvasW; x += 38) ctx.fillRect(x, y, 23, 2);
+    }
+
+    // Distant city lights and a simplified yacht.
+    ctx.fillStyle = '#ffd666';
+    for (let x = 14; x < canvasW; x += 47) ctx.fillRect(x, horizon - 16 - (x % 3) * 4, 3, 3);
+    ctx.fillStyle = '#c9d9e6';
+    ctx.beginPath();
+    ctx.moveTo(66, horizon + 20);
+    ctx.lineTo(248, horizon + 20);
+    ctx.lineTo(218, horizon + 45);
+    ctx.lineTo(92, horizon + 45);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillRect(124, horizon - 9, 72, 31);
+    ctx.fillStyle = '#10253a';
+    ctx.fillRect(136, horizon - 2, 18, 12);
+    ctx.fillRect(162, horizon - 2, 20, 12);
+
+    // Dock rail and planks frame the lower arena without covering cells.
+    ctx.fillStyle = '#8d1d27';
+    ctx.fillRect(0, canvasH - 43, canvasW, 5);
+    for (let x = 10; x < canvasW; x += 62) ctx.fillRect(x, canvasH - 73, 6, 35);
+    ctx.strokeStyle = '#9c5a31';
+    ctx.lineWidth = 2;
+    for (let x = -canvasH; x < canvasW; x += 34) {
+      ctx.beginPath();
+      ctx.moveTo(x, canvasH);
+      ctx.lineTo(x + 48, canvasH - 38);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   // Interpolated snake position
@@ -4352,7 +4539,7 @@ function draw(interp) {
       ctx.shadowColor = T.snakeHead;
       ctx.shadowBlur = 12 + Math.sin(foodPulse * 2) * 3;
     }
-    const segmentColor = (T.snakeStyle === 'bricks' || T.snakeStyle === 'cel')
+    const segmentColor = (T.snakeStyle === 'bricks' || T.snakeStyle === 'cel' || T.snakeStyle === 'fighter')
       ? T.snakePalette[i % T.snakePalette.length]
       : `rgb(${r},${g},${b})`;
     ctx.fillStyle = segmentColor;
@@ -4400,6 +4587,27 @@ function draw(interp) {
       roundRect(px + pad + 2, py + pad + 2, CELL - pad * 2 - 4, CELL - pad * 2 - 4, i === 0 ? 4 : 2);
       ctx.fillStyle = 'rgba(255,255,255,0.28)';
       ctx.fillRect(px + pad + 4, py + pad + 4, Math.max(3, CELL - pad * 2 - 9), 2);
+    } else if (T.snakeStyle === 'fighter') {
+      // Red gi, black belt bands, and a blond pixel head turn the snake into
+      // a compact arcade fighter without changing its collision footprint.
+      ctx.fillStyle = '#11131a';
+      roundRect(px + pad, py + pad, CELL - pad * 2, CELL - pad * 2, i === 0 ? 5 : 3);
+      ctx.fillStyle = i === 0 ? T.fighterSkin : (i % 3 === 0 ? T.fighterGiShadow : T.fighterGi);
+      roundRect(px + pad + 1.5, py + pad + 1.5, CELL - pad * 2 - 3, CELL - pad * 2 - 3, i === 0 ? 4 : 2);
+      if (i === 0) {
+        ctx.fillStyle = T.fighterHair;
+        ctx.fillRect(px + 3, py + 2, 14, 4);
+        ctx.fillRect(px + 5, py, 3, 4);
+        ctx.fillRect(px + 11, py + 1, 4, 4);
+        ctx.fillStyle = T.fighterBand;
+        ctx.fillRect(px + 2, py + 6, 16, 2);
+      } else if (i % 4 === 0) {
+        ctx.fillStyle = T.fighterBand;
+        ctx.fillRect(px + pad + 1, py + 8, CELL - pad * 2 - 2, 4);
+      } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.fillRect(px + pad + 4, py + pad + 3, 4, 2);
+      }
     } else {
       const radius = i === 0 ? 6 : 3;
       roundRect(px + pad, py + pad, CELL - pad * 2, CELL - pad * 2, radius);
@@ -4420,6 +4628,28 @@ function draw(interp) {
     const eyeOff2 = dir.x === 0 ? {x: 13, y: dir.y > 0 ? 12 : 5} : {x: dir.x > 0 ? 12 : 5, y: 13};
     ctx.beginPath(); ctx.arc(hx + eyeOff1.x, hy + eyeOff1.y, 2.5, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.arc(hx + eyeOff2.x, hy + eyeOff2.y, 2.5, 0, Math.PI * 2); ctx.fill();
+    if (T.snakeStyle === 'fighter' && fighterImpactBurst > 0) {
+      const strength = fighterImpactBurst;
+      const cx = hx + CELL / 2;
+      const cy = hy + CELL / 2;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.strokeStyle = T.fighterSpark;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = T.fighterSpark;
+      ctx.shadowBlur = 8;
+      for (let ray = 0; ray < 8; ray++) {
+        const angle = ray * Math.PI / 4 + foodPulse * 0.08;
+        const inner = 11 + (1 - strength) * 5;
+        const outer = inner + 9 * strength;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        ctx.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+        ctx.stroke();
+      }
+      ctx.restore();
+      fighterImpactBurst = Math.max(0, fighterImpactBurst - 0.065);
+    }
   }
 
   // Food with pulsing glow + scale punch
@@ -4512,6 +4742,7 @@ function gameTick() {
     AudioEngine.updateTempo(snake.length);
     const T = THEMES[currentTheme];
     if (T.snakeStyle === 'dragon') dragonFireBurst = 1;
+    if (T.snakeStyle === 'fighter') fighterImpactBurst = 1;
     // Particle burst on eat
     spawnParticles(
       food.x * CELL + CELL / 2,
@@ -4974,8 +5205,217 @@ const AudioEngine = (() => {
   let wakePromise = null;
   let heartbeatTimer = null;
   let heartbeatProgress = null;
-
-  function getTheme() { return THEMES[currentTheme].music; }
+  let nativeThemeAudio = null;
+  let nativeThemeAudioUrl = '';
+  let nativeAudioFailedUrl = '';
+  let nativeMusicDuck = 1;
+  let midiSong = null;
+  let midiSongUrl = '';
+  let midiLoadPromise = null;
+  let midiLoadFailedUrl = '';
+  let midiCursor = 0;
+  let midiStartedAt = 0;
+  let midiOffset = 0;
+  const midiVoices = new Set();
+
+  function getTheme() { return THEMES[currentTheme].music; }
+
+  function applyNativeThemeVolume(music = getTheme()) {
+    if (!nativeThemeAudio) return;
+    nativeThemeAudio.volume = Math.max(
+      0,
+      Math.min(1, (music.audioGain || 1) * nativeMusicDuck)
+    );
+    nativeThemeAudio.muted = muted;
+  }
+
+  function stopNativeThemeAudio(resetPosition = true) {
+    if (!nativeThemeAudio) return;
+    nativeThemeAudio.pause();
+    if (resetPosition) {
+      try { nativeThemeAudio.currentTime = 0; } catch (error) {}
+    }
+  }
+
+  function startNativeThemeAudio(music, resetPosition = true) {
+    if (!music.audioUrl) return false;
+    const url = music.audioUrl;
+    nativeAudioFailedUrl = '';
+    if (!nativeThemeAudio || nativeThemeAudioUrl !== url) {
+      stopNativeThemeAudio(true);
+      nativeThemeAudio = new Audio(url);
+      nativeThemeAudioUrl = url;
+      nativeThemeAudio.preload = 'auto';
+      nativeThemeAudio.loop = true;
+      nativeThemeAudio.playsInline = true;
+      nativeThemeAudio.addEventListener('error', () => {
+        if (nativeThemeAudioUrl !== url || !running) return;
+        nativeAudioFailedUrl = url;
+        console.error('Native theme audio failed to load; using MIDI fallback.');
+        prepareMidiTheme(getTheme());
+        startSeqTimer();
+      });
+    }
+    if (resetPosition) {
+      try { nativeThemeAudio.currentTime = 0; } catch (error) {}
+    }
+    applyNativeThemeVolume(music);
+
+    const playPromise = nativeThemeAudio.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(error => {
+        if (nativeThemeAudioUrl !== url || !running) return;
+        nativeAudioFailedUrl = url;
+        console.error('Unable to play native theme audio; using MIDI fallback:', error);
+        prepareMidiTheme(music);
+        startSeqTimer();
+      });
+    }
+    return true;
+  }
+
+  function parseMidiFile(arrayBuffer) {
+    const view = new DataView(arrayBuffer);
+    let offset = 0;
+    const readText = length => {
+      let value = '';
+      for (let i = 0; i < length; i++) value += String.fromCharCode(view.getUint8(offset++));
+      return value;
+    };
+    const readU16 = () => { const value = view.getUint16(offset); offset += 2; return value; };
+    const readU32 = () => { const value = view.getUint32(offset); offset += 4; return value; };
+    const readVar = () => {
+      let value = 0;
+      let byte;
+      do {
+        byte = view.getUint8(offset++);
+        value = (value << 7) | (byte & 0x7f);
+      } while (byte & 0x80);
+      return value;
+    };
+
+    if (readText(4) !== 'MThd') throw new Error('Invalid MIDI header');
+    const headerLength = readU32();
+    const headerEnd = offset + headerLength;
+    readU16();
+    const trackCount = readU16();
+    const division = readU16();
+    if (division & 0x8000) throw new Error('SMPTE MIDI timing is not supported');
+    offset = headerEnd;
+
+    const tempos = [{ tick: 0, micros: 500000 }];
+    const rawNotes = [];
+    let finalTick = 0;
+
+    for (let track = 0; track < trackCount && offset < view.byteLength; track++) {
+      if (readText(4) !== 'MTrk') throw new Error('Invalid MIDI track');
+      const trackLength = readU32();
+      const trackEnd = offset + trackLength;
+      const programs = new Array(16).fill(0);
+      const active = new Map();
+      let tick = 0;
+      let runningStatus = 0;
+
+      while (offset < trackEnd) {
+        tick += readVar();
+        finalTick = Math.max(finalTick, tick);
+        let status = view.getUint8(offset);
+        if (status & 0x80) {
+          offset++;
+          runningStatus = status;
+        } else {
+          status = runningStatus;
+        }
+
+        if (status === 0xff) {
+          const metaType = view.getUint8(offset++);
+          const length = readVar();
+          if (metaType === 0x51 && length === 3) {
+            const micros = (view.getUint8(offset) << 16)
+              | (view.getUint8(offset + 1) << 8)
+              | view.getUint8(offset + 2);
+            tempos.push({ tick, micros });
+          }
+          offset += length;
+          runningStatus = 0;
+          continue;
+        }
+        if (status === 0xf0 || status === 0xf7) {
+          const length = readVar();
+          offset += length;
+          runningStatus = 0;
+          continue;
+        }
+
+        const type = status & 0xf0;
+        const channel = status & 0x0f;
+        const data1 = view.getUint8(offset++);
+        const data2 = type === 0xc0 || type === 0xd0 ? 0 : view.getUint8(offset++);
+
+        if (type === 0xc0) {
+          programs[channel] = data1;
+          continue;
+        }
+        if (type !== 0x80 && type !== 0x90) continue;
+
+        const key = `${channel}:${data1}`;
+        if (type === 0x90 && data2 > 0) {
+          const queue = active.get(key) || [];
+          queue.push({
+            tick,
+            note: data1,
+            velocity: data2,
+            channel,
+            program: programs[channel],
+            track,
+          });
+          active.set(key, queue);
+        } else {
+          const queue = active.get(key);
+          if (!queue || !queue.length) continue;
+          const note = queue.shift();
+          rawNotes.push({ ...note, endTick: Math.max(note.tick + 1, tick) });
+        }
+      }
+
+      for (const queue of active.values()) {
+        for (const note of queue) rawNotes.push({ ...note, endTick: Math.max(note.tick + 1, tick) });
+      }
+      offset = trackEnd;
+    }
+
+    const uniqueTempos = [...new Map(
+      tempos.sort((a, b) => a.tick - b.tick).map(tempo => [tempo.tick, tempo])
+    ).values()];
+    let elapsed = 0;
+    for (let i = 0; i < uniqueTempos.length; i++) {
+      if (i > 0) {
+        const previous = uniqueTempos[i - 1];
+        elapsed += (uniqueTempos[i].tick - previous.tick) * previous.micros / division / 1000000;
+      }
+      uniqueTempos[i].seconds = elapsed;
+    }
+
+    const tickToSeconds = tick => {
+      let tempo = uniqueTempos[0];
+      for (let i = 1; i < uniqueTempos.length && uniqueTempos[i].tick <= tick; i++) {
+        tempo = uniqueTempos[i];
+      }
+      return tempo.seconds + (tick - tempo.tick) * tempo.micros / division / 1000000;
+    };
+
+    const notes = rawNotes
+      .map(note => {
+        const start = tickToSeconds(note.tick);
+        const end = tickToSeconds(note.endTick);
+        return { ...note, start, duration: Math.max(0.025, end - start) };
+      })
+      .sort((a, b) => a.start - b.start || a.track - b.track);
+    return {
+      notes,
+      duration: Math.max(tickToSeconds(finalTick), ...notes.map(note => note.start + note.duration)),
+    };
+  }
 
   function init() {
     if (actx && actx.state !== 'closed') return;
@@ -5051,8 +5491,135 @@ const AudioEngine = (() => {
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + duration);
     osc.connect(g); g.connect(gainNode);
-    osc.start(t); osc.stop(t + duration);
-  }
+    osc.start(t); osc.stop(t + duration);
+  }
+
+  function stopMidiVoices() {
+    for (const oscillator of midiVoices) {
+      try { oscillator.stop(); } catch (error) {}
+    }
+    midiVoices.clear();
+  }
+
+  function resetMidiPlayback(resetPosition = true) {
+    stopMidiVoices();
+    midiCursor = 0;
+    midiStartedAt = actx ? actx.currentTime : 0;
+    if (resetPosition) midiOffset = 0;
+  }
+
+  function findMidiCursor(seconds) {
+    if (!midiSong) return 0;
+    let low = 0;
+    let high = midiSong.notes.length;
+    while (low < high) {
+      const middle = (low + high) >> 1;
+      if (midiSong.notes[middle].start < seconds) low = middle + 1;
+      else high = middle;
+    }
+    return low;
+  }
+
+  function prepareMidiTheme(music) {
+    if (!music.midiUrl) return;
+    const url = music.midiUrl;
+    midiLoadFailedUrl = '';
+
+    if (midiSong && midiSongUrl === url) {
+      resetMidiPlayback(true);
+      return;
+    }
+    if (midiLoadPromise && midiSongUrl === url) return;
+
+    midiSong = null;
+    midiSongUrl = url;
+    midiLoadPromise = fetch(url, { cache: 'no-store' })
+      .then(response => {
+        if (!response.ok) throw new Error(`MIDI request failed: ${response.status}`);
+        return response.arrayBuffer();
+      })
+      .then(buffer => {
+        const song = parseMidiFile(buffer);
+        if (midiSongUrl !== url) return;
+        midiSong = song;
+        midiLoadFailedUrl = '';
+        resetMidiPlayback(true);
+        if (running && getTheme().midiUrl === url && actx?.state === 'running') startSeqTimer();
+      })
+      .catch(error => {
+        if (midiSongUrl !== url) return;
+        midiLoadFailedUrl = url;
+        console.error('Unable to load theme MIDI; using chiptune fallback:', error);
+      })
+      .finally(() => {
+        if (midiSongUrl === url) midiLoadPromise = null;
+      });
+  }
+
+  function scheduleMidiNote(note, when, music) {
+    const isDrum = note.channel === 9;
+    let frequency = 440 * Math.pow(2, (note.note - 69) / 12);
+    let duration = Math.max(0.025, note.duration);
+    let waveform = note.program >= 32 && note.program <= 39 ? 'triangle' : 'square';
+
+    if (isDrum) {
+      if (note.note === 35 || note.note === 36) frequency = 73.42;
+      else if (note.note === 38 || note.note === 40) frequency = 196;
+      else frequency = 1174.66;
+      duration = Math.min(duration, note.note >= 42 ? 0.045 : 0.1);
+      waveform = 'square';
+    }
+
+    const oscillator = actx.createOscillator();
+    const gain = actx.createGain();
+    const velocity = Math.max(0.08, note.velocity / 127);
+    const peak = velocity * (isDrum ? 0.045 : 0.038) * (music.midiGain || 1);
+    const releaseAt = when + Math.max(0.02, duration);
+
+    oscillator.type = waveform;
+    oscillator.frequency.setValueAtTime(frequency, when);
+    gain.gain.setValueAtTime(0.001, when);
+    gain.gain.linearRampToValueAtTime(peak, when + 0.006);
+    gain.gain.setValueAtTime(peak * 0.78, Math.max(when + 0.007, releaseAt - 0.025));
+    gain.gain.exponentialRampToValueAtTime(0.001, releaseAt);
+    oscillator.connect(gain);
+    gain.connect(musicGain);
+    oscillator.addEventListener('ended', () => midiVoices.delete(oscillator), { once: true });
+    midiVoices.add(oscillator);
+    oscillator.start(when);
+    oscillator.stop(releaseAt + 0.01);
+  }
+
+  function scheduleMidiPlayback(music) {
+    if (!midiSong || midiSongUrl !== music.midiUrl || !midiSong.duration) return;
+    let elapsed = actx.currentTime - midiStartedAt + midiOffset;
+
+    if (elapsed >= midiSong.duration) {
+      midiOffset = 0;
+      midiCursor = 0;
+      midiStartedAt = actx.currentTime;
+      elapsed = 0;
+    }
+
+    const lookAhead = 0.12;
+    while (
+      midiCursor < midiSong.notes.length
+      && midiSong.notes[midiCursor].start <= elapsed + lookAhead
+    ) {
+      const note = midiSong.notes[midiCursor++];
+      const when = actx.currentTime + Math.max(0, note.start - elapsed);
+      scheduleMidiNote(note, when, music);
+    }
+  }
+
+  function captureMidiPosition() {
+    const music = getTheme();
+    if (!music.midiUrl || !midiSong || !midiStartedAt) return;
+    midiOffset = (midiOffset + Math.max(0, actx.currentTime - midiStartedAt)) % midiSong.duration;
+    midiCursor = findMidiCursor(midiOffset);
+    midiStartedAt = actx.currentTime;
+    stopMidiVoices();
+  }
 
   function playKick() {
     const t = actx.currentTime;
@@ -5156,6 +5723,31 @@ const AudioEngine = (() => {
     }
   }
 
+  function playArcadeRockHit(kind) {
+    if (kind === 1) {
+      playKick();
+      return;
+    }
+    if (kind === 2) {
+      playHihat();
+      return;
+    }
+
+    // Tight square-wave tom layered with the existing noise snare gives the
+    // Street Fighter suite a crunchy CPS-era rock backbeat.
+    const t = actx.currentTime;
+    const tom = actx.createOscillator();
+    const tomGain = actx.createGain();
+    tom.type = 'square';
+    tom.frequency.setValueAtTime(196, t);
+    tom.frequency.exponentialRampToValueAtTime(82.41, t + 0.09);
+    tomGain.gain.setValueAtTime(0.13, t);
+    tomGain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+    tom.connect(tomGain); tomGain.connect(musicGain);
+    tom.start(t); tom.stop(t + 0.11);
+    playSnare();
+  }
+
   function sequencer() {
     const m = getTheme();
     const intensity = getIntensity(snake ? snake.length : 3, m);
@@ -5174,6 +5766,8 @@ const AudioEngine = (() => {
       if (dVal === 1) play8BitWarDrum(false);
       else if (dVal === 2) playHihat();
       else if (dVal === 3) play8BitWarDrum(true);
+    } else if (m.percussion === 'arcade-rock') {
+      if (dVal) playArcadeRockHit(dVal);
     } else {
       if (dVal === 1) playKick();
       else if (dVal === 2) m.percussion === 'blocks' ? playBlockClick(true) : playHihat();
@@ -5192,8 +5786,17 @@ const AudioEngine = (() => {
     lastStepTime = now;
     // Cap to avoid burst catch-up after long background
     const dt = Math.min(rawDt, 200);
-    stepAccum += dt;
+    stepAccum += dt;
     const m = getTheme();
+    if (m.audioUrl && nativeAudioFailedUrl !== m.audioUrl) {
+      seqRafId = requestAnimationFrame(sequencerTick);
+      return;
+    }
+    if (m.midiUrl && midiLoadFailedUrl !== m.midiUrl) {
+      scheduleMidiPlayback(m);
+      seqRafId = requestAnimationFrame(sequencerTick);
+      return;
+    }
     const swing = Math.max(0, Math.min(0.3, m.swing || 0));
     const baseStepInterval = 60000 / curBPM / 4;
     let stepInterval = baseStepInterval * (step % 2 === 0 ? 1 + swing : 1 - swing);
@@ -5240,6 +5843,8 @@ const AudioEngine = (() => {
   }
 
   function setMusicDuck(value) {
+    nativeMusicDuck = value;
+    applyNativeThemeVolume();
     if (!musicGain || !actx) return;
     const now = actx.currentTime;
     musicGain.gain.cancelScheduledValues(now);
@@ -5335,19 +5940,36 @@ const AudioEngine = (() => {
     const m = getTheme();
     curBPM = m.baseBPM;
     stopSeqTimer();
+    resetMidiPlayback(true);
+    nativeMusicDuck = 1;
+    if (m.audioUrl) startNativeThemeAudio(m, true);
+    else {
+      stopNativeThemeAudio(true);
+      if (m.midiUrl) prepareMidiTheme(m);
+    }
     wake(true);
-  }
+  }
 
-  function stop() {
+  function stop() {
     running = false;
     stopRecordHeartbeat();
-    stopSeqTimer();
-  }
-
-  function pause()  { stopSeqTimer(); clearHeartbeatTimer(); }
+    stopSeqTimer();
+    stopNativeThemeAudio(true);
+    resetMidiPlayback(true);
+  }
+
+  function pause()  {
+    stopNativeThemeAudio(false);
+    captureMidiPosition();
+    stopSeqTimer();
+    clearHeartbeatTimer();
+  }
   function resume() {
     if (!running) return;
     stopSeqTimer();
+    const music = getTheme();
+    if (music.audioUrl) startNativeThemeAudio(music, false);
+    else if (music.midiUrl && actx) midiStartedAt = actx.currentTime;
     wake(true).then(() => {
       if (heartbeatProgress !== null) playHeartbeatPulse();
     });
@@ -5364,9 +5986,10 @@ const AudioEngine = (() => {
   document.addEventListener('touchend', wakeFromGesture, { passive: true, capture: true });
   document.addEventListener('keydown', wakeFromGesture, { capture: true });
 
-  function toggleMute() {
+  function toggleMute() {
     muted = !muted;
-    if (master) master.gain.value = muted ? 0 : 0.35;
+    if (master) master.gain.value = muted ? 0 : 0.35;
+    if (nativeThemeAudio) nativeThemeAudio.muted = muted;
     return muted;
   }
 
