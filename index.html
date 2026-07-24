@@ -1644,6 +1644,63 @@
     line-height: 1.55;
   }
   .whats-new-release li + li { margin-top: 6px; }
+  #whats-new-older-toggle {
+    width: 100%;
+    min-height: 40px;
+    margin-top: 20px;
+    border: 1px solid var(--accent-dim);
+    border-radius: 0;
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    font-family: var(--pixel-font);
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+  #whats-new-older-toggle[aria-expanded="true"] {
+    background: var(--accent-glow-soft);
+  }
+  .whats-new-archive {
+    margin-top: 13px;
+    border-top: 1px solid var(--line);
+  }
+  .whats-new-archive[hidden] { display: none; }
+  .whats-new-archive details {
+    border-bottom: 1px solid var(--line);
+  }
+  .whats-new-archive summary {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    gap: 10px;
+    align-items: center;
+    padding: 13px 2px;
+    color: var(--text);
+    cursor: pointer;
+    font-family: var(--pixel-font);
+    font-size: 0.68rem;
+    list-style: none;
+  }
+  .whats-new-archive summary::-webkit-details-marker { display: none; }
+  .whats-new-archive summary::before {
+    content: '+';
+    color: var(--accent);
+    font-size: 0.9rem;
+  }
+  .whats-new-archive details[open] summary::before { content: '−'; }
+  .whats-new-archive time {
+    color: var(--accent-dim);
+    font-size: 0.56rem;
+    letter-spacing: 0.06em;
+  }
+  .whats-new-archive .whats-new-release {
+    padding: 0 2px 15px 22px;
+  }
+  .whats-new-archive .whats-new-release h3,
+  .whats-new-archive .whats-new-release-meta {
+    display: none;
+  }
   #whats-new-close {
     width: 100%;
     min-height: 44px;
@@ -2112,9 +2169,11 @@ function markCurrentReleaseSeen() {
 }
 
 function renderWhatsNew() {
-  whatsNewCurrent.textContent = `Latest release • ${WHATS_NEW_RELEASES[0].version}`;
+  const latestRelease = WHATS_NEW_RELEASES[0];
+  whatsNewCurrent.textContent = `Latest release • ${latestRelease.version}`;
   whatsNewReleases.replaceChildren();
-  WHATS_NEW_RELEASES.forEach(release => {
+
+  const createReleaseSection = release => {
     const section = document.createElement('section');
     section.className = 'whats-new-release';
     const heading = document.createElement('h3');
@@ -2129,8 +2188,47 @@ function renderWhatsNew() {
       list.appendChild(entry);
     });
     section.append(heading, meta, list);
-    whatsNewReleases.appendChild(section);
+    return section;
+  };
+
+  whatsNewReleases.appendChild(createReleaseSection(latestRelease));
+
+  const olderReleases = WHATS_NEW_RELEASES.slice(1);
+  if (!olderReleases.length) return;
+
+  const toggle = document.createElement('button');
+  toggle.id = 'whats-new-older-toggle';
+  toggle.type = 'button';
+  toggle.setAttribute('aria-expanded', 'false');
+  toggle.textContent = `View Older Updates (${olderReleases.length})`;
+
+  const archive = document.createElement('div');
+  archive.className = 'whats-new-archive';
+  archive.hidden = true;
+
+  olderReleases.forEach(release => {
+    const entry = document.createElement('details');
+    const summary = document.createElement('summary');
+    const date = document.createElement('time');
+    date.dateTime = release.id.slice(0, 10);
+    date.textContent = release.version.replace(/^Update\s+/i, '');
+    const title = document.createElement('span');
+    title.textContent = release.title;
+    summary.append(date, title);
+    entry.append(summary, createReleaseSection(release));
+    archive.appendChild(entry);
   });
+
+  toggle.addEventListener('click', () => {
+    const expanded = toggle.getAttribute('aria-expanded') === 'true';
+    toggle.setAttribute('aria-expanded', String(!expanded));
+    toggle.textContent = expanded
+      ? `View Older Updates (${olderReleases.length})`
+      : 'Hide Older Updates';
+    archive.hidden = expanded;
+  });
+
+  whatsNewReleases.append(toggle, archive);
 }
 
 function openWhatsNew() {
