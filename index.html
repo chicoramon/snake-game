@@ -6506,6 +6506,20 @@ async function loadLeaderboard() {
     if (lbState.theme !== 'all') query = query.eq('theme', lbState.theme);
     return query;
   };
+  const runOverallQuery = async () => {
+    const rpcResult = await sb.rpc('get_overall_leaderboard', {
+      p_game_mode: lbState.gameMode,
+      p_theme: lbState.theme === 'all' ? null : lbState.theme,
+      p_limit: LB_PAGE_SIZE,
+      p_offset: from
+    });
+    const rows = Array.isArray(rpcResult.data) ? rpcResult.data : [];
+    return {
+      ...rpcResult,
+      data: rows,
+      count: rows.length > 0 ? Number(rows[0].total_count) : 0
+    };
+  };
   let result;
   if (lbState.gameMode === 'daily') {
     const challenge = dailyChallenge || ensureDailyChallenge();
@@ -6515,6 +6529,8 @@ async function loadLeaderboard() {
       .eq('challenge_date', leaderboardDate)
       .order('leaderboard_rank', { ascending: true })
       .range(from, to);
+  } else if (lbState.control === 'all') {
+    result = await runOverallQuery();
   } else {
     result = await runQuery('name, score, theme, control_method, game_mode, created_at, player_id, player_code');
     if (['42703', 'PGRST204'].includes(result.error?.code)) {
@@ -6524,10 +6540,10 @@ async function loadLeaderboard() {
   const { data, error, count } = result;
   if (requestId !== lbState.requestId) return;
   lbLoading.style.display = 'none';
-  if (error || !data || data.length === 0) {
+  if (error || !data || data.length === 0) {
     lbEmpty.style.display = 'block';
     lbEmpty.textContent = error
-      ? ((lbState.gameMode === 'daily' && ['42P01', 'PGRST205'].includes(error.code)) || error.code === '42703'
+      ? (isSchemaError(error)
           ? 'Leaderboard update required'
           : 'Failed to load')
       : (lbState.gameMode === 'daily' && lbState.dailyDate !== currentUtcDateKey()
