@@ -6,12 +6,13 @@
  * online player to an outdated version of the game.
  */
 const CACHE_PREFIX = 'snake-';
-const CACHE_VERSION = 'shell-v5';
+const CACHE_VERSION = 'shell-v6';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const OFFLINE_PAGE = './';
-const CORE_ASSET = './snake-core.js';
-const KEN_STAGE_AUDIO = './assets/audio/ken-stage-96.mp3';
-const KEN_STAGE_MIDI = './audio%20themes/street_fighter_ii_-_ken.mid';
+// Replaced by scripts/build-service-worker.mjs after Vite emits its hashed
+// production assets. Keeping the template free of a fixed file list prevents
+// a new build from serving an old JavaScript or CSS shell offline.
+const PRECACHE_ASSETS = __VITE_PRECACHE_ASSETS__;
 
 async function fetchFreshAsset(asset) {
   const response = await fetch(new Request(asset, {
@@ -28,18 +29,11 @@ async function fetchFreshAsset(asset) {
 
 async function cacheFreshGameShell() {
   const cache = await caches.open(CACHE_NAME);
-  const [pageResponse, coreResponse, kenAudioResponse, kenMidiResponse] = await Promise.all([
-    fetchFreshAsset(OFFLINE_PAGE),
-    fetchFreshAsset(CORE_ASSET),
-    fetchFreshAsset(KEN_STAGE_AUDIO),
-    fetchFreshAsset(KEN_STAGE_MIDI)
-  ]);
-  await Promise.all([
-    cache.put(OFFLINE_PAGE, pageResponse),
-    cache.put(CORE_ASSET, coreResponse),
-    cache.put(KEN_STAGE_AUDIO, kenAudioResponse),
-    cache.put(KEN_STAGE_MIDI, kenMidiResponse)
-  ]);
+  const assets = [OFFLINE_PAGE, ...PRECACHE_ASSETS];
+  await Promise.all(assets.map(async asset => {
+    const response = await fetchFreshAsset(asset);
+    await cache.put(asset, response);
+  }));
 }
 
 self.addEventListener('install', event => {
@@ -64,9 +58,6 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const { request } = event;
   const requestUrl = new URL(request.url);
-  const coreUrl = new URL(CORE_ASSET, self.registration.scope);
-  const kenAudioUrl = new URL(KEN_STAGE_AUDIO, self.registration.scope);
-  const kenMidiUrl = new URL(KEN_STAGE_MIDI, self.registration.scope);
 
   // Leave cross-origin resources, Supabase, auth, and every other API request
   // to the browser/network unchanged.
@@ -75,15 +66,13 @@ self.addEventListener('fetch', event => {
   }
 
   const isNavigation = request.mode === 'navigate';
-  const isCoreRequest = requestUrl.pathname === coreUrl.pathname;
-  const isKenAudioRequest = requestUrl.pathname === kenAudioUrl.pathname;
-  const isKenMidiRequest = requestUrl.pathname === kenMidiUrl.pathname;
-  if (!isNavigation && !isCoreRequest && !isKenAudioRequest && !isKenMidiRequest) return;
+  const requestedAsset = `./${requestUrl.pathname.slice(self.registration.scope ? new URL(self.registration.scope).pathname.length : 0)}`;
+  const normalizedAsset = requestedAsset.replace(/\/{2,}/g, '/');
+  const isPrecachedAsset = PRECACHE_ASSETS.includes(normalizedAsset);
+  if (!isNavigation && !isPrecachedAsset) return;
 
   event.respondWith((async () => {
-    const cacheKey = isNavigation
-      ? OFFLINE_PAGE
-      : (isCoreRequest ? CORE_ASSET : (isKenAudioRequest ? KEN_STAGE_AUDIO : KEN_STAGE_MIDI));
+    const cacheKey = isNavigation ? OFFLINE_PAGE : normalizedAsset;
     try {
       const response = await fetch(request, { cache: 'no-store' });
       if (response.ok) {

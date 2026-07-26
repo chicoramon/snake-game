@@ -3,11 +3,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { readAppSource } from './app-source.mjs';
 
 const testDir = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(testDir, '..');
 const sql = readFileSync(join(rootDir, 'supabase-player-display-names.sql'), 'utf8');
-const html = readFileSync(join(rootDir, 'snake-game-turn.html'), 'utf8');
+const html = readAppSource();
 
 test('display-name migration validates writes and exposes only the public card fields', () => {
   assert.match(sql, /add column if not exists display_name text/i);
@@ -34,6 +35,18 @@ test('Player menu supports saving and clearing an optional display name', () => 
   assert.match(html, /sb\.rpc\('set_player_display_name'/);
   assert.match(html, /p_display_name: displayName \|\| null/);
   assert.match(html, /id: '2026-07-24-player-cards'/);
+});
+
+test('email restoration cannot let a stale anonymous session overwrite its player profile', () => {
+  assert.match(html, /let playerIdentityRevision = 0/);
+  assert.match(html, /async function loadPlayerProfile\(user = currentUser, revision = playerIdentityRevision\)/);
+  assert.match(html, /\.eq\('id', user\.id\)/);
+  assert.match(html, /revision !== playerIdentityRevision \|\| currentUser\?\.id !== user\.id/);
+  assert.match(html, /const activeSession = data\?\.session \|\| null/);
+  assert.match(html, /activeSession\?\.user\?\.id \|\| null\) !== \(eventSession\?\.user\?\.id \|\| null/);
+  assert.match(html, /playerIdentityPromise = syncPlayerSession\(/);
+  assert.match(html, /If the initial profile read raced that persistence/);
+  assert.match(html, /currentSession\?\.user\?\.id === data\.user\.id/);
 });
 
 test('main menu gently invites named players to add a public display name', () => {

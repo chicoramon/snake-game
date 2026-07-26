@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
+import { readAppSource } from './app-source.mjs';
 
-const html = fs.readFileSync(new URL('../snake-game-turn.html', import.meta.url), 'utf8');
+const html = readAppSource();
 
 test('selecting Daily Run fetches the authoritative live challenge', () => {
   assert.match(

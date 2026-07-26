@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { readAppSource } from './app-source.mjs';
 
-const html = fs.readFileSync(new URL('../snake-game-turn.html', import.meta.url), 'utf8');
+const html = readAppSource();
 const serviceWorker = fs.readFileSync(new URL('../sw.js', import.meta.url), 'utf8');
 const deployScript = fs.readFileSync(new URL('../deploy-gh-pages.ps1', import.meta.url), 'utf8');
 const musicOverride = html.match(
@@ -72,8 +73,12 @@ test('the compressed recording is the native primary score', () => {
 });
 
 test('the native audio and MIDI fallback are included in the versioned offline shell', () => {
-  assert.match(serviceWorker, /CACHE_VERSION\s*=\s*['"]shell-v5['"]/);
-  assert.match(serviceWorker, /assets\/audio\/ken-stage-96\.mp3/);
-  assert.match(serviceWorker, /audio%20themes\/street_fighter_ii_-_ken\.mid/);
-  assert.match(deployScript, /audio themes\\street_fighter_ii_-_ken\.mid/);
+  const packagingScript = fs.readFileSync(new URL('../scripts/package-static-assets.mjs', import.meta.url), 'utf8');
+  const workerBuildScript = fs.readFileSync(new URL('../scripts/build-service-worker.mjs', import.meta.url), 'utf8');
+  assert.match(serviceWorker, /CACHE_VERSION\s*=\s*['"]shell-v6['"]/);
+  assert.match(serviceWorker, /PRECACHE_ASSETS\s*=\s*__VITE_PRECACHE_ASSETS__/);
+  assert.match(packagingScript, /\['assets', 'assets'\]/);
+  assert.match(packagingScript, /audio themes\/street_fighter_ii_-_ken\.mid/);
+  assert.match(workerBuildScript, /__VITE_PRECACHE_ASSETS__/);
+  assert.match(deployScript, /npm run build/);
 });

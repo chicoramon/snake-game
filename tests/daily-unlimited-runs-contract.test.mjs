@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { readAppSource } from './app-source.mjs';
 
 const testDir = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(testDir, '..');
 const read = path => readFileSync(join(rootDir, path), 'utf8');
 
-const html = read('snake-game-turn.html');
+const html = readAppSource();
 const canonicalSql = read('supabase-daily-run.sql');
 const rolloutSql = read('supabase-daily-run-unlimited-attempts.sql');
 const edgeFunction = read('supabase/functions/submit-daily-attempt/index.ts');

@@ -3,11 +3,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { readAppSource } from './app-source.mjs';
 
 const testDir = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(testDir, '..');
 const sql = readFileSync(join(rootDir, 'supabase-leaderboard-overall-best.sql'), 'utf8');
-const html = readFileSync(join(rootDir, 'snake-game-turn.html'), 'utf8');
+const html = readAppSource();
 
 test('overall leaderboard is deduplicated, ranked, and counted on the server', () => {
   assert.match(sql, /create or replace function public\.get_overall_leaderboard/i);
@@ -30,4 +31,3 @@ test('only the non-Daily ALL control filter uses the overall leaderboard RPC', (
   assert.match(html, /p_theme: lbState\.theme === 'all' \? null : lbState\.theme/);
   assert.match(html, /count: rows\.length > 0 \? Number\(rows\[0\]\.total_count\) : 0/);
 });
-

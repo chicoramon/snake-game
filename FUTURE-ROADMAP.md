@@ -194,6 +194,11 @@ dist/
 
 Start with the smoke-test harness and the behavior-neutral CSS/JavaScript extraction. Do not split gameplay systems until that modular shell builds, deploys, updates through `sw.js`, and matches the current game on desktop and mobile Safari.
 
+### Implementation Status
+
+- **Source/build shell — implemented locally (2026-07-26).** The modular entry point now uses Vite, with extracted CSS and application JavaScript, reproducible hashed `dist/` output, asset packaging, and a generated asset-aware service-worker precache. The legacy `snake-game-turn.html` remains untouched as the behavioral reference.
+- **Automated checks — implemented locally.** Existing contract tests now target the modular application source, and Playwright smoke tests cover the main menu, play/pause, theme selection, controls, and leaderboard flows. Final browser/Safari parity validation and production deployment remain pending.
+
 ## Competitive Play Roadmap
 
 The competitive roadmap should build on the game's existing fixed board, persistent player identity, Supabase leaderboard, per-run game-mode freezing, and authenticated score-submission flow. The shared foundation for Daily Run and Vs mode is a deterministic, versioned gameplay core: given the same ruleset, seed, and input events, the browser and server must reproduce the same run.
