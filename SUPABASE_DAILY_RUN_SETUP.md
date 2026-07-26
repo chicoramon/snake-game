@@ -61,28 +61,28 @@ If the Supabase CLI cannot reach the Management API, the same setup can be compl
 
 The dashboard entrypoint contains the same replay validator as the two-file CLI source, inlined because the browser editor deploys a single entrypoint. Supabase provides the project URL and project keys to the function environment automatically; do not paste keys into the source.
 
-## Temporary unlimited-attempt debug mode
+## Unlimited ranked-run policy
 
-During end-to-end debugging, ranked attempts can be made explicitly unlimited without changing the production default:
+Daily Run now permits unlimited ranked runs throughout each UTC day. For an existing deployment:
 
-1. Rerun the complete current `supabase-daily-run.sql` in the SQL Editor to install the config switch and updated RPCs.
-2. Run `supabase-daily-run-debug-mode.sql` to enable the switch.
-3. Redeploy `submit-daily-attempt` from the current `supabase/dashboard/submit-daily-attempt-index.ts`.
+1. Run `supabase-daily-run-unlimited-attempts.sql` in the SQL Editor.
+2. Deploy the updated website.
 
-The database and function return `-1` as an internal unlimited sentinel; the client renders this as **DEBUG • Unlimited ranked attempts**. Before launch, execute the disable statement included at the bottom of `supabase-daily-run-debug-mode.sql`. Production then returns to three attempts without another code deployment.
+The database and function return `-1` as an internal unlimited sentinel. The client presents this as **Unlimited ranked runs**. The original configuration column is retained internally as a reversible rollout switch, but it is no longer described as a debug mode to players.
+
+Clean installations need only the current `supabase-daily-run.sql`, which enables unlimited ranked runs by default.
 
 ## Smoke test
 
 1. Create or reuse a device-bound player by saving initials.
-2. Select **Daily Run**. The menu should show `3/3 ranked attempts left`.
-3. Start a run. The menu reserves attempt 1 immediately before countdown.
+2. Select **Daily Run**. The menu should show `Unlimited ranked runs`.
+3. Start a run. The menu reserves ranked run 1 immediately before countdown.
 4. Finish the run. The result should change from `Verifying...` to `Verified` and show the Daily rank.
-5. Repeat twice. The counter should reach `0/3`.
-6. Start again. The run should be labeled **Practice Run** and should not submit.
-7. Clear neither site data nor the Supabase session during this test; the initial policy intentionally ties the allowance to the current anonymous Auth user.
+5. Repeat at least three more times. Every completed run should verify and only the player's strongest result should represent them on the Daily leaderboard.
+6. Confirm that each run receives an increasing ranked-run number and no Practice Run appears because of run count.
 
 If the SQL has not been installed, the client remains in clearly labeled local-preview mode. This fallback does not submit scores.
 
 ## Initial identity policy
 
-The first release accepts any Supabase player profile, including an anonymous device-bound profile. A future hardening milestone will require a persistent email-restorable player for ranked attempts so clearing website data cannot create a fresh allowance.
+The first release accepts any Supabase player profile, including an anonymous device-bound profile. A future hardening milestone will require a persistent email-restorable player for ranked runs so competitive identity and history survive cleared website data.

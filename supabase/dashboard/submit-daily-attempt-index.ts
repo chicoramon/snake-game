@@ -269,12 +269,12 @@ Deno.serve(async request => {
       .maybeSingle()
   ]);
 
-  const debugUnlimitedAttempts = runConfig?.debug_unlimited_attempts === true;
+  const unlimitedRankedRuns = runConfig?.debug_unlimited_attempts === true;
 
   return json({
     verified: true,
     attemptNumber: attempt.attempt_number,
-    attemptsRemaining: debugUnlimitedAttempts ? -1 : Math.max(0, 3 - (attemptsUsed || 0)),
+    attemptsRemaining: unlimitedRankedRuns ? -1 : Math.max(0, 3 - (attemptsUsed || 0)),
     score: validation.score,
     finalFoodMs: validation.finalFoodMs,
     leaderboardRank: ranking?.leaderboard_rank ?? null,

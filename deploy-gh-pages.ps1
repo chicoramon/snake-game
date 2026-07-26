@@ -2,7 +2,12 @@
 param(
   [string]$Source = 'snake-game-turn.html',
   [string]$ServiceWorker = 'sw.js',
-  [string[]]$StaticAssets = @('manifest.webmanifest', 'assets', 'snake-core.js'),
+  [string[]]$StaticAssets = @(
+    'manifest.webmanifest',
+    'assets',
+    'audio themes\street_fighter_ii_-_ken.mid',
+    'snake-core.js'
+  ),
   [string]$Remote = 'origin',
   [string]$Branch = 'gh-pages',
   [string]$CommitMessage = 'Deploy Snake game',
@@ -81,7 +86,12 @@ try {
   Copy-Item -LiteralPath $sourcePath -Destination (Join-Path $tempPath 'index.html')
   Copy-Item -LiteralPath $serviceWorkerPath -Destination (Join-Path $tempPath 'sw.js')
   foreach ($asset in $StaticAssets) {
-    Copy-Item -LiteralPath (Join-Path $repoRoot $asset) -Destination (Join-Path $tempPath $asset) -Recurse
+    $assetDestination = Join-Path $tempPath $asset
+    $assetDestinationParent = Split-Path -Parent $assetDestination
+    if (-not (Test-Path -LiteralPath $assetDestinationParent)) {
+      New-Item -ItemType Directory -Path $assetDestinationParent -Force | Out-Null
+    }
+    Copy-Item -LiteralPath (Join-Path $repoRoot $asset) -Destination $assetDestination -Recurse
   }
   [IO.File]::WriteAllText((Join-Path $tempPath '.nojekyll'), '')
 

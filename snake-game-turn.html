@@ -1040,6 +1040,91 @@
   }
   #player-message.error { color: #ff8b8b; }
   #player-back { width: 100%; margin-top: 16px; }
+  #player-display-setup { margin-top: 16px; }
+  #player-display-name-save { width: 100%; margin-top: 8px; }
+  .lb-player-link {
+    appearance: none;
+    -webkit-appearance: none;
+    display: inline;
+    border: 0;
+    border-bottom: 1px dotted currentColor;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    font-weight: inherit;
+    letter-spacing: inherit;
+    padding: 0 0 1px;
+    text-align: inherit;
+    touch-action: manipulation;
+  }
+  .lb-player-link:hover { color: var(--accent); border-bottom-style: solid; }
+  .lb-player-link:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  #public-player-card-panel {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0,0,0,0.9);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  #public-player-card-panel.visible { display: flex; }
+  .public-player-card {
+    width: min(100%, 350px);
+    padding: 28px 24px 24px;
+    border: 1px solid var(--accent-dim);
+    background:
+      linear-gradient(135deg, var(--accent-glow-soft), transparent 42%),
+      var(--panel-strong);
+    box-shadow:
+      4px 4px 0 rgba(0,0,0,0.9),
+      0 0 28px var(--accent-glow);
+    font-family: var(--pixel-font);
+    text-align: center;
+  }
+  .public-player-card h2 {
+    overflow-wrap: anywhere;
+    margin: 8px 0 12px;
+    color: var(--accent);
+    font-size: 1.3rem;
+    line-height: 1.3;
+  }
+  #public-player-arcade-id {
+    color: var(--text);
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+  }
+  #public-player-card-message {
+    min-height: 1.4em;
+    margin: 14px 0 0;
+    color: var(--muted);
+    font-size: 0.68rem;
+    line-height: 1.5;
+  }
+  #public-player-card-close {
+    width: 100%;
+    min-height: 42px;
+    margin-top: 18px;
+    border: 1px solid var(--accent);
+    border-radius: 0;
+    background: var(--accent);
+    color: #020504;
+    cursor: pointer;
+    font-family: var(--pixel-font);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
   .lb-you-badge {
     display: inline-block;
     margin-left: 6px;
@@ -1443,7 +1528,7 @@
     letter-spacing: 1px;
     text-transform: uppercase;
   }
-  #overlay #mute-btn, #overlay #options-btn, #overlay #controls-btn, #overlay #player-btn,
+  #overlay #mute-btn, #overlay #options-btn, #overlay #controls-btn, #overlay #player-btn, #overlay #whats-new-btn,
   #overlay #shareBtn, #overlay #lbBtn {
     width: min(100%, 228px);
     min-height: 42px;
@@ -1460,7 +1545,7 @@
     pointer-events: auto;
     touch-action: manipulation;
   }
-  #overlay #mute-btn:hover, #overlay #options-btn:hover, #overlay #controls-btn:hover, #overlay #player-btn:hover,
+  #overlay #mute-btn:hover, #overlay #options-btn:hover, #overlay #controls-btn:hover, #overlay #player-btn:hover, #overlay #whats-new-btn:hover,
   #overlay #shareBtn:hover, #overlay #lbBtn:hover {
     border-color: var(--accent-dim);
     background: var(--accent-glow-soft);
@@ -1468,7 +1553,227 @@
   #overlay #mute-btn { margin-top: 16px; }
   #overlay #shareBtn { display: none; }
   #overlay #lbBtn { display: block; }
-  #overlay #options-btn, #overlay #controls-btn, #overlay #player-btn { margin-top: 7px; }
+  #overlay #options-btn, #overlay #controls-btn, #overlay #player-btn, #overlay #whats-new-btn { margin-top: 7px; }
+  #player-btn, #whats-new-btn { position: relative; }
+  #player-add-name-badge {
+    position: absolute;
+    top: -7px;
+    right: -8px;
+    padding: 3px 5px;
+    background: var(--accent);
+    border: 1px solid #fff;
+    color: #020504;
+    font-family: var(--pixel-font);
+    font-size: 0.46rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    box-shadow: 0 0 12px var(--accent-glow);
+  }
+  #player-add-name-badge[hidden] { display: none; }
+  #display-name-invite {
+    width: min(100%, 228px);
+    margin-top: 7px;
+    padding: 10px;
+    background: linear-gradient(135deg, var(--accent-glow-soft), transparent 55%), var(--panel);
+    border: 1px solid var(--accent-dim);
+    border-left: 3px solid var(--accent);
+    color: var(--text);
+    font-family: var(--pixel-font);
+    text-align: left;
+    box-shadow: 0 0 14px var(--accent-glow-soft);
+  }
+  #display-name-invite[hidden] { display: none; }
+  #overlay #display-name-invite p {
+    margin: 0 0 9px;
+    color: var(--text);
+    font-size: 0.66rem;
+    line-height: 1.45;
+  }
+  #display-name-invite-id { color: var(--accent); font-weight: 800; }
+  .display-name-invite-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+  }
+  #overlay .display-name-invite-actions button {
+    width: 100%;
+    min-height: 32px;
+    margin: 0;
+    padding: 7px 6px;
+    border: 1px solid var(--accent-dim);
+    border-radius: 0;
+    background: transparent;
+    color: var(--accent);
+    font-size: 0.56rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  #overlay .display-name-invite-actions #display-name-invite-add {
+    background: var(--accent);
+    color: #020504;
+  }
+  #whats-new-badge {
+    position: absolute;
+    top: -7px;
+    right: -8px;
+    padding: 3px 5px;
+    background: var(--food);
+    border: 1px solid #fff;
+    color: #fff;
+    font-family: var(--pixel-font);
+    font-size: 0.5rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    box-shadow: 0 0 12px var(--food-glow);
+  }
+  #whats-new-badge[hidden] { display: none; }
+  #whats-new-panel {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    align-items: center;
+    justify-content: center;
+    padding: max(env(safe-area-inset-top), 20px) 18px max(env(safe-area-inset-bottom), 20px);
+    overflow-y: auto;
+    background: rgba(0,0,0,0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    touch-action: auto;
+  }
+  #whats-new-panel.visible { display: flex; }
+  .whats-new-card {
+    width: calc(100vw - 36px);
+    max-width: 430px;
+    max-height: calc(100dvh - 40px);
+    overflow-y: auto;
+    padding: 26px 22px 22px;
+    background: linear-gradient(135deg, var(--accent-glow-soft), transparent 42%), var(--panel-strong);
+    border: 1px solid var(--accent-dim);
+    box-shadow: 0 0 0 4px #000, 0 0 28px var(--accent-glow);
+  }
+  .whats-new-card h2 {
+    margin: 4px 0 5px;
+    color: var(--accent);
+    font-family: var(--pixel-font);
+    font-size: 1.35rem;
+    letter-spacing: 0.14em;
+    text-align: center;
+    text-transform: uppercase;
+    text-shadow: 0 0 14px var(--accent-glow);
+  }
+  #whats-new-current {
+    margin-bottom: 18px;
+    color: var(--muted);
+    font-family: var(--pixel-font);
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+  .whats-new-release + .whats-new-release {
+    margin-top: 19px;
+    padding-top: 17px;
+    border-top: 1px solid var(--line);
+  }
+  .whats-new-release h3 {
+    margin: 0 0 4px;
+    color: var(--text);
+    font-family: var(--pixel-font);
+    font-size: 0.86rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+  .whats-new-release-meta {
+    margin-bottom: 9px;
+    color: var(--accent-dim);
+    font-family: var(--pixel-font);
+    font-size: 0.56rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .whats-new-release ul {
+    margin: 0;
+    padding-left: 1.25rem;
+    color: var(--text);
+    font-size: 0.78rem;
+    line-height: 1.55;
+  }
+  .whats-new-release li + li { margin-top: 6px; }
+  #whats-new-older-toggle {
+    width: 100%;
+    min-height: 40px;
+    margin-top: 20px;
+    border: 1px solid var(--accent-dim);
+    border-radius: 0;
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    font-family: var(--pixel-font);
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+  #whats-new-older-toggle[aria-expanded="true"] {
+    background: var(--accent-glow-soft);
+  }
+  .whats-new-archive {
+    margin-top: 13px;
+    border-top: 1px solid var(--line);
+  }
+  .whats-new-archive[hidden] { display: none; }
+  .whats-new-archive details {
+    border-bottom: 1px solid var(--line);
+  }
+  .whats-new-archive summary {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    gap: 10px;
+    align-items: center;
+    padding: 13px 2px;
+    color: var(--text);
+    cursor: pointer;
+    font-family: var(--pixel-font);
+    font-size: 0.68rem;
+    list-style: none;
+  }
+  .whats-new-archive summary::-webkit-details-marker { display: none; }
+  .whats-new-archive summary::before {
+    content: '+';
+    color: var(--accent);
+    font-size: 0.9rem;
+  }
+  .whats-new-archive details[open] summary::before { content: '−'; }
+  .whats-new-archive time {
+    color: var(--accent-dim);
+    font-size: 0.56rem;
+    letter-spacing: 0.06em;
+  }
+  .whats-new-archive .whats-new-release {
+    padding: 0 2px 15px 22px;
+  }
+  .whats-new-archive .whats-new-release h3,
+  .whats-new-archive .whats-new-release-meta {
+    display: none;
+  }
+  #whats-new-close {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 22px;
+    border: 1px solid var(--accent);
+    border-radius: 0;
+    background: var(--accent);
+    color: #020504;
+    cursor: pointer;
+    font-family: var(--pixel-font);
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
   #overlay .control-mode-toggle { margin-top: 0; }
   #namePrompt {
     width: 100%;
@@ -1617,10 +1922,28 @@
   <button id="mute-btn" title="Toggle music"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="1" y="3" width="2" height="4"/><rect x="3" y="2" width="2" height="6"/><rect x="5" y="1" width="1" height="8"/><rect x="7" y="3" width="1" height="4"/><rect x="9" y="2" width="1" height="6"/></svg> Music</button>
   <button id="options-btn" title="Themes"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="1" y="1" width="2" height="2"/><rect x="7" y="1" width="2" height="2"/><rect x="4" y="3" width="2" height="2"/><rect x="1" y="5" width="2" height="2"/><rect x="7" y="5" width="2" height="2"/><rect x="4" y="7" width="2" height="2"/></svg> Themes</button>
   <button id="controls-btn" title="Choose and customize controls"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="3" y="0" width="4" height="2"/><rect x="1" y="2" width="2" height="2"/><rect x="7" y="2" width="2" height="2"/><rect x="3" y="2" width="4" height="2"/><rect x="3" y="4" width="4" height="2"/><rect x="1" y="6" width="2" height="2"/><rect x="7" y="6" width="2" height="2"/><rect x="3" y="6" width="4" height="2"/><rect x="3" y="8" width="4" height="2"/></svg> Controls</button>
-  <button id="player-btn" title="Player identity and score saving"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="3" y="1" width="4" height="2"/><rect x="2" y="3" width="6" height="3"/><rect x="1" y="7" width="8" height="2"/></svg> <span id="player-menu-label">Player: Guest</span></button>
+  <button id="player-btn" title="Player identity and score saving"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="3" y="1" width="4" height="2"/><rect x="2" y="3" width="6" height="3"/><rect x="1" y="7" width="8" height="2"/></svg> <span id="player-menu-label">Player: Guest</span><span id="player-add-name-badge" hidden>ADD NAME</span></button>
+  <div id="display-name-invite" role="status" aria-live="polite" hidden>
+    <p>Give <span id="display-name-invite-id"></span> a public name?</p>
+    <div class="display-name-invite-actions">
+      <button id="display-name-invite-add" type="button">Add Name</button>
+      <button id="display-name-invite-later" type="button">Later</button>
+    </div>
+  </div>
+  <button id="whats-new-btn" title="See recent game updates"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true"><rect x="4" y="0" width="2" height="2"/><rect x="4" y="8" width="2" height="2"/><rect x="0" y="4" width="2" height="2"/><rect x="8" y="4" width="2" height="2"/><rect x="2" y="2" width="6" height="6"/></svg> What's New <span id="whats-new-badge">NEW!</span></button>
   </div>
 </div>
 
+<div id="whats-new-panel" role="dialog" aria-modal="true" aria-labelledby="whats-new-title" aria-hidden="true">
+  <div class="whats-new-card">
+    <span class="menu-kicker">Update Bulletin</span>
+    <h2 id="whats-new-title">What's New</h2>
+    <div id="whats-new-current"></div>
+    <div id="whats-new-releases"></div>
+    <button id="whats-new-close" type="button">Got It</button>
+  </div>
+</div>
+
 <div id="dailyRulesDialog" role="dialog" aria-modal="true" aria-labelledby="dailyRulesTitle" aria-hidden="true">
   <div class="daily-rules-card">
     <svg class="daily-rules-icon" viewBox="0 0 16 16" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true">
@@ -1635,11 +1958,11 @@
     <div class="daily-rule-list">
       <div class="daily-rule"><span class="daily-rule-number">01</span><span>Collect as much food as possible before the 60-second clock expires.</span></div>
       <div class="daily-rule"><span class="daily-rule-number">02</span><span>Everyone receives the same seeded challenge and locked theme for the day.</span></div>
-      <div class="daily-rule"><span class="daily-rule-number">03</span><span id="daily-attempt-rule">You receive three ranked attempts each UTC day. Extra runs are unranked practice.</span></div>
+      <div class="daily-rule"><span class="daily-rule-number">03</span><span id="daily-attempt-rule">Every run is ranked. Play as many times as you like before the UTC day ends.</span></div>
       <div class="daily-rule"><span class="daily-rule-number">04</span><span>More food ranks higher. Ties favor the player who reached their final food sooner.</span></div>
       <div class="daily-rule"><span class="daily-rule-number">05</span><span>A collision ends the attempt immediately. Stay alive and keep moving.</span></div>
     </div>
-    <p id="dailyRulesFootnote" class="daily-rules-preview">Preview phase: results remain on this device. The three-attempt limit activates with ranked Daily Run.</p>
+    <p id="dailyRulesFootnote" class="daily-rules-preview">Preview results remain on this device until ranked Daily Run is available.</p>
     <button id="dailyRulesBegin" type="button">Begin Daily Run</button>
     <button id="dailyRulesLater" type="button">Not Now</button>
   </div>
@@ -1707,6 +2030,13 @@
       <p class="player-help">Initials may be shared. Your four-character player code makes your identity unique.</p>
     </div>
 
+    <div id="player-display-setup">
+      <label class="player-field-label" for="player-display-name-input">Display name (public)</label>
+      <input id="player-display-name-input" type="text" maxlength="20" placeholder="Your public name" autocomplete="nickname" />
+      <button id="player-display-name-save" class="primary" type="button">Save Display Name</button>
+      <p class="player-help">Shown only when someone opens your player card. Leave blank to remove it.</p>
+    </div>
+
     <label class="player-toggle" for="auto-submit-toggle">
       <span>Auto-submit personal bests</span>
       <input id="auto-submit-toggle" type="checkbox" checked />
@@ -1732,8 +2062,18 @@
     <button id="player-back" type="button">Back</button>
   </div>
 </div>
-
-<div id="fps-counter">-- FPS</div>
+
+<div id="public-player-card-panel" role="dialog" aria-modal="true" aria-labelledby="public-player-card-name" aria-hidden="true">
+  <div class="public-player-card">
+    <span class="menu-kicker">Player Card</span>
+    <h2 id="public-player-card-name">Loading...</h2>
+    <div id="public-player-arcade-id"></div>
+    <p id="public-player-card-message" aria-live="polite"></p>
+    <button id="public-player-card-close" type="button">Back to Leaderboard</button>
+  </div>
+</div>
+
+<div id="fps-counter">-- FPS</div>
 
 <div id="dpad">
   <div class="btn up" data-dir="up"><svg viewBox="0 0 24 24"><polyline points="6 15 12 9 18 15"/></svg></div>
@@ -1800,11 +2140,19 @@ const lbPageInfo = document.getElementById('lbPageInfo');
 const lbBack = document.getElementById('lbBack');
 const playerBtn = document.getElementById('player-btn');
 const playerMenuLabel = document.getElementById('player-menu-label');
+const playerAddNameBadge = document.getElementById('player-add-name-badge');
+const displayNameInvite = document.getElementById('display-name-invite');
+const displayNameInviteId = document.getElementById('display-name-invite-id');
+const displayNameInviteAdd = document.getElementById('display-name-invite-add');
+const displayNameInviteLater = document.getElementById('display-name-invite-later');
 const playerPanel = document.getElementById('player-panel');
 const playerIdentityStatus = document.getElementById('player-identity-status');
 const playerProfileSetup = document.getElementById('player-profile-setup');
 const playerInitialsInput = document.getElementById('player-initials-input');
 const playerInitialsSave = document.getElementById('player-initials-save');
+const playerDisplaySetup = document.getElementById('player-display-setup');
+const playerDisplayNameInput = document.getElementById('player-display-name-input');
+const playerDisplayNameSave = document.getElementById('player-display-name-save');
 const autoSubmitToggle = document.getElementById('auto-submit-toggle');
 const playerAccountSetup = document.getElementById('player-account-setup');
 const playerEmailInput = document.getElementById('player-email-input');
@@ -1815,7 +2163,18 @@ const playerOtpInput = document.getElementById('player-otp-input');
 const playerVerifyOtp = document.getElementById('player-verify-otp');
 const playerMessage = document.getElementById('player-message');
 const playerBack = document.getElementById('player-back');
-const overlayTitle = document.getElementById('overlayTitle');
+const publicPlayerCardPanel = document.getElementById('public-player-card-panel');
+const publicPlayerCardName = document.getElementById('public-player-card-name');
+const publicPlayerArcadeId = document.getElementById('public-player-arcade-id');
+const publicPlayerCardMessage = document.getElementById('public-player-card-message');
+const publicPlayerCardClose = document.getElementById('public-player-card-close');
+const whatsNewBtn = document.getElementById('whats-new-btn');
+const whatsNewBadge = document.getElementById('whats-new-badge');
+const whatsNewPanel = document.getElementById('whats-new-panel');
+const whatsNewCurrent = document.getElementById('whats-new-current');
+const whatsNewReleases = document.getElementById('whats-new-releases');
+const whatsNewClose = document.getElementById('whats-new-close');
+const overlayTitle = document.getElementById('overlayTitle');
 const themeLabel = document.getElementById('themeLabel');
 const overlayMsg = document.getElementById('overlayMsg');
 const scoreEl = document.getElementById('score');
@@ -1828,8 +2187,220 @@ const recordChaseEl = document.getElementById('record-chase');
 const recordCelebrationEl = document.getElementById('record-celebration');
 const recordFireworksCanvas = document.getElementById('record-fireworks');
 const recordBannerCopy = document.getElementById('record-banner-copy');
-
-// --- Responsive canvas ---
+
+// Add the newest release first and change its id whenever a release should
+// trigger the one-time update bulletin. Keep every item player-facing: new
+// features, modes, controls, themes, options, and competitive experiences only.
+// Do not include bugs, fixes, caching, builds, deployments, or backend details.
+const WHATS_NEW_RELEASES = Object.freeze([
+  {
+    id: '2026-07-24-player-cards',
+    version: 'Update 2026.07.24',
+    title: 'Player Cards & Fairer Rankings',
+    items: [
+      'Add an optional public display name from the Player menu.',
+      'Tap a player’s initials in any leaderboard to see their public player card.',
+      'The ALL leaderboard now shows every player once, using their strongest score across control methods.',
+      'Daily Run now offers unlimited ranked runs until the UTC day ends.'
+    ]
+  },
+  {
+    id: '2026-07-23-tap-turn',
+    version: 'Update 2026.07.23',
+    title: 'Tap Turn & Daily Challenges',
+    items: [
+      'New TAP controls: tap the left or right half of the board to turn with no buttons covering the action.',
+      'Daily Run now shows the time remaining in today’s worldwide challenge.',
+      'The record chase warns when the undisputed top score is within reach and celebrates a new number one at game over.'
+    ]
+  },
+  {
+    id: '2026-07-21-random-pwa',
+    version: 'Update 2026.07.21',
+    title: 'Random Mode & New Worlds',
+    items: [
+      'RANDOM theme mode rolls a different complete theme whenever you press Play.',
+      'New Simpsons, LEGO, and Game of Thrones themes bring distinct characters, food, visuals, and evolving 8-bit music.',
+      'The Game of Thrones theme transforms the snake into a fire-breathing dragon.'
+    ]
+  }
+]);
+const CURRENT_RELEASE_ID = WHATS_NEW_RELEASES[0].id;
+const WHATS_NEW_SEEN_KEY = 'snake_whats_new_seen';
+const FORCE_WHATS_NEW = new URLSearchParams(location.search).has('whatsnew');
+const DISPLAY_NAME_INVITE_KEY = 'snake_display_name_invite_v1';
+const DISPLAY_NAME_INVITE_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
+const DISPLAY_NAME_INVITE_MAX_DISMISSALS = 2;
+let displayNameInviteSuppressedThisSession = FORCE_WHATS_NEW || !hasSeenCurrentRelease();
+
+function hasSeenCurrentRelease() {
+  try { return localStorage.getItem(WHATS_NEW_SEEN_KEY) === CURRENT_RELEASE_ID; }
+  catch { return false; }
+}
+
+function markCurrentReleaseSeen() {
+  try { localStorage.setItem(WHATS_NEW_SEEN_KEY, CURRENT_RELEASE_ID); } catch {}
+  whatsNewBadge.hidden = true;
+}
+
+function renderWhatsNew() {
+  const latestRelease = WHATS_NEW_RELEASES[0];
+  whatsNewCurrent.textContent = `Latest release • ${latestRelease.version}`;
+  whatsNewReleases.replaceChildren();
+
+  const createReleaseSection = release => {
+    const section = document.createElement('section');
+    section.className = 'whats-new-release';
+    const heading = document.createElement('h3');
+    heading.textContent = release.title;
+    const meta = document.createElement('div');
+    meta.className = 'whats-new-release-meta';
+    meta.textContent = release.version;
+    const list = document.createElement('ul');
+    release.items.forEach(item => {
+      const entry = document.createElement('li');
+      entry.textContent = item;
+      list.appendChild(entry);
+    });
+    section.append(heading, meta, list);
+    return section;
+  };
+
+  whatsNewReleases.appendChild(createReleaseSection(latestRelease));
+
+  const olderReleases = WHATS_NEW_RELEASES.slice(1);
+  if (!olderReleases.length) return;
+
+  const toggle = document.createElement('button');
+  toggle.id = 'whats-new-older-toggle';
+  toggle.type = 'button';
+  toggle.setAttribute('aria-expanded', 'false');
+  toggle.textContent = `View Older Updates (${olderReleases.length})`;
+
+  const archive = document.createElement('div');
+  archive.className = 'whats-new-archive';
+  archive.hidden = true;
+
+  olderReleases.forEach(release => {
+    const entry = document.createElement('details');
+    const summary = document.createElement('summary');
+    const date = document.createElement('time');
+    date.dateTime = release.id.slice(0, 10);
+    date.textContent = release.version.replace(/^Update\s+/i, '');
+    const title = document.createElement('span');
+    title.textContent = release.title;
+    summary.append(date, title);
+    entry.append(summary, createReleaseSection(release));
+    archive.appendChild(entry);
+  });
+
+  toggle.addEventListener('click', () => {
+    const expanded = toggle.getAttribute('aria-expanded') === 'true';
+    toggle.setAttribute('aria-expanded', String(!expanded));
+    toggle.textContent = expanded
+      ? `View Older Updates (${olderReleases.length})`
+      : 'Hide Older Updates';
+    archive.hidden = expanded;
+  });
+
+  whatsNewReleases.append(toggle, archive);
+}
+
+function readDisplayNameInviteState() {
+  try {
+    const key = `${DISPLAY_NAME_INVITE_KEY}:${currentUser?.id || 'device'}`;
+    const saved = JSON.parse(localStorage.getItem(key) || '{}');
+    return {
+      dismissals: Math.max(0, Number(saved.dismissals) || 0),
+      snoozedUntil: Math.max(0, Number(saved.snoozedUntil) || 0),
+      completed: saved.completed === true
+    };
+  } catch {
+    return { dismissals: 0, snoozedUntil: 0, completed: false };
+  }
+}
+
+function writeDisplayNameInviteState(state) {
+  try {
+    const key = `${DISPLAY_NAME_INVITE_KEY}:${currentUser?.id || 'device'}`;
+    localStorage.setItem(key, JSON.stringify(state));
+  } catch {}
+}
+
+function isDisplayNameMissing() {
+  return !!playerProfile && !(playerProfile.display_name || '').trim();
+}
+
+function renderDisplayNameInvitation() {
+  const missingName = isDisplayNameMissing();
+  playerAddNameBadge.hidden = !missingName;
+  if (missingName) displayNameInviteId.textContent = playerDisplayName();
+
+  const state = readDisplayNameInviteState();
+  const canInvite = missingName
+    && !state.completed
+    && state.dismissals < DISPLAY_NAME_INVITE_MAX_DISMISSALS
+    && state.snoozedUntil <= Date.now()
+    && !displayNameInviteSuppressedThisSession
+    && !alive
+    && !overlay.classList.contains('hidden')
+    && !whatsNewPanel.classList.contains('visible')
+    && !playerPanel.classList.contains('visible');
+  displayNameInvite.hidden = !canInvite;
+}
+
+function snoozeDisplayNameInvitation() {
+  const state = readDisplayNameInviteState();
+  state.dismissals = Math.min(DISPLAY_NAME_INVITE_MAX_DISMISSALS, state.dismissals + 1);
+  state.snoozedUntil = Date.now() + DISPLAY_NAME_INVITE_SNOOZE_MS;
+  writeDisplayNameInviteState(state);
+  displayNameInvite.hidden = true;
+}
+
+function completeDisplayNameInvitation() {
+  const state = readDisplayNameInviteState();
+  state.completed = true;
+  state.snoozedUntil = 0;
+  writeDisplayNameInviteState(state);
+  displayNameInvite.hidden = true;
+}
+
+function openWhatsNew({ suppressDisplayNameInvite = false } = {}) {
+  if (alive || overlay.classList.contains('hidden')) return;
+  if (suppressDisplayNameInvite) displayNameInviteSuppressedThisSession = true;
+  displayNameInvite.hidden = true;
+  renderWhatsNew();
+  whatsNewPanel.classList.add('visible');
+  whatsNewPanel.setAttribute('aria-hidden', 'false');
+  whatsNewClose.focus();
+}
+
+function closeWhatsNew({ restoreFocus = true } = {}) {
+  markCurrentReleaseSeen();
+  whatsNewPanel.classList.remove('visible');
+  whatsNewPanel.setAttribute('aria-hidden', 'true');
+  renderDisplayNameInvitation();
+  if (restoreFocus) whatsNewBtn.focus();
+}
+
+whatsNewBadge.hidden = !FORCE_WHATS_NEW && hasSeenCurrentRelease();
+whatsNewBtn.addEventListener('click', () => openWhatsNew());
+whatsNewClose.addEventListener('click', () => closeWhatsNew());
+whatsNewPanel.addEventListener('click', event => {
+  if (event.target === whatsNewPanel) closeWhatsNew();
+});
+whatsNewPanel.addEventListener('keydown', event => {
+  if (event.key === 'Escape') closeWhatsNew();
+});
+setTimeout(() => {
+  if (FORCE_WHATS_NEW || !hasSeenCurrentRelease()) {
+    openWhatsNew({ suppressDisplayNameInvite: true });
+  } else {
+    renderDisplayNameInvitation();
+  }
+}, 350);
+
+// --- Responsive canvas ---
 const CELL = 20;
 const BOARD_COLS = 20;
 const BOARD_ROWS = 32;
@@ -1912,6 +2483,7 @@ let dailyLastFoodElapsedMs = null;
 let dailyAttempt = null;
 let dailyStartPending = false;
 let dailyChallengeRequest = 0;
+let dailyChallengeLoading = false;
 let dailyReservationRequestId = null;
 const DAILY_RULES_SEEN_KEY = 'snake_daily_rules_seen_v2';
 
@@ -2069,12 +2641,22 @@ const THEMES = {
   },
   streetfighter: {
     name: 'Street Fighter',
-    bg: '#1a0a0a', grid: 'rgba(255,100,50,0.03)',
-    snakeHead: '#e83030', snakeTail: [232, 48, 48],
-    food: '#40a0ff', foodGlow: 'rgba(64,160,255,0.5)', foodAccent: '#ffffff',
-    accent: '#e83030',
-    deathFlash: 'rgba(255,80,30,',
-    trail: '#e83030', deathParticle: '#ff6030',
+    bg: '#070a12', grid: 'rgba(74,153,214,0.065)',
+    boardPattern: 'kenstage', snakeStyle: 'fighter',
+
+    snakeHead: '#ef3d32', snakeTail: [220, 43, 38],
+
+    snakePalette: ['#ef3d32', '#bd2028', '#f0c08a', '#15151b'],
+
+    fighterGi: '#ef3d32', fighterGiShadow: '#9d1822',
+
+    fighterSkin: '#f0c08a', fighterHair: '#f4c849', fighterBand: '#16161d',
+
+    fighterSpark: '#ffe56a',
+    food: '#43b8ff', foodGlow: 'rgba(67,184,255,0.62)', foodAccent: '#ffffff',
+    accent: '#ef3d32',
+    deathFlash: 'rgba(255,63,42,',
+    trail: '#ef3d32', deathParticle: '#ffe56a',
     music: {
       bass: [
         [164.81,164.81,164.81,164.81,0,0,0,0,0,0,0,0,0,0,0,0,164.81,164.81,164.81,164.81,0,0,0,0,0,0,0,0,0,0,0,0,146.83,146.83,146.83,146.83,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -2105,9 +2687,11 @@ const THEMES = {
       baseBPM: 140, maxBPM: 220, bpmPerLen: 2,
     },
     sfxEat: [
-      { type: 'square', freqs: [330, 440, 660, 880], times: [0, 0.04, 0.08, 0.12], dur: 0.2, vol: 0.15 }
+      { type: 'square', freqs: [329.63, 493.88, 659.25, 987.77], times: [0, 0.035, 0.075, 0.12], dur: 0.22, vol: 0.13 },
+
+      { type: 'triangle', freqs: [146.83, 110, 82.41], times: [0, 0.045, 0.09], dur: 0.16, vol: 0.065 }
     ],
-    sfxDie: { type: 'sawtooth', freqStart: 440, freqEnd: 55, dur: 0.7, vol: 0.15 },
+    sfxDie: { type: 'square', freqStart: 493.88, freqEnd: 55, dur: 0.78, vol: 0.16 },
   },
   dk: {
     name: 'Donkey Kong',
@@ -2777,6 +3361,135 @@ Object.assign(THEMES.got.music, {
   swing: 0,
 });
 
+// Premium 8-bit arcade-rock suite for Street Fighter. Its syncopated E-minor
+// lead, climbing power-chord contour, and driving bass evoke the energy of
+// Ken's famous stage while using a fresh four-movement chiptune arrangement.
+// Every intensity gets a full 128-step arc instead of repeating its peak loop.
+Object.assign(THEMES.streetfighter.music, {
+  bass: [
+    buildMusicArc(
+      [82.41,0,0,0,123.47,0,0,0,82.41,0,0,0,146.83,0,123.47,0],
+      [82.41,0,123.47,0,82.41,0,146.83,0,98,0,146.83,0,110,0,123.47,0],
+      [82.41,0,82.41,123.47,82.41,0,146.83,123.47,98,0,98,146.83,110,0,123.47,146.83],
+      [82.41,0,123.47,0,146.83,0,123.47,0,98,0,110,0,82.41,0,0,0]
+    ),
+    buildMusicArc(
+      [82.41,0,123.47,82.41,0,146.83,123.47,0,98,0,146.83,98,0,110,123.47,0],
+      [82.41,82.41,123.47,0,82.41,146.83,123.47,0,98,98,146.83,0,110,123.47,146.83,0],
+      [82.41,123.47,164.81,123.47,82.41,123.47,146.83,123.47,98,146.83,196,146.83,110,146.83,123.47,146.83],
+      [82.41,82.41,123.47,146.83,164.81,146.83,123.47,0,98,110,123.47,110,82.41,0,0,0]
+    ),
+    buildMusicArc(
+      [82.41,123.47,164.81,123.47,82.41,146.83,164.81,123.47,98,146.83,196,146.83,110,146.83,164.81,146.83],
+      [82.41,164.81,123.47,164.81,196,164.81,146.83,123.47,98,196,146.83,196,220,196,164.81,146.83],
+      [82.41,123.47,164.81,196,246.94,196,164.81,123.47,98,146.83,196,220,246.94,220,196,146.83],
+      [82.41,164.81,196,164.81,146.83,123.47,110,0,98,123.47,146.83,123.47,82.41,0,0,0]
+    ),
+    buildMusicArc(
+      [82.41,164.81,196,246.94,196,164.81,146.83,123.47,98,196,220,246.94,220,196,164.81,146.83],
+      [82.41,123.47,164.81,196,246.94,196,164.81,123.47,98,146.83,196,220,261.63,220,196,146.83],
+      [82.41,164.81,196,246.94,329.63,246.94,196,164.81,98,196,246.94,293.66,329.63,293.66,246.94,196],
+      [82.41,164.81,196,164.81,146.83,123.47,110,0,98,123.47,146.83,123.47,82.41,0,0,0]
+    ),
+  ],
+  melody: [
+    buildMusicArc(
+      [0,0,0,0,0,0,0,0,329.63,0,392,0,440,0,0,0],
+      [329.63,0,392,329.63,0,293.66,0,246.94,329.63,0,440,392,329.63,0,293.66,0],
+      [329.63,392,440,0,493.88,440,392,0,329.63,440,493.88,0,440,392,329.63,0],
+      [329.63,0,392,329.63,293.66,0,246.94,0,329.63,0,293.66,0,246.94,0,0,0]
+    ),
+    buildMusicArc(
+      [329.63,0,392,329.63,440,0,493.88,0,440,392,329.63,0,293.66,329.63,0,0],
+      [329.63,392,440,0,493.88,440,392,329.63,440,493.88,587.33,0,493.88,440,392,0],
+      [392,440,493.88,0,587.33,493.88,440,392,493.88,587.33,659.25,0,587.33,493.88,440,0],
+      [329.63,392,440,493.88,440,392,329.63,0,293.66,329.63,392,329.63,246.94,0,0,0]
+    ),
+    buildMusicArc(
+      [329.63,392,440,493.88,587.33,493.88,440,392,493.88,587.33,659.25,587.33,493.88,440,392,0],
+      [392,440,493.88,587.33,659.25,587.33,493.88,440,587.33,659.25,783.99,659.25,587.33,493.88,440,0],
+      [493.88,587.33,659.25,783.99,880,783.99,659.25,587.33,493.88,659.25,783.99,880,987.77,880,783.99,659.25],
+      [659.25,587.33,493.88,440,392,329.63,293.66,0,329.63,392,440,392,329.63,0,0,0]
+    ),
+    buildMusicArc(
+      [659.25,0,783.99,659.25,587.33,0,493.88,0,659.25,783.99,880,783.99,659.25,0,587.33,0],
+      [659.25,783.99,880,987.77,880,783.99,659.25,587.33,783.99,880,987.77,1174.66,987.77,880,783.99,659.25],
+      [783.99,880,987.77,1174.66,1318.51,1174.66,987.77,880,783.99,987.77,1174.66,1318.51,1174.66,987.77,880,783.99],
+      [659.25,783.99,880,783.99,659.25,587.33,493.88,0,440,493.88,587.33,493.88,329.63,0,0,0]
+    ),
+  ],
+  arpeggio: [
+    buildMusicArc(
+      [0],
+      [164.81,0,196,0,246.94,0,196,0,146.83,0,196,0,220,0,196,0],
+      [164.81,0,196,0,246.94,0,293.66,0,146.83,0,196,0,220,0,246.94,0],
+      [164.81,0,196,0,246.94,0,196,0,146.83,0,196,0,164.81,0,0,0]
+    ),
+    buildMusicArc(
+      [164.81,0,196,0,246.94,0,293.66,0,146.83,0,196,0,246.94,0,293.66,0],
+      [164.81,196,246.94,293.66,246.94,196,164.81,196,146.83,196,246.94,293.66,246.94,196,146.83,196],
+      [196,246.94,293.66,329.63,293.66,246.94,196,246.94,220,246.94,293.66,369.99,293.66,246.94,220,246.94],
+      [164.81,196,246.94,293.66,246.94,196,164.81,0,146.83,196,246.94,196,164.81,0,0,0]
+    ),
+    buildMusicArc(
+      [164.81,246.94,329.63,392,329.63,246.94,196,246.94,196,293.66,392,493.88,392,293.66,246.94,293.66],
+      [196,293.66,392,493.88,587.33,493.88,392,293.66,220,329.63,440,554.37,659.25,554.37,440,329.63],
+      [246.94,329.63,392,493.88,659.25,493.88,392,329.63,293.66,369.99,493.88,587.33,739.99,587.33,493.88,369.99],
+      [164.81,246.94,329.63,392,329.63,246.94,196,0,146.83,196,246.94,196,164.81,0,0,0]
+    ),
+    buildMusicArc(
+      [329.63,392,493.88,659.25,783.99,659.25,493.88,392,293.66,369.99,493.88,587.33,739.99,587.33,493.88,369.99],
+      [392,493.88,659.25,783.99,987.77,783.99,659.25,493.88,440,554.37,739.99,880,1108.73,880,739.99,554.37],
+      [493.88,659.25,783.99,987.77,1318.51,987.77,783.99,659.25,587.33,739.99,987.77,1174.66,1479.98,1174.66,987.77,739.99],
+      [329.63,392,493.88,659.25,493.88,392,329.63,0,246.94,293.66,369.99,293.66,164.81,0,0,0]
+    ),
+  ],
+  drums: [
+    buildMusicArc(
+      [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+      [1,0,0,0,0,0,2,0,1,0,0,0,0,0,2,0],
+      [1,0,0,0,2,0,2,0,1,0,0,0,2,0,2,0],
+      [1,0,0,0,0,0,2,0,1,0,0,0,0,0,0,0]
+    ),
+    buildMusicArc(
+      [1,0,0,0,2,0,2,0,1,0,0,0,2,0,2,0],
+      [1,0,3,0,2,0,2,0,1,0,3,0,2,0,2,0],
+      [1,0,3,0,2,2,2,0,1,0,3,0,2,2,2,0],
+      [1,0,3,0,2,0,2,0,1,0,0,0,2,0,0,0]
+    ),
+    buildMusicArc(
+      [1,0,3,0,2,2,2,0,1,0,3,0,2,2,2,0],
+      [1,2,3,0,2,2,3,0,1,2,3,0,2,2,3,0],
+      [1,2,3,2,2,2,3,0,1,2,3,2,2,2,3,0],
+      [1,0,3,0,2,0,2,0,1,0,3,0,0,0,0,0]
+    ),
+    buildMusicArc(
+      [1,2,3,0,2,2,3,0,1,2,3,0,2,2,3,0],
+      [1,2,3,2,2,2,3,0,1,2,3,2,2,2,3,0],
+      [1,2,3,2,1,2,3,2,1,2,3,2,1,2,3,2],
+      [1,0,3,0,2,0,2,0,1,0,0,0,0,0,0,0]
+    ),
+  ],
+  bassType: 'triangle',
+  melodyType: 'square',
+  arpType: 'square',
+  bassVol: 0.29,
+  melodyVol: 0.115,
+  arpVol: 0.05,
+  baseBPM: 104,
+  maxBPM: 176,
+  bpmPerLen: 1.75,
+  tempoGrowth: 34,
+  intensityThresholds: [8, 17, 29],
+  minStepsPerIntensity: 64,
+  percussion: 'arcade-rock',
+  swing: 0,
+  audioUrl: 'assets/audio/ken-stage-96.mp3',
+  audioGain: 0.82,
+  midiUrl: 'audio themes/street_fighter_ii_-_ken.mid',
+  midiGain: 0.72,
+});
+
 const savedThemeSelection = localStorage.getItem('snakeTheme') || 'default';
 let themeSelection = savedThemeSelection === 'random' || THEMES[savedThemeSelection]
   ? savedThemeSelection
@@ -2933,21 +3646,23 @@ function hasUnlimitedDailyAttempts(challenge = dailyChallenge) {
   return challenge?.authoritative === true && challenge.attemptsRemaining < 0;
 }
 
-function dailyAttemptLabel(number, challenge = dailyChallenge) {
-  return hasUnlimitedDailyAttempts(challenge)
-    ? `Ranked debug attempt ${number}`
-    : `Ranked attempt ${number}/3`;
+function dailyAttemptLabel(number) {
+  return `Ranked run #${number}`;
 }
 
 function dailyAttemptsRemainingLabel(challenge = dailyChallenge) {
   return hasUnlimitedDailyAttempts(challenge)
-    ? 'DEBUG • Unlimited ranked attempts'
-    : `${challenge?.attemptsRemaining ?? 0}/3 ranked attempts left`;
+    ? 'Unlimited ranked runs'
+    : `${challenge?.attemptsRemaining ?? 0} ranked runs left`;
 }
 
 function renderDailyChallengeInfo() {
   if (gameMode !== 'daily') return;
   const challenge = dailyChallenge || ensureDailyChallenge();
+  if (dailyChallengeLoading && !challenge.authoritative) {
+    dailyChallengeInfo.textContent = 'Loading live Daily Run…';
+    return;
+  }
   const themeName = THEMES[challenge.theme]?.name || challenge.theme;
   dailyChallengeInfo.textContent = challenge.authoritative
     ? `Challenge #${challenge.number} • ${themeName} • ${dailyAttemptsRemainingLabel(challenge)}`
@@ -2955,17 +3670,20 @@ function renderDailyChallengeInfo() {
   const attemptRule = document.getElementById('daily-attempt-rule');
   if (attemptRule) {
     attemptRule.textContent = hasUnlimitedDailyAttempts(challenge)
-      ? 'Debug mode is active, so ranked attempts are temporarily unlimited.'
-      : 'You receive three ranked attempts each UTC day. Extra runs are unranked practice.';
+      ? 'Every run is ranked. Play as many times as you like before the UTC day ends.'
+      : `${challenge.attemptsRemaining} ranked runs remain today.`;
   }
 }
 
 async function refreshDailyChallenge({ force = false } = {}) {
   const requestId = ++dailyChallengeRequest;
   if (!force && dailyChallenge?.authoritative && dailyChallenge.date === currentUtcDateKey()) {
+    dailyChallengeLoading = false;
     renderDailyChallengeInfo();
     return dailyChallenge;
   }
+  dailyChallengeLoading = true;
+  renderDailyChallengeInfo();
   try {
     await playerIdentityPromise;
     if (!sb || !currentUser) throw new Error('Player session unavailable');
@@ -2987,13 +3705,37 @@ async function refreshDailyChallenge({ force = false } = {}) {
     }
     return challenge;
   } catch (error) {
+    // An older request must never replace a newer authoritative response with
+    // the local preview merely because the older request failed later.
+    if (requestId !== dailyChallengeRequest) return dailyChallenge || ensureDailyChallenge();
     if (!isSchemaError(error)) console.warn('Authoritative Daily challenge unavailable; using local preview.', error);
     if (!dailyChallenge?.authoritative) dailyChallenge = null;
     const preview = ensureDailyChallenge();
     renderDailyChallengeInfo();
     return preview;
+  } finally {
+    if (requestId === dailyChallengeRequest) {
+      dailyChallengeLoading = false;
+      renderDailyChallengeInfo();
+    }
   }
 }
+
+function refreshVisibleDailyMenu() {
+  if (gameMode !== 'daily' || alive || dailyStartPending) return;
+  refreshDailyChallenge({ force: true });
+}
+
+// Safari may restore the page from its back-forward cache, or regain network
+// access after the initial live request failed. Reconcile the visible menu in
+// both cases instead of leaving the local preview in place until a reload.
+window.addEventListener('online', refreshVisibleDailyMenu);
+window.addEventListener('pageshow', event => {
+  if (event.persisted) refreshVisibleDailyMenu();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') refreshVisibleDailyMenu();
+});
 
 function formatDailyFoodTime(ms) {
   return Number.isFinite(ms) ? `${(ms / 1000).toFixed(2)}s` : '—';
@@ -3010,8 +3752,8 @@ function shouldShowDailyRules() {
 
 function showDailyRules() {
   dailyRulesFootnote.textContent = dailyChallenge?.authoritative
-    ? 'Your ranked attempt is reserved after you press Begin, immediately before the countdown.'
-    : 'Preview phase: results remain on this device. The three-attempt limit activates with ranked Daily Run.';
+    ? 'Your ranked run is reserved after you press Begin, immediately before the countdown.'
+    : 'Preview results remain on this device until ranked Daily Run is available.';
   dailyRulesDialog.classList.add('visible');
   dailyRulesDialog.setAttribute('aria-hidden', 'false');
   setTimeout(() => dailyRulesBegin.focus(), 0);
@@ -3064,7 +3806,13 @@ function applyGameMode(mode) {
 }
 
 document.querySelectorAll('.game-mode-btn').forEach(btn => {
-  btn.addEventListener('click', () => applyGameMode(btn.dataset.gameMode));
+  btn.addEventListener('click', () => {
+    const selectedMode = btn.dataset.gameMode;
+    applyGameMode(selectedMode);
+    // Daily Run starts with a deterministic offline preview. Selecting it
+    // must always replace that preview with today's authoritative live state.
+    if (selectedMode === 'daily') refreshDailyChallenge({ force: true });
+  });
 });
 applyGameMode(gameMode);
 
@@ -3116,6 +3864,7 @@ function reset(startingRun = false) {
   deathFlash = 0;
   foodScale = 1; foodScaleTarget = 1;
   dragonFireBurst = 0;
+  fighterImpactBurst = 0;
   // Reset pause button
   const pauseBtn = document.getElementById('pause-btn');
   pauseBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="2" y="1" width="2" height="8"/><rect x="6" y="1" width="2" height="8"/></svg>';
@@ -3157,6 +3906,7 @@ let deathFlash = 0;
 let fpsFrames = 0, fpsLast = performance.now(), fpsDisplay = 0;
 let foodScale = 1, foodScaleTarget = 1;
 let dragonFireBurst = 0;
+let fighterImpactBurst = 0;
 let screenShake = 0, shakeX = 0, shakeY = 0;
 
 // --- Particle System (from game-engine: object pooling for perf) ---
@@ -3708,6 +4458,50 @@ function draw(interp) {
       ctx.fillRect(sx, sy, i % 3 === 0 ? 2 : 1, i % 3 === 0 ? 2 : 1);
     }
     ctx.restore();
+  } else if (T.boardPattern === 'kenstage') {
+    // Moonlit harbor, yacht silhouette, and red dock railings nod to Ken's
+    // classic arena while remaining subtle enough for competitive play.
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    const horizon = canvasH - 116;
+
+    ctx.fillStyle = '#183650';
+    ctx.fillRect(0, horizon, canvasW, 116);
+    ctx.fillStyle = '#3d81a5';
+    for (let y = horizon + 10; y < canvasH - 38; y += 13) {
+      const offset = ((y - horizon) / 13) % 2 ? 16 : 0;
+      for (let x = -offset; x < canvasW; x += 38) ctx.fillRect(x, y, 23, 2);
+    }
+
+    // Distant city lights and a simplified yacht.
+    ctx.fillStyle = '#ffd666';
+    for (let x = 14; x < canvasW; x += 47) ctx.fillRect(x, horizon - 16 - (x % 3) * 4, 3, 3);
+    ctx.fillStyle = '#c9d9e6';
+    ctx.beginPath();
+    ctx.moveTo(66, horizon + 20);
+    ctx.lineTo(248, horizon + 20);
+    ctx.lineTo(218, horizon + 45);
+    ctx.lineTo(92, horizon + 45);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillRect(124, horizon - 9, 72, 31);
+    ctx.fillStyle = '#10253a';
+    ctx.fillRect(136, horizon - 2, 18, 12);
+    ctx.fillRect(162, horizon - 2, 20, 12);
+
+    // Dock rail and planks frame the lower arena without covering cells.
+    ctx.fillStyle = '#8d1d27';
+    ctx.fillRect(0, canvasH - 43, canvasW, 5);
+    for (let x = 10; x < canvasW; x += 62) ctx.fillRect(x, canvasH - 73, 6, 35);
+    ctx.strokeStyle = '#9c5a31';
+    ctx.lineWidth = 2;
+    for (let x = -canvasH; x < canvasW; x += 34) {
+      ctx.beginPath();
+      ctx.moveTo(x, canvasH);
+      ctx.lineTo(x + 48, canvasH - 38);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   // Interpolated snake position
@@ -3745,7 +4539,7 @@ function draw(interp) {
       ctx.shadowColor = T.snakeHead;
       ctx.shadowBlur = 12 + Math.sin(foodPulse * 2) * 3;
     }
-    const segmentColor = (T.snakeStyle === 'bricks' || T.snakeStyle === 'cel')
+    const segmentColor = (T.snakeStyle === 'bricks' || T.snakeStyle === 'cel' || T.snakeStyle === 'fighter')
       ? T.snakePalette[i % T.snakePalette.length]
       : `rgb(${r},${g},${b})`;
     ctx.fillStyle = segmentColor;
@@ -3793,6 +4587,27 @@ function draw(interp) {
       roundRect(px + pad + 2, py + pad + 2, CELL - pad * 2 - 4, CELL - pad * 2 - 4, i === 0 ? 4 : 2);
       ctx.fillStyle = 'rgba(255,255,255,0.28)';
       ctx.fillRect(px + pad + 4, py + pad + 4, Math.max(3, CELL - pad * 2 - 9), 2);
+    } else if (T.snakeStyle === 'fighter') {
+      // Red gi, black belt bands, and a blond pixel head turn the snake into
+      // a compact arcade fighter without changing its collision footprint.
+      ctx.fillStyle = '#11131a';
+      roundRect(px + pad, py + pad, CELL - pad * 2, CELL - pad * 2, i === 0 ? 5 : 3);
+      ctx.fillStyle = i === 0 ? T.fighterSkin : (i % 3 === 0 ? T.fighterGiShadow : T.fighterGi);
+      roundRect(px + pad + 1.5, py + pad + 1.5, CELL - pad * 2 - 3, CELL - pad * 2 - 3, i === 0 ? 4 : 2);
+      if (i === 0) {
+        ctx.fillStyle = T.fighterHair;
+        ctx.fillRect(px + 3, py + 2, 14, 4);
+        ctx.fillRect(px + 5, py, 3, 4);
+        ctx.fillRect(px + 11, py + 1, 4, 4);
+        ctx.fillStyle = T.fighterBand;
+        ctx.fillRect(px + 2, py + 6, 16, 2);
+      } else if (i % 4 === 0) {
+        ctx.fillStyle = T.fighterBand;
+        ctx.fillRect(px + pad + 1, py + 8, CELL - pad * 2 - 2, 4);
+      } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.fillRect(px + pad + 4, py + pad + 3, 4, 2);
+      }
     } else {
       const radius = i === 0 ? 6 : 3;
       roundRect(px + pad, py + pad, CELL - pad * 2, CELL - pad * 2, radius);
@@ -3813,6 +4628,28 @@ function draw(interp) {
     const eyeOff2 = dir.x === 0 ? {x: 13, y: dir.y > 0 ? 12 : 5} : {x: dir.x > 0 ? 12 : 5, y: 13};
     ctx.beginPath(); ctx.arc(hx + eyeOff1.x, hy + eyeOff1.y, 2.5, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.arc(hx + eyeOff2.x, hy + eyeOff2.y, 2.5, 0, Math.PI * 2); ctx.fill();
+    if (T.snakeStyle === 'fighter' && fighterImpactBurst > 0) {
+      const strength = fighterImpactBurst;
+      const cx = hx + CELL / 2;
+      const cy = hy + CELL / 2;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.strokeStyle = T.fighterSpark;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = T.fighterSpark;
+      ctx.shadowBlur = 8;
+      for (let ray = 0; ray < 8; ray++) {
+        const angle = ray * Math.PI / 4 + foodPulse * 0.08;
+        const inner = 11 + (1 - strength) * 5;
+        const outer = inner + 9 * strength;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        ctx.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+        ctx.stroke();
+      }
+      ctx.restore();
+      fighterImpactBurst = Math.max(0, fighterImpactBurst - 0.065);
+    }
   }
 
   // Food with pulsing glow + scale punch
@@ -3905,6 +4742,7 @@ function gameTick() {
     AudioEngine.updateTempo(snake.length);
     const T = THEMES[currentTheme];
     if (T.snakeStyle === 'dragon') dragonFireBurst = 1;
+    if (T.snakeStyle === 'fighter') fighterImpactBurst = 1;
     // Particle burst on eat
     spawnParticles(
       food.x * CELL + CELL / 2,
@@ -4007,9 +4845,11 @@ function die() {
 }
 
 function showDailyPlayerSetup() {
+  displayNameInviteSuppressedThisSession = true;
+  displayNameInvite.hidden = true;
   setPlayerMessage(hasUnlimitedDailyAttempts()
-    ? 'Choose initials to unlock unlimited ranked debug attempts. Email is not required.'
-    : 'Choose initials to unlock today\'s three ranked attempts. Email is not required.');
+    ? 'Choose initials to unlock unlimited ranked Daily runs. Email is not required.'
+    : 'Choose initials to unlock ranked Daily runs. Email is not required.');
   renderPlayerIdentity();
   playerPanel.classList.add('visible');
   setTimeout(() => playerInitialsInput.focus(), 0);
@@ -4097,6 +4937,8 @@ async function startGame(options = {}) {
     const nextTheme = pickRandomThemeId(Object.keys(THEMES), currentTheme);
     if (nextTheme) applyTheme(nextTheme, { updateSelection: false });
   }
+  displayNameInviteSuppressedThisSession = true;
+  displayNameInvite.hidden = true;
   overlay.classList.add('hidden');
   overlay.setAttribute('aria-hidden', 'true');
   shareBtn.style.display = 'none';
@@ -4110,7 +4952,7 @@ async function startGame(options = {}) {
   runGameMode = gameMode;
   if (runGameMode === 'daily') {
     startBtn.textContent = dailyAttempt?.ranked
-      ? dailyAttemptLabel(dailyAttempt.number, challenge)
+      ? dailyAttemptLabel(dailyAttempt.number)
       : 'Practice Run';
   }
   hudMode.textContent = modeHudLabel(runGameMode);
@@ -4363,8 +5205,217 @@ const AudioEngine = (() => {
   let wakePromise = null;
   let heartbeatTimer = null;
   let heartbeatProgress = null;
-
-  function getTheme() { return THEMES[currentTheme].music; }
+  let nativeThemeAudio = null;
+  let nativeThemeAudioUrl = '';
+  let nativeAudioFailedUrl = '';
+  let nativeMusicDuck = 1;
+  let midiSong = null;
+  let midiSongUrl = '';
+  let midiLoadPromise = null;
+  let midiLoadFailedUrl = '';
+  let midiCursor = 0;
+  let midiStartedAt = 0;
+  let midiOffset = 0;
+  const midiVoices = new Set();
+
+  function getTheme() { return THEMES[currentTheme].music; }
+
+  function applyNativeThemeVolume(music = getTheme()) {
+    if (!nativeThemeAudio) return;
+    nativeThemeAudio.volume = Math.max(
+      0,
+      Math.min(1, (music.audioGain || 1) * nativeMusicDuck)
+    );
+    nativeThemeAudio.muted = muted;
+  }
+
+  function stopNativeThemeAudio(resetPosition = true) {
+    if (!nativeThemeAudio) return;
+    nativeThemeAudio.pause();
+    if (resetPosition) {
+      try { nativeThemeAudio.currentTime = 0; } catch (error) {}
+    }
+  }
+
+  function startNativeThemeAudio(music, resetPosition = true) {
+    if (!music.audioUrl) return false;
+    const url = music.audioUrl;
+    nativeAudioFailedUrl = '';
+    if (!nativeThemeAudio || nativeThemeAudioUrl !== url) {
+      stopNativeThemeAudio(true);
+      nativeThemeAudio = new Audio(url);
+      nativeThemeAudioUrl = url;
+      nativeThemeAudio.preload = 'auto';
+      nativeThemeAudio.loop = true;
+      nativeThemeAudio.playsInline = true;
+      nativeThemeAudio.addEventListener('error', () => {
+        if (nativeThemeAudioUrl !== url || !running) return;
+        nativeAudioFailedUrl = url;
+        console.error('Native theme audio failed to load; using MIDI fallback.');
+        prepareMidiTheme(getTheme());
+        startSeqTimer();
+      });
+    }
+    if (resetPosition) {
+      try { nativeThemeAudio.currentTime = 0; } catch (error) {}
+    }
+    applyNativeThemeVolume(music);
+
+    const playPromise = nativeThemeAudio.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(error => {
+        if (nativeThemeAudioUrl !== url || !running) return;
+        nativeAudioFailedUrl = url;
+        console.error('Unable to play native theme audio; using MIDI fallback:', error);
+        prepareMidiTheme(music);
+        startSeqTimer();
+      });
+    }
+    return true;
+  }
+
+  function parseMidiFile(arrayBuffer) {
+    const view = new DataView(arrayBuffer);
+    let offset = 0;
+    const readText = length => {
+      let value = '';
+      for (let i = 0; i < length; i++) value += String.fromCharCode(view.getUint8(offset++));
+      return value;
+    };
+    const readU16 = () => { const value = view.getUint16(offset); offset += 2; return value; };
+    const readU32 = () => { const value = view.getUint32(offset); offset += 4; return value; };
+    const readVar = () => {
+      let value = 0;
+      let byte;
+      do {
+        byte = view.getUint8(offset++);
+        value = (value << 7) | (byte & 0x7f);
+      } while (byte & 0x80);
+      return value;
+    };
+
+    if (readText(4) !== 'MThd') throw new Error('Invalid MIDI header');
+    const headerLength = readU32();
+    const headerEnd = offset + headerLength;
+    readU16();
+    const trackCount = readU16();
+    const division = readU16();
+    if (division & 0x8000) throw new Error('SMPTE MIDI timing is not supported');
+    offset = headerEnd;
+
+    const tempos = [{ tick: 0, micros: 500000 }];
+    const rawNotes = [];
+    let finalTick = 0;
+
+    for (let track = 0; track < trackCount && offset < view.byteLength; track++) {
+      if (readText(4) !== 'MTrk') throw new Error('Invalid MIDI track');
+      const trackLength = readU32();
+      const trackEnd = offset + trackLength;
+      const programs = new Array(16).fill(0);
+      const active = new Map();
+      let tick = 0;
+      let runningStatus = 0;
+
+      while (offset < trackEnd) {
+        tick += readVar();
+        finalTick = Math.max(finalTick, tick);
+        let status = view.getUint8(offset);
+        if (status & 0x80) {
+          offset++;
+          runningStatus = status;
+        } else {
+          status = runningStatus;
+        }
+
+        if (status === 0xff) {
+          const metaType = view.getUint8(offset++);
+          const length = readVar();
+          if (metaType === 0x51 && length === 3) {
+            const micros = (view.getUint8(offset) << 16)
+              | (view.getUint8(offset + 1) << 8)
+              | view.getUint8(offset + 2);
+            tempos.push({ tick, micros });
+          }
+          offset += length;
+          runningStatus = 0;
+          continue;
+        }
+        if (status === 0xf0 || status === 0xf7) {
+          const length = readVar();
+          offset += length;
+          runningStatus = 0;
+          continue;
+        }
+
+        const type = status & 0xf0;
+        const channel = status & 0x0f;
+        const data1 = view.getUint8(offset++);
+        const data2 = type === 0xc0 || type === 0xd0 ? 0 : view.getUint8(offset++);
+
+        if (type === 0xc0) {
+          programs[channel] = data1;
+          continue;
+        }
+        if (type !== 0x80 && type !== 0x90) continue;
+
+        const key = `${channel}:${data1}`;
+        if (type === 0x90 && data2 > 0) {
+          const queue = active.get(key) || [];
+          queue.push({
+            tick,
+            note: data1,
+            velocity: data2,
+            channel,
+            program: programs[channel],
+            track,
+          });
+          active.set(key, queue);
+        } else {
+          const queue = active.get(key);
+          if (!queue || !queue.length) continue;
+          const note = queue.shift();
+          rawNotes.push({ ...note, endTick: Math.max(note.tick + 1, tick) });
+        }
+      }
+
+      for (const queue of active.values()) {
+        for (const note of queue) rawNotes.push({ ...note, endTick: Math.max(note.tick + 1, tick) });
+      }
+      offset = trackEnd;
+    }
+
+    const uniqueTempos = [...new Map(
+      tempos.sort((a, b) => a.tick - b.tick).map(tempo => [tempo.tick, tempo])
+    ).values()];
+    let elapsed = 0;
+    for (let i = 0; i < uniqueTempos.length; i++) {
+      if (i > 0) {
+        const previous = uniqueTempos[i - 1];
+        elapsed += (uniqueTempos[i].tick - previous.tick) * previous.micros / division / 1000000;
+      }
+      uniqueTempos[i].seconds = elapsed;
+    }
+
+    const tickToSeconds = tick => {
+      let tempo = uniqueTempos[0];
+      for (let i = 1; i < uniqueTempos.length && uniqueTempos[i].tick <= tick; i++) {
+        tempo = uniqueTempos[i];
+      }
+      return tempo.seconds + (tick - tempo.tick) * tempo.micros / division / 1000000;
+    };
+
+    const notes = rawNotes
+      .map(note => {
+        const start = tickToSeconds(note.tick);
+        const end = tickToSeconds(note.endTick);
+        return { ...note, start, duration: Math.max(0.025, end - start) };
+      })
+      .sort((a, b) => a.start - b.start || a.track - b.track);
+    return {
+      notes,
+      duration: Math.max(tickToSeconds(finalTick), ...notes.map(note => note.start + note.duration)),
+    };
+  }
 
   function init() {
     if (actx && actx.state !== 'closed') return;
@@ -4440,8 +5491,135 @@ const AudioEngine = (() => {
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + duration);
     osc.connect(g); g.connect(gainNode);
-    osc.start(t); osc.stop(t + duration);
-  }
+    osc.start(t); osc.stop(t + duration);
+  }
+
+  function stopMidiVoices() {
+    for (const oscillator of midiVoices) {
+      try { oscillator.stop(); } catch (error) {}
+    }
+    midiVoices.clear();
+  }
+
+  function resetMidiPlayback(resetPosition = true) {
+    stopMidiVoices();
+    midiCursor = 0;
+    midiStartedAt = actx ? actx.currentTime : 0;
+    if (resetPosition) midiOffset = 0;
+  }
+
+  function findMidiCursor(seconds) {
+    if (!midiSong) return 0;
+    let low = 0;
+    let high = midiSong.notes.length;
+    while (low < high) {
+      const middle = (low + high) >> 1;
+      if (midiSong.notes[middle].start < seconds) low = middle + 1;
+      else high = middle;
+    }
+    return low;
+  }
+
+  function prepareMidiTheme(music) {
+    if (!music.midiUrl) return;
+    const url = music.midiUrl;
+    midiLoadFailedUrl = '';
+
+    if (midiSong && midiSongUrl === url) {
+      resetMidiPlayback(true);
+      return;
+    }
+    if (midiLoadPromise && midiSongUrl === url) return;
+
+    midiSong = null;
+    midiSongUrl = url;
+    midiLoadPromise = fetch(url, { cache: 'no-store' })
+      .then(response => {
+        if (!response.ok) throw new Error(`MIDI request failed: ${response.status}`);
+        return response.arrayBuffer();
+      })
+      .then(buffer => {
+        const song = parseMidiFile(buffer);
+        if (midiSongUrl !== url) return;
+        midiSong = song;
+        midiLoadFailedUrl = '';
+        resetMidiPlayback(true);
+        if (running && getTheme().midiUrl === url && actx?.state === 'running') startSeqTimer();
+      })
+      .catch(error => {
+        if (midiSongUrl !== url) return;
+        midiLoadFailedUrl = url;
+        console.error('Unable to load theme MIDI; using chiptune fallback:', error);
+      })
+      .finally(() => {
+        if (midiSongUrl === url) midiLoadPromise = null;
+      });
+  }
+
+  function scheduleMidiNote(note, when, music) {
+    const isDrum = note.channel === 9;
+    let frequency = 440 * Math.pow(2, (note.note - 69) / 12);
+    let duration = Math.max(0.025, note.duration);
+    let waveform = note.program >= 32 && note.program <= 39 ? 'triangle' : 'square';
+
+    if (isDrum) {
+      if (note.note === 35 || note.note === 36) frequency = 73.42;
+      else if (note.note === 38 || note.note === 40) frequency = 196;
+      else frequency = 1174.66;
+      duration = Math.min(duration, note.note >= 42 ? 0.045 : 0.1);
+      waveform = 'square';
+    }
+
+    const oscillator = actx.createOscillator();
+    const gain = actx.createGain();
+    const velocity = Math.max(0.08, note.velocity / 127);
+    const peak = velocity * (isDrum ? 0.045 : 0.038) * (music.midiGain || 1);
+    const releaseAt = when + Math.max(0.02, duration);
+
+    oscillator.type = waveform;
+    oscillator.frequency.setValueAtTime(frequency, when);
+    gain.gain.setValueAtTime(0.001, when);
+    gain.gain.linearRampToValueAtTime(peak, when + 0.006);
+    gain.gain.setValueAtTime(peak * 0.78, Math.max(when + 0.007, releaseAt - 0.025));
+    gain.gain.exponentialRampToValueAtTime(0.001, releaseAt);
+    oscillator.connect(gain);
+    gain.connect(musicGain);
+    oscillator.addEventListener('ended', () => midiVoices.delete(oscillator), { once: true });
+    midiVoices.add(oscillator);
+    oscillator.start(when);
+    oscillator.stop(releaseAt + 0.01);
+  }
+
+  function scheduleMidiPlayback(music) {
+    if (!midiSong || midiSongUrl !== music.midiUrl || !midiSong.duration) return;
+    let elapsed = actx.currentTime - midiStartedAt + midiOffset;
+
+    if (elapsed >= midiSong.duration) {
+      midiOffset = 0;
+      midiCursor = 0;
+      midiStartedAt = actx.currentTime;
+      elapsed = 0;
+    }
+
+    const lookAhead = 0.12;
+    while (
+      midiCursor < midiSong.notes.length
+      && midiSong.notes[midiCursor].start <= elapsed + lookAhead
+    ) {
+      const note = midiSong.notes[midiCursor++];
+      const when = actx.currentTime + Math.max(0, note.start - elapsed);
+      scheduleMidiNote(note, when, music);
+    }
+  }
+
+  function captureMidiPosition() {
+    const music = getTheme();
+    if (!music.midiUrl || !midiSong || !midiStartedAt) return;
+    midiOffset = (midiOffset + Math.max(0, actx.currentTime - midiStartedAt)) % midiSong.duration;
+    midiCursor = findMidiCursor(midiOffset);
+    midiStartedAt = actx.currentTime;
+    stopMidiVoices();
+  }
 
   function playKick() {
     const t = actx.currentTime;
@@ -4545,6 +5723,31 @@ const AudioEngine = (() => {
     }
   }
 
+  function playArcadeRockHit(kind) {
+    if (kind === 1) {
+      playKick();
+      return;
+    }
+    if (kind === 2) {
+      playHihat();
+      return;
+    }
+
+    // Tight square-wave tom layered with the existing noise snare gives the
+    // Street Fighter suite a crunchy CPS-era rock backbeat.
+    const t = actx.currentTime;
+    const tom = actx.createOscillator();
+    const tomGain = actx.createGain();
+    tom.type = 'square';
+    tom.frequency.setValueAtTime(196, t);
+    tom.frequency.exponentialRampToValueAtTime(82.41, t + 0.09);
+    tomGain.gain.setValueAtTime(0.13, t);
+    tomGain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+    tom.connect(tomGain); tomGain.connect(musicGain);
+    tom.start(t); tom.stop(t + 0.11);
+    playSnare();
+  }
+
   function sequencer() {
     const m = getTheme();
     const intensity = getIntensity(snake ? snake.length : 3, m);
@@ -4563,6 +5766,8 @@ const AudioEngine = (() => {
       if (dVal === 1) play8BitWarDrum(false);
       else if (dVal === 2) playHihat();
       else if (dVal === 3) play8BitWarDrum(true);
+    } else if (m.percussion === 'arcade-rock') {
+      if (dVal) playArcadeRockHit(dVal);
     } else {
       if (dVal === 1) playKick();
       else if (dVal === 2) m.percussion === 'blocks' ? playBlockClick(true) : playHihat();
@@ -4581,8 +5786,17 @@ const AudioEngine = (() => {
     lastStepTime = now;
     // Cap to avoid burst catch-up after long background
     const dt = Math.min(rawDt, 200);
-    stepAccum += dt;
+    stepAccum += dt;
     const m = getTheme();
+    if (m.audioUrl && nativeAudioFailedUrl !== m.audioUrl) {
+      seqRafId = requestAnimationFrame(sequencerTick);
+      return;
+    }
+    if (m.midiUrl && midiLoadFailedUrl !== m.midiUrl) {
+      scheduleMidiPlayback(m);
+      seqRafId = requestAnimationFrame(sequencerTick);
+      return;
+    }
     const swing = Math.max(0, Math.min(0.3, m.swing || 0));
     const baseStepInterval = 60000 / curBPM / 4;
     let stepInterval = baseStepInterval * (step % 2 === 0 ? 1 + swing : 1 - swing);
@@ -4629,6 +5843,8 @@ const AudioEngine = (() => {
   }
 
   function setMusicDuck(value) {
+    nativeMusicDuck = value;
+    applyNativeThemeVolume();
     if (!musicGain || !actx) return;
     const now = actx.currentTime;
     musicGain.gain.cancelScheduledValues(now);
@@ -4724,19 +5940,36 @@ const AudioEngine = (() => {
     const m = getTheme();
     curBPM = m.baseBPM;
     stopSeqTimer();
+    resetMidiPlayback(true);
+    nativeMusicDuck = 1;
+    if (m.audioUrl) startNativeThemeAudio(m, true);
+    else {
+      stopNativeThemeAudio(true);
+      if (m.midiUrl) prepareMidiTheme(m);
+    }
     wake(true);
-  }
+  }
 
-  function stop() {
+  function stop() {
     running = false;
     stopRecordHeartbeat();
-    stopSeqTimer();
-  }
-
-  function pause()  { stopSeqTimer(); clearHeartbeatTimer(); }
+    stopSeqTimer();
+    stopNativeThemeAudio(true);
+    resetMidiPlayback(true);
+  }
+
+  function pause()  {
+    stopNativeThemeAudio(false);
+    captureMidiPosition();
+    stopSeqTimer();
+    clearHeartbeatTimer();
+  }
   function resume() {
     if (!running) return;
     stopSeqTimer();
+    const music = getTheme();
+    if (music.audioUrl) startNativeThemeAudio(music, false);
+    else if (music.midiUrl && actx) midiStartedAt = actx.currentTime;
     wake(true).then(() => {
       if (heartbeatProgress !== null) playHeartbeatPulse();
     });
@@ -4753,9 +5986,10 @@ const AudioEngine = (() => {
   document.addEventListener('touchend', wakeFromGesture, { passive: true, capture: true });
   document.addEventListener('keydown', wakeFromGesture, { capture: true });
 
-  function toggleMute() {
+  function toggleMute() {
     muted = !muted;
-    if (master) master.gain.value = muted ? 0 : 0.35;
+    if (master) master.gain.value = muted ? 0 : 0.35;
+    if (nativeThemeAudio) nativeThemeAudio.muted = muted;
     return muted;
   }
 
@@ -5528,6 +6762,14 @@ function cleanInitials(value) {
   return value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
 }
 
+function cleanDisplayName(value) {
+  const cleaned = String(value || '')
+    .replace(/[<>\u0000-\u001f\u007f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return Array.from(cleaned).slice(0, 20).join('');
+}
+
 function playerDisplayName(profile = playerProfile) {
   return profile ? `${profile.initials}\u00b7${profile.player_code}` : '';
 }
@@ -5549,17 +6791,29 @@ function renderPlayerIdentity() {
     ? `<span class="player-tag">${escHtml(displayName)}</span><br>${permanent ? 'Saved player \u2022 restorable by email' : 'Guest player \u2022 saved on this device'}`
     : currentUser ? 'Guest connected<br>Choose your arcade initials' : 'Connecting...';
   playerProfileSetup.style.display = playerProfile ? 'none' : 'block';
+  playerDisplaySetup.style.display = playerProfile ? 'block' : 'none';
+  if (playerProfile && document.activeElement !== playerDisplayNameInput) {
+    playerDisplayNameInput.value = playerProfile.display_name || '';
+  }
   playerAccountSetup.style.display = permanent ? 'none' : 'block';
+  renderDisplayNameInvitation();
 }
 
 async function loadPlayerProfile() {
   playerProfile = null;
   if (!sb || !currentUser) return;
   try {
-    const { data, error } = await sb.from('player_profiles')
-      .select('initials, player_code')
+    let result = await sb.from('player_profiles')
+      .select('initials, player_code, display_name')
       .eq('id', currentUser.id)
       .maybeSingle();
+    if (['42703', 'PGRST204'].includes(result.error?.code)) {
+      result = await sb.from('player_profiles')
+        .select('initials, player_code')
+        .eq('id', currentUser.id)
+        .maybeSingle();
+    }
+    const { data, error } = result;
     if (!error && data) playerProfile = data;
     else if (error && !['42P01', 'PGRST205'].includes(error.code)) console.warn('Player profile load failed:', error);
   } catch (error) {
@@ -5628,9 +6882,25 @@ async function savePlayerInitials(value) {
   if (!initials || !sb || !currentUser) throw new Error('Enter 1 to 3 letters or numbers');
   const { data, error } = await sb.rpc('set_player_initials', { p_initials: initials });
   if (error) throw error;
-  playerProfile = Array.isArray(data) ? data[0] : data;
+  const savedProfile = Array.isArray(data) ? data[0] : data;
+  playerProfile = { ...(playerProfile || {}), ...(savedProfile || {}) };
   renderPlayerIdentity();
   return playerProfile;
+}
+
+async function savePlayerDisplayName(value) {
+  if (!sb || !currentUser || !playerProfile) throw new Error('Choose your arcade initials first');
+  const displayName = cleanDisplayName(value);
+  if (displayName && Array.from(displayName).length < 2) throw new Error('Display name must contain 2 to 20 characters');
+  const { data, error } = await sb.rpc('set_player_display_name', {
+    p_display_name: displayName || null
+  });
+  if (error) throw error;
+  const saved = Array.isArray(data) ? data[0] : data;
+  playerProfile = { ...playerProfile, display_name: saved?.display_name || null };
+  if (playerProfile.display_name) completeDisplayNameInvitation();
+  renderPlayerIdentity();
+  return playerProfile.display_name;
 }
 
 function getPendingScores() {
@@ -5797,7 +7067,7 @@ async function prepareRunSubmission() {
     const challenge = ensureDailyChallenge();
     const ranked = dailyAttempt?.ranked === true;
     promptLabel.textContent = ranked
-      ? `Daily #${challenge.number} • ${dailyAttemptLabel(dailyAttempt.number, challenge)}`
+      ? `Daily #${challenge.number} • ${dailyAttemptLabel(dailyAttempt.number)}`
       : `Daily #${challenge.number} • ${dailyAttempt?.preview ? 'Local preview' : 'Practice run'}`;
     nameInput.style.display = 'none';
     nameInput.disabled = true;
@@ -5880,15 +7150,32 @@ async function submitScore() {
 submitScoreBtn.addEventListener('click', submitScore);
 window.addEventListener('online', retryPendingScores);
 
-playerBtn.addEventListener('click', () => {
+function openPlayerPanel({ focusDisplayName = false } = {}) {
+  displayNameInviteSuppressedThisSession = true;
+  displayNameInvite.hidden = true;
   setPlayerMessage('');
   renderPlayerIdentity();
   playerPanel.classList.add('visible');
-});
+  if (focusDisplayName) {
+    requestAnimationFrame(() => {
+      playerDisplayNameInput.focus({ preventScroll: true });
+      playerDisplayNameInput.select();
+    });
+  }
+}
 
-playerBack.addEventListener('click', () => playerPanel.classList.remove('visible'));
+function closePlayerPanel() {
+  playerPanel.classList.remove('visible');
+  renderDisplayNameInvitation();
+}
+
+playerBtn.addEventListener('click', () => openPlayerPanel());
+displayNameInviteAdd.addEventListener('click', () => openPlayerPanel({ focusDisplayName: true }));
+displayNameInviteLater.addEventListener('click', snoozeDisplayNameInvitation);
+
+playerBack.addEventListener('click', closePlayerPanel);
 playerPanel.addEventListener('click', event => {
-  if (event.target === playerPanel) playerPanel.classList.remove('visible');
+  if (event.target === playerPanel) closePlayerPanel();
 });
 
 playerInitialsInput.addEventListener('input', () => {
@@ -5908,6 +7195,36 @@ playerInitialsSave.addEventListener('click', async () => {
     setPlayerMessage(isSchemaError(error) ? 'Leaderboard database update required' : (error.message || 'Could not save initials'), true);
   } finally {
     playerInitialsSave.disabled = false;
+  }
+});
+
+playerDisplayNameInput.addEventListener('input', () => {
+  const caretAtEnd = playerDisplayNameInput.selectionStart === playerDisplayNameInput.value.length;
+  playerDisplayNameInput.value = Array.from(
+    playerDisplayNameInput.value.replace(/[<>\u0000-\u001f\u007f]/g, '')
+  ).slice(0, 20).join('');
+  if (caretAtEnd) {
+    const end = playerDisplayNameInput.value.length;
+    playerDisplayNameInput.setSelectionRange(end, end);
+  }
+});
+
+playerDisplayNameSave.addEventListener('click', async () => {
+  playerDisplayNameSave.disabled = true;
+  setPlayerMessage('Saving public display name...');
+  try {
+    await playerIdentityPromise;
+    const displayName = await savePlayerDisplayName(playerDisplayNameInput.value);
+    if (currentUser) publicPlayerCardCache.delete(currentUser.id);
+    setPlayerMessage(displayName
+      ? `Display name saved as ${displayName}`
+      : 'Public display name removed');
+  } catch (error) {
+    setPlayerMessage(isSchemaError(error)
+      ? 'Display-name database update required'
+      : (error.message || 'Could not save display name'), true);
+  } finally {
+    playerDisplayNameSave.disabled = false;
   }
 });
 
@@ -5991,6 +7308,80 @@ playerVerifyOtp.addEventListener('click', async () => {
   } finally {
     playerVerifyOtp.disabled = false;
   }
+});
+
+const publicPlayerCardCache = new Map();
+let publicPlayerCardTrigger = null;
+let publicPlayerCardRequestId = 0;
+
+function leaderboardPlayerLabel(row) {
+  const initials = row?.name || row?.initials || '---';
+  return `${initials}${row?.player_code ? `\u00b7${row.player_code}` : ''}`;
+}
+
+function leaderboardPlayerIdentity(row) {
+  const label = leaderboardPlayerLabel(row);
+  if (!row?.player_id) return `<span>${escHtml(label)}</span>`;
+  const playerId = escHtml(String(row.player_id));
+  const safeLabel = escHtml(label);
+  return `<button class="lb-player-link" type="button" data-player-id="${playerId}" data-player-label="${safeLabel}" aria-label="View player card for ${safeLabel}">${safeLabel}</button>`;
+}
+
+function hidePublicPlayerCard({ restoreFocus = true } = {}) {
+  publicPlayerCardRequestId++;
+  publicPlayerCardPanel.classList.remove('visible');
+  publicPlayerCardPanel.setAttribute('aria-hidden', 'true');
+  if (restoreFocus && publicPlayerCardTrigger?.isConnected) publicPlayerCardTrigger.focus();
+  publicPlayerCardTrigger = null;
+}
+
+async function showPublicPlayerCard(playerId, trigger) {
+  if (!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(playerId || '')) return;
+  const requestId = ++publicPlayerCardRequestId;
+  publicPlayerCardTrigger = trigger || null;
+  publicPlayerCardName.textContent = 'Loading...';
+  publicPlayerArcadeId.textContent = trigger?.dataset.playerLabel || '';
+  publicPlayerCardMessage.textContent = 'Retrieving public player identity...';
+  publicPlayerCardPanel.classList.add('visible');
+  publicPlayerCardPanel.setAttribute('aria-hidden', 'false');
+  publicPlayerCardClose.focus();
+
+  try {
+    let card = publicPlayerCardCache.get(playerId);
+    if (!card) {
+      if (!sb) throw new Error('Player cards are unavailable offline');
+      const { data, error } = await sb.rpc('get_public_player_card', { p_player_id: playerId });
+      if (error) throw error;
+      card = Array.isArray(data) ? data[0] : data;
+      if (!card) throw new Error('Player card unavailable');
+      publicPlayerCardCache.set(playerId, card);
+    }
+    if (requestId !== publicPlayerCardRequestId) return;
+    publicPlayerCardName.textContent = card.display_name || 'No Display Name Set';
+    publicPlayerArcadeId.textContent = leaderboardPlayerLabel(card);
+    publicPlayerCardMessage.textContent = card.display_name
+      ? 'Public player identity'
+      : 'This player has not added a public display name.';
+  } catch (error) {
+    if (requestId !== publicPlayerCardRequestId) return;
+    publicPlayerCardName.textContent = 'Player Card Unavailable';
+    publicPlayerCardMessage.textContent = isSchemaError(error)
+      ? 'Player-card database update required'
+      : (error.message || 'Could not load this player card');
+  }
+}
+
+publicPlayerCardClose.addEventListener('click', () => hidePublicPlayerCard());
+publicPlayerCardPanel.addEventListener('click', event => {
+  if (event.target === publicPlayerCardPanel) hidePublicPlayerCard();
+});
+publicPlayerCardPanel.addEventListener('keydown', event => {
+  if (event.key === 'Escape') hidePublicPlayerCard();
+});
+leaderboardOverlay.addEventListener('click', event => {
+  const trigger = event.target.closest('.lb-player-link[data-player-id]');
+  if (!trigger || !leaderboardOverlay.contains(trigger)) return;
+  showPublicPlayerCard(trigger.dataset.playerId, trigger);
 });
 
 const dailyArchivePanel = document.createElement('section');
@@ -6100,7 +7491,7 @@ function renderDailyLegends() {
   records.forEach(([label, row, value]) => {
     const card = document.createElement('div');
     card.className = 'daily-legend-card';
-    card.innerHTML = `<span class="daily-legend-label">${escHtml(label)}</span><span class="daily-legend-player">${escHtml(dailyStatsPlayerLabel(row))}</span><span class="daily-legend-value">${escHtml(value)}</span>`;
+    card.innerHTML = `<span class="daily-legend-label">${escHtml(label)}</span><span class="daily-legend-player">${leaderboardPlayerIdentity(row)}</span><span class="daily-legend-value">${escHtml(value)}</span>`;
     dailyLegendCards.appendChild(card);
   });
 
@@ -6111,7 +7502,7 @@ function renderDailyLegends() {
     else if (index === 2) tr.classList.add('top3');
     if (currentUser && row.player_id === currentUser.id) tr.classList.add('you');
     const you = currentUser && row.player_id === currentUser.id ? '<span class="lb-you-badge">YOU</span>' : '';
-    tr.innerHTML = `<td class="lb-rank">${index + 1}</td><td>${escHtml(dailyStatsPlayerLabel(row))}${you}</td><td>${Number(row.wins)}</td><td>${Number(row.longest_win_streak)}</td><td>${Number(row.podiums)}</td>`;
+    tr.innerHTML = `<td class="lb-rank">${index + 1}</td><td>${leaderboardPlayerIdentity(row)}${you}</td><td>${Number(row.wins)}</td><td>${Number(row.longest_win_streak)}</td><td>${Number(row.podiums)}</td>`;
     dailyLegendsBody.appendChild(tr);
   });
 }
@@ -6131,16 +7522,24 @@ function renderDailyArchive() {
   if (lbState.dailyArchiveError) {
     dailyArchiveSummary.textContent = 'Archive update required in Supabase';
   } else if (isToday && meta?.winner_name) {
-    const leader = `${meta.winner_name}${meta.winner_player_code ? `·${meta.winner_player_code}` : ''}`;
+    const leader = leaderboardPlayerIdentity({
+      name: meta.winner_name,
+      player_code: meta.winner_player_code,
+      player_id: meta.winner_player_id
+    });
     const players = Number(meta.participant_count || 0);
-    dailyArchiveSummary.textContent = `Current leader ${leader} • Score ${Number(meta.winning_score)} • ${players} player${players === 1 ? '' : 's'} • Ends in ${formatDailyRunTimeLeft()}`;
+    dailyArchiveSummary.innerHTML = `Current leader ${leader} • Score ${Number(meta.winning_score)} • ${players} player${players === 1 ? '' : 's'} • Ends in ${escHtml(formatDailyRunTimeLeft())}`;
   } else if (isToday) {
     const players = Number(meta?.participant_count || 0);
     dailyArchiveSummary.textContent = `Today's race is open • ${players} player${players === 1 ? '' : 's'} • Ends in ${formatDailyRunTimeLeft()}`;
   } else if (meta?.winner_name) {
-    const winner = `${meta.winner_name}${meta.winner_player_code ? `·${meta.winner_player_code}` : ''}`;
+    const winner = leaderboardPlayerIdentity({
+      name: meta.winner_name,
+      player_code: meta.winner_player_code,
+      player_id: meta.winner_player_id
+    });
     const players = Number(meta.participant_count || 0);
-    dailyArchiveSummary.textContent = `Winner ${winner} • Score ${Number(meta.winning_score)} • ${players} player${players === 1 ? '' : 's'}`;
+    dailyArchiveSummary.innerHTML = `Winner ${winner} • Score ${Number(meta.winning_score)} • ${players} player${players === 1 ? '' : 's'}`;
   } else {
     dailyArchiveSummary.textContent = 'No verified finishers';
   }
@@ -6296,6 +7695,20 @@ async function loadLeaderboard() {
     if (lbState.theme !== 'all') query = query.eq('theme', lbState.theme);
     return query;
   };
+  const runOverallQuery = async () => {
+    const rpcResult = await sb.rpc('get_overall_leaderboard', {
+      p_game_mode: lbState.gameMode,
+      p_theme: lbState.theme === 'all' ? null : lbState.theme,
+      p_limit: LB_PAGE_SIZE,
+      p_offset: from
+    });
+    const rows = Array.isArray(rpcResult.data) ? rpcResult.data : [];
+    return {
+      ...rpcResult,
+      data: rows,
+      count: rows.length > 0 ? Number(rows[0].total_count) : 0
+    };
+  };
   let result;
   if (lbState.gameMode === 'daily') {
     const challenge = dailyChallenge || ensureDailyChallenge();
@@ -6305,6 +7718,8 @@ async function loadLeaderboard() {
       .eq('challenge_date', leaderboardDate)
       .order('leaderboard_rank', { ascending: true })
       .range(from, to);
+  } else if (lbState.control === 'all') {
+    result = await runOverallQuery();
   } else {
     result = await runQuery('name, score, theme, control_method, game_mode, created_at, player_id, player_code');
     if (['42703', 'PGRST204'].includes(result.error?.code)) {
@@ -6314,10 +7729,10 @@ async function loadLeaderboard() {
   const { data, error, count } = result;
   if (requestId !== lbState.requestId) return;
   lbLoading.style.display = 'none';
-  if (error || !data || data.length === 0) {
+  if (error || !data || data.length === 0) {
     lbEmpty.style.display = 'block';
     lbEmpty.textContent = error
-      ? ((lbState.gameMode === 'daily' && ['42P01', 'PGRST205'].includes(error.code)) || error.code === '42703'
+      ? (isSchemaError(error)
           ? 'Leaderboard update required'
           : 'Failed to load')
       : (lbState.gameMode === 'daily' && lbState.dailyDate !== currentUtcDateKey()
@@ -6342,12 +7757,12 @@ async function loadLeaderboard() {
     const methodLabel = lbState.gameMode === 'daily' && row.attempt_number
       ? `TRY ${row.attempt_number} • ${method}`
       : method;
-    const code = row.player_code ? `\u00b7${escHtml(row.player_code)}` : '';
+    const identity = leaderboardPlayerIdentity(row);
     const you = isOwnRow ? '<span class="lb-you-badge">YOU</span>' : '';
     const detail = lbState.gameMode === 'daily'
       ? formatDailyFoodTime(row.final_food_ms == null ? null : Number(row.final_food_ms))
       : escHtml(row.theme);
-    tr.innerHTML = `<td class="lb-rank">${rank}</td><td>${escHtml(row.name)}${code}${you}<span class="lb-method-tag">${escHtml(methodLabel)}</span></td><td class="lb-theme-col">${detail}</td><td class="lb-score">${row.score}</td>`;
+    tr.innerHTML = `<td class="lb-rank">${rank}</td><td>${identity}${you}<span class="lb-method-tag">${escHtml(methodLabel)}</span></td><td class="lb-theme-col">${detail}</td><td class="lb-score">${row.score}</td>`;
     lbBody.appendChild(tr);
   });
   updatePagination();

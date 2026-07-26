@@ -1,9 +1,8 @@
--- Temporary Daily Run debugging switch.
--- Prerequisite: rerun the current supabase-daily-run.sql once so the config
--- table and unlimited-attempt-aware RPC definitions are installed.
+-- Legacy compatibility alias for the permanent unlimited Daily Run policy.
+-- New deployments should use supabase-daily-run-unlimited-attempts.sql.
 
--- Enable unlimited ranked attempts. The RPCs return -1 as the explicit
--- unlimited sentinel, and the client labels the mode as DEBUG.
+-- Enable unlimited ranked runs. The RPCs return -1 as the internal unlimited
+-- sentinel; the client presents this as the normal Daily Run policy.
 update public.daily_run_config
 set debug_unlimited_attempts = true,
     updated_at = now()
@@ -12,10 +11,3 @@ where singleton = true;
 select debug_unlimited_attempts, updated_at
 from public.daily_run_config
 where singleton = true;
-
--- Before production launch, disable debug mode with:
---
--- update public.daily_run_config
--- set debug_unlimited_attempts = false,
---     updated_at = now()
--- where singleton = true;

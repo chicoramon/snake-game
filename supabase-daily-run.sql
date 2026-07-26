@@ -1,17 +1,19 @@
--- Daily Run: authoritative UTC challenge, three ranked attempts, and public ranking.
+-- Daily Run: authoritative UTC challenge, unlimited ranked runs, and public ranking.
 -- Run this after supabase-player-identity-auto-submit.sql.
 
 create extension if not exists pgcrypto;
 
 create table if not exists public.daily_run_config (
   singleton boolean primary key default true check (singleton),
-  debug_unlimited_attempts boolean not null default false,
+  debug_unlimited_attempts boolean not null default true,
   updated_at timestamptz not null default now()
 );
 
 insert into public.daily_run_config (singleton, debug_unlimited_attempts)
-values (true, false)
-on conflict (singleton) do nothing;
+values (true, true)
+on conflict (singleton) do update
+set debug_unlimited_attempts = true,
+    updated_at = now();
 
 alter table public.daily_run_config enable row level security;
 revoke all on public.daily_run_config from public, anon, authenticated;

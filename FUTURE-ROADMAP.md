@@ -46,6 +46,18 @@ Implemented locally on 2026-07-23 as **Tap Turn**, with the compact in-game and 
 
 Supabase activation requires running `supabase-tap-control-method.sql` and redeploying the updated `submit-daily-attempt` Edge Function before ranked TAP submissions are enabled in production.
 
+## In-Game Release Notes — Implemented
+
+Implemented locally on 2026-07-23 as a permanent **WHAT'S NEW** main-menu bulletin.
+
+- Show a **NEW!** badge whenever the current release has not been acknowledged on that device.
+- Open the pixel-art release bulletin once after a newly deployed release, only while the main menu is idle.
+- Keep the complete recent update history available from the main menu after the badge is cleared.
+- Store the acknowledged release ID locally, requiring no Supabase schema or network request.
+- Define release notes in one data-driven catalog so future deployments only need a new release entry and current release ID.
+- Allow release QA at any time with the `?whatsnew=1` preview query.
+- Never open over an active run or repeatedly interrupt a player who already viewed that release.
+
 ## Junior Mode
 
 Planned as an inviting, clearly separate mode for children and first-time players. It must preserve the fixed board dimensions and should never weaken or contaminate the existing competitive leaderboards.
@@ -63,6 +75,125 @@ Recommended first version:
 
 Before implementation, finalize how much snake length is lost after a self-collision, whether score is preserved, and whether Junior eventually receives its own participation-focused leaderboard.
 
+## Modular Source and Reproducible Build
+
+Replace the maintained single-file application with modular source files and a reproducible production build. This must be an incremental, behavior-preserving migration rather than a rewrite: normal feature work should remain possible, and every completed phase should leave the game deployable.
+
+Why this is needed:
+
+- `snake-game-turn.html` currently combines the document structure, a large visual system, gameplay state, canvas rendering, controls, audio, themes, sprites, Supabase integration, competitive modes, and UI dialogs.
+- Unrelated systems share mutable globals, making regressions more likely when one feature changes.
+- Theme and music data make reviews noisy and obscure functional changes.
+- The current source is difficult to test in focused units even though `snake-core.js` has already demonstrated the value of an isolated deterministic module.
+- GitHub Pages can deploy a complete static site, so the production artifact is not limited to one HTML file.
+
+### Target Structure
+
+Use a small application structure along these boundaries, adjusting filenames during implementation when a clearer ownership boundary emerges:
+
+```text
+index.html
+src/
+  main.js
+  game/
+    game-controller.js
+    canvas-renderer.js
+    snake-core.js
+  controls/
+    control-manager.js
+    layout-editor.js
+  audio/
+    audio-engine.js
+  themes/
+    catalog.js
+    sprites.js
+    music.js
+    validator.js
+  modes/
+    sprint.js
+    daily-run.js
+  services/
+    supabase-client.js
+    player-identity.js
+    leaderboard.js
+  ui/
+    menu.js
+    dialogs.js
+    whats-new.js
+  styles/
+    game.css
+public/
+  assets/
+  manifest.webmanifest
+  sw.js
+tests/
+dist/
+```
+
+`main.js` should become a thin composition root: it creates the application services, passes explicit dependencies and callbacks to each module, and starts the game. New modules should not recreate the current shared-global architecture.
+
+### Migration Sequence
+
+1. **Protect existing behavior with browser smoke tests.**
+   - Cover initial menu startup, Play, pause/resume, each control method, theme selection, Random selection, game over, and leaderboard opening.
+   - Cover a graceful Supabase initialization failure so an unavailable backend can never leave the main menu dead.
+   - Add focused deterministic tests for `snake-core.js` and seeded Daily Run reproduction.
+2. **Introduce the build system.**
+   - Use Vite for the local development server, ES-module bundling, production asset hashing, and generation of a deployable `dist` directory.
+   - Add documented development, test, build, preview, and deployment commands.
+   - Keep the application dependency-light; Vite is a build tool, not a reason to introduce a UI framework.
+3. **Perform the first behavior-neutral extraction.**
+   - Move the complete inline stylesheet to `src/styles/game.css`.
+   - Move the complete inline application script to `src/main.js`.
+   - Keep the existing HTML markup and runtime behavior unchanged.
+   - Compare a local production build with the pre-extraction game before proceeding.
+4. **Extract inert data before behavior.**
+   - Move theme definitions, food sprites, theme-picker artwork, and music arrangements into dedicated theme modules.
+   - Add a theme validator that checks required colors, sprites, audio layers, progression stages, and sequence lengths before a theme can start.
+5. **Extract one functional system at a time.**
+   - Audio engine and AudioContext lifecycle.
+   - Touch, keyboard, TAP, and layout-customization controls.
+   - Canvas renderer and visual effects.
+   - Game lifecycle, state transitions, countdown, pause, and result handling.
+   - Sprint and Daily Run mode rules.
+   - Player identity and Supabase client.
+   - Standard, Daily, and historical leaderboards.
+   - Main menu, dialogs, onboarding, and release notes.
+6. **Make module contracts explicit.**
+   - Pass state and dependencies through function arguments or small interfaces.
+   - Keep gameplay-affecting randomness inside the versioned core.
+   - Keep UI, audio, and cosmetic effects unable to mutate competitive simulation state.
+7. **Update production packaging and offline behavior.**
+   - Deploy the complete contents of `dist`, recursively, to `gh-pages`.
+   - Generate or update the service-worker asset list from the production build.
+   - Preserve network-first navigation so Safari cannot be pinned to an obsolete HTML shell.
+   - Cache hashed JS, CSS, and local assets for offline launches without intercepting Supabase or authentication traffic.
+
+### Safeguards
+
+- Do not combine a module extraction with a gameplay feature or balancing change.
+- Keep every extraction small enough to review and revert independently.
+- Preserve `snake-core.js` determinism across browser play, local tests, replay verification, and the Daily Run Edge Function.
+- Retain the current working HTML as a reference until the modular build passes parity checks; do not maintain two production implementations.
+- Never resize or overlay the fixed gameplay board as part of the refactor.
+- Do not expose Supabase secrets in the bundle; only public client configuration belongs in browser code.
+- If a portable single-file edition remains useful, generate it from the modular production build instead of maintaining it as source.
+
+### Acceptance Criteria
+
+- A clean checkout can install dependencies, run locally, execute tests, and generate the same deployable site through documented commands.
+- The production `dist` build works from the GitHub Pages repository subpath, online and after a successful offline cache warm-up.
+- Existing local-storage preferences and saved player sessions survive the migration.
+- Classic, Sprint, Daily Run, themes, audio, controls, leaderboards, identity, and release notes retain behavioral parity.
+- Supabase or network failure never blocks local game startup or leaves menu controls unresponsive.
+- Theme data can be added or revised without editing the gameplay controller or audio engine.
+- Functional systems can be tested independently without loading the complete application.
+- The maintained HTML becomes primarily semantic markup and application mount points rather than the source of the whole game.
+
+### Recommended First Implementation Slice
+
+Start with the smoke-test harness and the behavior-neutral CSS/JavaScript extraction. Do not split gameplay systems until that modular shell builds, deploys, updates through `sw.js`, and matches the current game on desktop and mobile Safari.
+
 ## Competitive Play Roadmap
 
 The competitive roadmap should build on the game's existing fixed board, persistent player identity, Supabase leaderboard, per-run game-mode freezing, and authenticated score-submission flow. The shared foundation for Daily Run and Vs mode is a deterministic, versioned gameplay core: given the same ruleset, seed, and input events, the browser and server must reproduce the same run.
@@ -71,13 +202,15 @@ The competitive roadmap should build on the game's existing fixed board, persist
 
 Implementation started on 2026-07-22. The deterministic foundation is in place: `snake-core.js` defines the permanent `snake-rules-v1` ruleset identifier, seeded gameplay PRNG, shared initial-state and food-placement operations, deterministic state advancement, and the versioned replay/input format. Classic and Sprint consume food randomness through this core while retaining native unseeded behavior. The core is packaged by the GitHub Pages deployment script, cached network-first for offline launches, and covered by deterministic reproduction tests.
 
-The authoritative ranked implementation was staged locally and deployed to Supabase on 2026-07-22. `supabase-daily-run.sql` defines server-owned UTC challenges, atomic and idempotent three-attempt reservation, private attempt/replay storage, and a best-per-player Daily leaderboard. The deployed `submit-daily-attempt` Edge Function independently reproduces submitted runs before marking them verified. The client retrieves the authoritative challenge, displays remaining attempts, reserves immediately before countdown, submits ranked replays automatically, falls back to explicitly unranked preview/practice, and renders the dedicated Daily leaderboard. The live Edge endpoint passed its CORS/availability check; end-to-end ranked-run verification and website deployment remain.
+The authoritative ranked implementation was staged locally and deployed to Supabase on 2026-07-22. `supabase-daily-run.sql` defines server-owned UTC challenges, atomic and idempotent run reservation, private attempt/replay storage, and a best-per-player Daily leaderboard. The deployed `submit-daily-attempt` Edge Function independently reproduces submitted runs before marking them verified. The client retrieves the authoritative challenge, reserves immediately before countdown, submits ranked replays automatically, falls back to explicitly unranked local preview when the backend is unavailable, and renders the dedicated Daily leaderboard. The live Edge endpoint passed its CORS/availability check; end-to-end ranked-run verification and website deployment remain.
+
+Unlimited ranked Daily runs were adopted locally on 2026-07-24 to keep players invested throughout the entire UTC day. Every verified run remains stored for audit, while only the player's strongest result represents them on the leaderboard. The original 110 ms opening step interval remains unchanged pending playtesting; the proposed “30% faster” setting is deliberately deferred because reducing the interval by 30% would actually increase movement frequency by roughly 43%.
 
 Historical Daily leaderboards and Daily Legends were implemented locally on 2026-07-22. The leaderboard now keeps its archive date separate from today's playable challenge, provides older/newer day navigation plus a return-to-today action, and displays each challenge's winner, score, theme, and participation count. The companion `daily_leaderboard_days` and `daily_player_stats` views power all-time wins, podiums, top-ten finishes, win rate, longest/current participation streaks, and longest/current winning streaks. Daily Legends excludes the still-open current UTC challenge and remains hidden until at least one completed day has ranked results. The in-game presentation then highlights the headline record holders and top five players by daily wins. — **Implemented; Supabase archive SQL and website deployment pending**
 
 Local gameplay preview added on 2026-07-22. The main menu now exposes **Daily Run** using a UTC-date-derived preview seed, deterministic one-value-per-food placement, a locked daily theme, local daily best, replay capture, and final-food timing. Preview results are deliberately excluded from Supabase and clearly labeled unranked until the authoritative challenge and attempt backend is implemented.
 
-Daily Run onboarding and local replay verification added on 2026-07-22. The first attempt on a device now pauses before the countdown for an original cave-dialog-style 8-bit rules screen explaining the 60-second objective, shared seeded challenge, three ranked attempts per UTC day, unranked practice, tie-break rule, and collision rule. The preview explicitly states that ranked-attempt enforcement is not active yet. Completed preview replays are immediately re-simulated through `snake-core.js`; forged or divergent results fail the local verification check.
+Daily Run onboarding and local replay verification added on 2026-07-22. The first run on a device now pauses before the countdown for an original cave-dialog-style 8-bit rules screen explaining the 60-second objective, shared seeded challenge, unlimited ranked runs during the UTC day, tie-break rule, and collision rule. Completed preview replays are immediately re-simulated through `snake-core.js`; forged or divergent results fail the local verification check.
 
 Launch Daily Run first as a seeded **Sprint 60** challenge. A short, fixed-duration run is easy to understand, encourages repeat competition, and prevents one attempt from demanding an unpredictable amount of time.
 
@@ -85,7 +218,7 @@ Recommended rules:
 
 - Use the same logical board, food sequence, ruleset version, and theme for every player that day.
 - Define each challenge by UTC date so it changes simultaneously worldwide and cannot be changed by the device clock.
-- Give each authenticated player three ranked attempts per day; additional attempts can remain available as unranked practice.
+- Allow unlimited ranked runs during each UTC day so players can continuously improve their result.
 - Initial launch policy: allow anonymous device-bound players with saved initials to use ranked attempts, with the allowance keyed to their current Supabase Auth UUID. This deliberately favors low-friction adoption even though clearing site data can create a new device identity.
 - Future competitive hardening: require a persistent, email-restorable player for ranked attempts. Keep device-bound players eligible for unranked practice after this requirement is activated.
 - Maintain one undisputed daily leaderboard regardless of control method. Continue displaying control method as metadata and optionally provide filters, but do not divide the primary ranking.
@@ -111,7 +244,7 @@ Backend model:
 - Add `get_daily_challenge()` to return the authoritative current UTC challenge.
 - Add `start_daily_attempt()` to atomically reserve an official attempt and issue a short-lived run token.
 - Consume a ranked attempt only after the player confirms the rules and the backend authorizes the run, immediately before countdown. Use a client-generated idempotency key so retrying a lost response returns the same reservation instead of consuming another attempt. Once countdown begins, quitting, reloading, disconnecting, or colliding still consumes that attempt.
-- Rank each player's best verified result from their three official attempts; preserve all attempts for audit and show later runs as unranked practice after the allowance is exhausted.
+- Rank each player's best verified result from all runs that day and preserve every attempt for audit.
 - Add a submission function or Supabase Edge Function that validates the replay, records the result, and returns authoritative rank and rival information.
 - Keep Daily results separate from the existing personal-best leaderboard rows; a dated challenge is not the same entity as a permanent Classic or Sprint personal best.
 
@@ -190,7 +323,7 @@ Suggested Vs data model:
 1. Extract deterministic gameplay operations into a versioned core shared by normal play, seeded play, replay simulation, and validation. — **Foundation implemented 2026-07-22; full browser/server integration in progress**
 2. Add the Random Theme button as an isolated low-risk improvement. — **Implemented 2026-07-21**
 3. Add seeded local runs and prove that identical seeds plus inputs reproduce identical scores. — **Local Daily Run preview and replay round-trip implemented 2026-07-22**
-4. Implement Daily Run with authoritative challenge retrieval, three ranked attempts, and a dedicated leaderboard. — **Backend deployed to Supabase 2026-07-22; end-to-end ranked-run verification and website deployment pending**
+4. Implement Daily Run with authoritative challenge retrieval, unlimited ranked runs, and a dedicated leaderboard. — **Backend deployed to Supabase 2026-07-22; unlimited-run policy implemented locally 2026-07-24; end-to-end ranked-run verification and website deployment pending**
 5. Add server-side replay verification, streaks, nearby rivals, rank feedback, and sharing.
 6. Implement asynchronous duel links using the Daily foundation.
 7. Add ghost progress races.
