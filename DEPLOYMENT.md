@@ -32,6 +32,26 @@ Deploy:
 .\deploy-gh-pages.ps1
 ```
 
+## Mobile test deployment
+
+Publish a separate test build without changing the live game:
+
+```powershell
+.\deploy-preview.ps1
+# or: npm run deploy:preview
+```
+
+It builds the same `dist/` artifact, replaces only `preview/` on the `gh-pages`
+branch, and leaves the production site at the branch root unchanged.
+
+Test URL: <https://chicoramon.github.io/snake-game/preview/>
+
+Preview the change without pushing:
+
+```powershell
+.\deploy-preview.ps1 -DryRun
+```
+
 The script requires Git credentials with write access to `chicoramon/snake-game`. It builds the
 site first, clones the existing `gh-pages` branch into a temporary directory, preserves its GitHub
 Actions workflow, replaces the published files with `dist/`, commits the result, pushes it, and

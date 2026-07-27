@@ -3,6 +3,7 @@ param(
   [string]$BuildDirectory = 'dist',
   [string]$Remote = 'origin',
   [string]$Branch = 'gh-pages',
+  [string]$TargetDirectory = '',
   [string]$CommitMessage = 'Deploy Snake game',
   [switch]$DryRun
 )
@@ -56,6 +57,15 @@ if ($LASTEXITCODE -ne 0) {
   throw "Could not connect to Git remote '$Remote'."
 }
 
+$targetRelative = $TargetDirectory.Trim()
+if ($targetRelative) {
+  if ([IO.Path]::IsPathRooted($targetRelative) -or $targetRelative -match '(^|[\\/])\.\.([\\/]|$)') {
+    throw 'TargetDirectory must be a safe relative path inside the published branch.'
+  }
+  $targetRelative = $targetRelative.TrimStart([char[]]@('\', '/')).TrimEnd([char[]]@('\', '/'))
+  if (-not $targetRelative) { throw 'TargetDirectory must not resolve to the branch root.' }
+}
+
 $tempPath = Join-Path ([IO.Path]::GetTempPath()) ("snake-game-pages-" + [guid]::NewGuid().ToString('N'))
 
 try {
@@ -68,13 +78,23 @@ try {
     Invoke-Git -WorkingDirectory $tempPath -Arguments @('switch', '--orphan', $Branch)
   }
 
-  # This is an isolated temporary checkout created above. Preserve its Pages
-  # workflow, then publish the complete reproducible production artifact.
-  Get-ChildItem -LiteralPath $tempPath -Force |
-    Where-Object Name -notin @('.git', '.github') |
-    ForEach-Object { Remove-Item -LiteralPath $_.FullName -Recurse -Force }
+  # This is an isolated temporary checkout created above. Root publishing
+  # replaces the production artifact; a target folder replaces only that
+  # folder, so /preview can coexist with the live Pages site.
+  $publishPath = $tempPath
+  if ($targetRelative) {
+    $publishPath = Join-Path $tempPath $targetRelative
+    if (Test-Path -LiteralPath $publishPath) {
+      Remove-Item -LiteralPath $publishPath -Recurse -Force
+    }
+    New-Item -ItemType Directory -Path $publishPath -Force | Out-Null
+  } else {
+    Get-ChildItem -LiteralPath $tempPath -Force |
+      Where-Object Name -notin @('.git', '.github') |
+      ForEach-Object { Remove-Item -LiteralPath $_.FullName -Recurse -Force }
+  }
 
-  Copy-Item -Path (Join-Path $buildPath '*') -Destination $tempPath -Recurse -Force
+  Copy-Item -Path (Join-Path $buildPath '*') -Destination $publishPath -Recurse -Force
   [IO.File]::WriteAllText((Join-Path $tempPath '.nojekyll'), '')
 
   Invoke-Git -WorkingDirectory $tempPath -Arguments @('add', '--all')
@@ -88,7 +108,8 @@ try {
   }
 
   if ($DryRun) {
-    Write-Host 'Dry run complete. These production files would be deployed:'
+    $targetLabel = if ($targetRelative) { "/$targetRelative" } else { '/' }
+    Write-Host "Dry run complete. These files would be deployed to ${targetLabel}:"
     Invoke-Git -WorkingDirectory $tempPath -Arguments @('status', '--short')
     return
   }
@@ -103,8 +124,10 @@ try {
   Invoke-Git -WorkingDirectory $tempPath -Arguments @('commit', '--quiet', '-m', $datedMessage)
   Invoke-Git -WorkingDirectory $tempPath -Arguments @('push', 'origin', "HEAD:$Branch")
 
+  $siteUrl = 'https://chicoramon.github.io/snake-game/'
+  if ($targetRelative) { $siteUrl += "$targetRelative/" }
   Write-Host "Deployed the Vite production build to $Remote/$Branch."
-  Write-Host 'Site: https://chicoramon.github.io/snake-game/'
+  Write-Host "Site: $siteUrl"
 }
 finally {
   if (Test-Path -LiteralPath $tempPath) {

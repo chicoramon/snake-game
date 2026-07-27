@@ -22,11 +22,13 @@ test('the game remains playable when Supabase cannot initialize', async ({ page 
   await openGame(page, { blockSupabase: true });
 
   await page.locator('#startBtn').click();
+  // The default snake will eventually meet the wall without input; pause it
+  // immediately so this control assertion is independent of test-run speed.
+  await page.locator('#pause-btn').click();
+  await expect(page.locator('#pause-btn')).toHaveAttribute('aria-label', 'Resume game');
   await expect(page.locator('#overlay')).toHaveClass(/hidden/);
   await expect(page.locator('#game')).toBeVisible();
 
-  await page.locator('#pause-btn').click();
-  await expect(page.locator('#pause-btn')).toHaveAttribute('aria-label', 'Resume game');
   await page.locator('#pause-btn').click();
   await expect(page.locator('#pause-btn')).toHaveAttribute('aria-label', 'Pause game');
 });

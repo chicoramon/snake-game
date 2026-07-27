@@ -1982,14 +1982,30 @@ function setPaused(value) {
 function togglePause() { setPaused(!paused); }
 document.getElementById('pause-btn').addEventListener('click', togglePause);
 
-// Never let an inactive tab silently advance the run when rendering resumes.
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden && alive && !paused) setPaused(true);
+// Pause as soon as the game stops being the active page. `pagehide` covers
+// Safari's tab/background transitions, where `blur` is not always delivered
+// before the page is suspended.
+function pauseForInactivity() {
+  if (!alive || paused) return;
+  setPaused(true);
+  // Drop any time already accumulated for the next simulation step. A
+  // browser may have queued a frame immediately before it announced that the
+  // tab lost focus; that frame must never turn into a late snake movement.
   gameController.resetClock();
-});
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') pauseForInactivity();
+  gameController.resetClock();
+}, { capture: true });
+window.addEventListener('pagehide', pauseForInactivity, { capture: true });
 window.addEventListener('blur', () => {
-  if (alive && !paused) setPaused(true);
-});
+  // Ignore transient browser-chrome blurs while the document remains visible.
+  // A real tab switch also emits visibilitychange/pagehide synchronously.
+  queueMicrotask(() => {
+    if (document.visibilityState !== 'visible') pauseForInactivity();
+  });
+}, { capture: true });
 
 // ============================================================
 // 8-BIT CHIPTUNE ENGINE  —  Theme-aware, adaptive to snake length

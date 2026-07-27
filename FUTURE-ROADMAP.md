@@ -205,6 +205,7 @@ Start with the smoke-test harness and the behavior-neutral CSS/JavaScript extrac
 - **Game timing and animation lifecycle extraction — implemented locally (2026-07-27).** `src/game/game-controller.js` now owns requestAnimationFrame lifetime, cancellation, clamped frame deltas, and accumulator resets. `main.js` supplies the gameplay callback while preserving existing countdown, Sprint, Daily Run, pause, and game-over behavior.
 - **Unified live gameplay rules — implemented locally (2026-07-27).** The live movement tick now delegates wall/self collision, growth, food spawning, score, and speed progression to the same `SnakeCore.advanceState` rules used by replay verification. Daily Run retains deterministic free-cell food placement while Classic and Sprint retain their existing placement behavior.
 - **Run lifecycle coordination — implemented locally (2026-07-27).** `src/game/run-lifecycle.js` now owns ordered run start/finish boundaries: cancelling a prior frame, resetting, starting the next frame, and delaying the result handoff. `main.js` supplies existing UI, audio, Daily replay verification, and result callbacks.
+- **GitHub Pages preview deployment — implemented locally (2026-07-27).** `deploy-preview.ps1` builds the same Vite artifact and replaces only `preview/` on `gh-pages`, leaving production at the branch root intact for mobile testing at `/snake-game/preview/`.
 
 ### Transactional Email Deliverability
 
