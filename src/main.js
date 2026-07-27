@@ -1,5 +1,6 @@
 import { createAudioEngine } from './audio/audio-engine.js';
 import { createControlManager } from './controls/control-manager.js';
+import { createCanvasRenderer } from './rendering/canvas-renderer.js';
 import { THEMES, FOOD_SPRITES, THEME_ICON_URLS, buildMusicArc } from './themes/catalog.js';
 import { validateThemeCatalog } from './themes/validate-theme.js';
 
@@ -340,10 +341,10 @@ function resize() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 resize();
-window.addEventListener('resize', () => { resize(); if (alive) draw(); });
+window.addEventListener('resize', () => { resize(); if (alive) canvasRenderer.draw(1); });
 // Also handle mobile URL bar show/hide (visualViewport)
 if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', () => { resize(); if (alive) draw(); });
+  window.visualViewport.addEventListener('resize', () => { resize(); if (alive) canvasRenderer.draw(1); });
 }
 
 // --- State ---
@@ -664,6 +665,25 @@ let currentTheme = themeSelection === 'random'
 let controlMode = localStorage.getItem('snake_control_mode') || 'dpad'; // 'dpad', 'turn', or 'tap'
 const TURN_ORDER = ['up','right','down','left']; // clockwise
 const CONTROL_LABELS = { dpad: 'D-PAD', turn: 'TURN', tap: 'TAP', keyboard: 'KEYBOARD', mixed: 'MIXED', legacy: 'LEGACY' };
+
+const canvasRenderer = createCanvasRenderer({
+  ctx,
+  cellSize: CELL,
+  cols: COLS,
+  rows: ROWS,
+  canvasWidth: canvasW,
+  canvasHeight: canvasH,
+  foodSprites: FOOD_SPRITES,
+  getGameState: () => ({
+    snake,
+    direction: dir,
+    food,
+    theme: THEMES[currentTheme],
+    themeId: currentTheme,
+    alive,
+    paused
+  })
+});
 
 function registerControlMethod(method) {
   if (!alive || countdownActive) return;
@@ -997,6 +1017,7 @@ function prepareGameplayRun(seed = null) {
 }
 
 function reset(startingRun = false) {
+  canvasRenderer.resetEffects();
   snake = SnakeCore.createInitialSnake(COLS, ROWS);
   dir = {x: 1, y: 0};
   nextDir = {x: 1, y: 0};
@@ -1063,7 +1084,6 @@ function haptic(style) {
 
 // --- Rendering (runs at native refresh — 120fps on ProMotion) ---
 let prevSnake = null;
-let prevFood = null;
 let foodPulse = 0;
 let deathFlash = 0;
 let fpsFrames = 0, fpsLast = performance.now(), fpsDisplay = 0;
@@ -1611,11 +1631,11 @@ function gameTick() {
   }
   dir = appliedDirection;
   runTick++;
-  prevSnake = snake.map(s => ({...s}));
+  canvasRenderer.capturePreviousSnake(snake);
 
   // Record trail point at head position before moving
   const oldHead = snake[0];
-  trailPoints.unshift({ x: oldHead.x * CELL + CELL / 2, y: oldHead.y * CELL + CELL / 2, alpha: 1 });
+  canvasRenderer.recordMove(snake);
   if (trailPoints.length > MAX_TRAIL) trailPoints.pop();
   // Fade all trail points
   for (const tr of trailPoints) tr.alpha *= 0.7;
@@ -1637,6 +1657,7 @@ function gameTick() {
     AudioEngine.sfxEat();
     AudioEngine.updateTempo(snake.length);
     const T = THEMES[currentTheme];
+    canvasRenderer.triggerFoodEat({ food, theme: T });
     if (T.snakeStyle === 'dragon') dragonFireBurst = 1;
     if (T.snakeStyle === 'fighter') fighterImpactBurst = 1;
     // Particle burst on eat
@@ -1720,8 +1741,9 @@ function finishRun(reason) {
   AudioEngine.stop();
   if (reason === 'collision') {
     deathFlash = 0.5;
-    screenShake = 15;
-    AudioEngine.sfxDie();
+    // Screen shake is owned by canvasRenderer.
+    AudioEngine.sfxDie();
+    canvasRenderer.triggerCollision({ snake, theme: THEMES[currentTheme] });
     spawnDeathExplosion();
     spawnParticles(
       snake[0].x * CELL + CELL / 2,
@@ -1888,7 +1910,7 @@ function turnCounterClockwise() {
 
 // --- Main loop — requestAnimationFrame for 120Hz ProMotion ---
 function loop(now) {
-  const hasEffects = deathFlash > 0 || deathSegments.length > 0 || particles.length > 0;
+  const hasEffects = canvasRenderer.hasActiveEffects();
   if (!alive && !hasEffects) {
     animationFrameId = null;
     return;
@@ -1919,7 +1941,7 @@ function loop(now) {
         while (alive && tickAccum >= speed && dailyTickElapsedMs + speed <= durationMs) {
           const stepInterval = speed;
           dailyTickElapsedMs += stepInterval;
-          prevSnake = snake.map(s => ({...s}));
+          canvasRenderer.capturePreviousSnake(snake);
           gameTick();
           tickAccum -= stepInterval;
         }
@@ -1935,7 +1957,7 @@ function loop(now) {
         if (alive) {
           tickAccum += dt;
           while (alive && tickAccum >= speed) {
-            prevSnake = snake.map(s => ({...s}));
+            canvasRenderer.capturePreviousSnake(snake);
             gameTick();
             tickAccum -= speed;
           }
@@ -1945,7 +1967,7 @@ function loop(now) {
   }
 
   // Update effects
-  updateParticles(dt);
+  canvasRenderer.update(dt);
   updateDeathSegments(dt);
 
   // Screen shake
@@ -1963,7 +1985,7 @@ function loop(now) {
     ctx.save();
     ctx.translate(shakeX, shakeY);
   }
-  draw(interp);
+  canvasRenderer.draw(interp);
   if (screenShake > 0) {
     ctx.restore();
   }
@@ -1997,7 +2019,7 @@ function setPaused(value) {
   if (countdownActive) {
     countdownDisplay.textContent = paused ? 'PAUSED' : String(Math.max(1, Math.ceil(countdownRemainingMs / 1000)));
   }
-  if (paused) draw(1);
+  if (paused) canvasRenderer.draw(1);
 }
 function togglePause() { setPaused(!paused); }
 document.getElementById('pause-btn').addEventListener('click', togglePause);
@@ -3552,7 +3574,7 @@ shareBtn.addEventListener('click', async () => {
 });
 
 reset();
-draw(1);
+canvasRenderer.draw(1);
 
 // Attach and render the core game first. Identity is an optional enhancement
 // and may fail in restrictive mobile browsers or embedded web views.
