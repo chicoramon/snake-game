@@ -31,6 +31,16 @@ test('the game remains playable when Supabase cannot initialize', async ({ page 
   await expect(page.locator('#pause-btn')).toHaveAttribute('aria-label', 'Pause game');
 });
 
+test('player identity bootstraps without page errors when Supabase is available', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.message));
+
+  await openGame(page);
+  await expect(page.locator('#player-identity-status')).not.toContainText('unavailable');
+  await expect(page.locator('#player-menu-label')).toHaveText(/Player:/);
+  expect(pageErrors).toEqual([]);
+});
+
 test('menu choices expose themes, random, controls, and leaderboard', async ({ page }) => {
   await openGame(page);
 

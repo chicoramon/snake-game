@@ -200,6 +200,7 @@ Start with the smoke-test harness and the behavior-neutral CSS/JavaScript extrac
 - **Automated checks — implemented locally.** Existing contract tests now target the modular application source, and Playwright smoke tests cover the main menu, play/pause, theme selection, controls, and leaderboard flows. Final browser/Safari parity validation and production deployment remain pending.
 - **Theme catalog extraction — implemented locally (2026-07-27).** Theme definitions, food sprites, picker artwork, and music arrangements now live in `src/themes/catalog.js`. The app validates the complete theme catalog, four-stage music progression, and matching sprites before a game can start; focused contract tests protect the catalog without loading gameplay.
 - **Audio engine extraction — implemented locally (2026-07-27).** The complete Web Audio, native-track/MIDI fallback, mobile recovery, record-heartbeat, and fanfare system now lives in `src/audio/audio-engine.js`. `main.js` supplies explicit theme and game-state callbacks, allowing the engine to remain independent of gameplay globals.
+- **Controls extraction — implemented locally (2026-07-27).** Keyboard, swipe, D-PAD, TURN, TAP, fade behavior, persisted control choice, and layout editing now live in `src/controls/control-manager.js`. `main.js` retains competitive run state and provides explicit direction, turn, pause, and input-recording callbacks.
 
 ### Transactional Email Deliverability
 
