@@ -1,6 +1,7 @@
 import { createAudioEngine } from './audio/audio-engine.js';
 import { createControlManager } from './controls/control-manager.js';
 import { createGameController } from './game/game-controller.js';
+import { createRunLifecycle } from './game/run-lifecycle.js';
 import { createCanvasRenderer } from './rendering/canvas-renderer.js';
 import { THEMES, FOOD_SPRITES, THEME_ICON_URLS, buildMusicArc } from './themes/catalog.js';
 import { validateThemeCatalog } from './themes/validate-theme.js';
@@ -367,6 +368,7 @@ let recordBrokenThisRun = false;
 let recordResultVisible = false;
 let recordCelebrationShown = false;
 const gameController = createGameController();
+const runLifecycle = createRunLifecycle({ controller: gameController });
 let gameMode = localStorage.getItem('snake_game_mode') || 'classic';
 if (!['classic', 'sprint', 'daily'].includes(gameMode)) gameMode = 'classic';
 let runGameMode = gameMode;
@@ -1702,45 +1704,45 @@ function showRunResult(reason) {
 }
 
 function finishRun(reason) {
-  if (!alive) return;
-  alive = false;
-  SnakeCore.finalizeReplay(runReplay, { tick: runTick, score, reason });
-  if (runGameMode === 'daily' && runReplay) {
-    try {
-      const replayCheck = SnakeCore.simulateReplay(runReplay, {
-        baseInterval: BASE_INTERVAL,
-        minInterval: MIN_INTERVAL,
-        foodPlacement: 'free-cells'
-      });
-      runReplay.localVerification = replayCheck.verified ? 'verified' : 'failed';
-      if (!replayCheck.verified) console.warn('Daily Run replay did not reproduce the local result.', replayCheck);
-    } catch (error) {
-      runReplay.localVerification = 'error';
-      console.warn('Daily Run replay verification failed.', error);
-    }
-  }
-  countdownActive = false;
-  countdownDisplay.classList.remove('visible');
-  haptic('die');
-  AudioEngine.stop();
-  if (reason === 'collision') {
-    deathFlash = 0.5;
-    // Screen shake is owned by canvasRenderer.
-    AudioEngine.sfxDie();
-    canvasRenderer.triggerCollision({ snake, theme: THEMES[currentTheme] });
-    spawnDeathExplosion();
-    spawnParticles(
-      snake[0].x * CELL + CELL / 2,
-      snake[0].y * CELL + CELL / 2,
-      30, THEMES[currentTheme].deathParticle, 3, 1.5
-    );
-    trailPoints = [];
-  } else {
-    sprintRemainingMs = 0;
-    updateSprintTimer(true);
-  }
-  setTimeout(() => showRunResult(reason), reason === 'collision' ? 600 : 250);
-}
+  runLifecycle.finish({
+    isActive: () => alive,
+    markFinished: () => {
+      alive = false;
+      SnakeCore.finalizeReplay(runReplay, { tick: runTick, score, reason });
+      if (runGameMode !== 'daily' || !runReplay) return;
+      try {
+        const replayCheck = SnakeCore.simulateReplay(runReplay, {
+          baseInterval: BASE_INTERVAL,
+          minInterval: MIN_INTERVAL,
+          foodPlacement: 'free-cells'
+        });
+        runReplay.localVerification = replayCheck.verified ? 'verified' : 'failed';
+        if (!replayCheck.verified) console.warn('Daily Run replay did not reproduce the local result.', replayCheck);
+      } catch (error) {
+        runReplay.localVerification = 'error';
+        console.warn('Daily Run replay verification failed.', error);
+      }
+    },
+    finalize: () => {
+      countdownActive = false;
+      countdownDisplay.classList.remove('visible');
+      haptic('die');
+      AudioEngine.stop();
+    },
+    resolveOutcome: () => {
+      if (reason === 'collision') {
+        // Screen shake and the collision burst are owned by canvasRenderer.
+        AudioEngine.sfxDie();
+        canvasRenderer.triggerCollision({ snake, theme: THEMES[currentTheme] });
+        return 600;
+      }
+      sprintRemainingMs = 0;
+      updateSprintTimer(true);
+      return 250;
+    },
+    showResult: () => showRunResult(reason)
+  });
+}
 
 function die() {
   finishRun('collision');
@@ -1829,44 +1831,48 @@ async function startGame(options = {}) {
       if (!challenge) startBtn.textContent = 'Play';
     }
   }
-  gameController.stop();
-  stopRecordCelebration();
-  recordResultVisible = false;
-  challenge ||= gameMode === 'daily' ? ensureDailyChallenge() : null;
-  if (challenge) {
-    applyTheme(challenge.theme, { updateSelection: false });
-  } else if (themeSelection === 'random') {
-    const nextTheme = pickRandomThemeId(Object.keys(THEMES), currentTheme);
-    if (nextTheme) applyTheme(nextTheme, { updateSelection: false });
-  }
-  displayNameInviteSuppressedThisSession = true;
-  displayNameInvite.hidden = true;
-  overlay.classList.add('hidden');
-  overlay.setAttribute('aria-hidden', 'true');
-  shareBtn.style.display = 'none';
-  namePrompt.style.display = 'none';
-  submittedThisRound = false;
-  currentRunId = createRunId();
-  runControlMethod = null;
-  runUsesMixedControls = false;
-  nameInput.disabled = false;
-  scoreMethodLabel.classList.remove('unranked');
-  runGameMode = gameMode;
-  if (runGameMode === 'daily') {
-    startBtn.textContent = dailyAttempt?.ranked
-      ? dailyAttemptLabel(dailyAttempt.number)
-      : 'Practice Run';
-  }
-  hudMode.textContent = modeHudLabel(runGameMode);
-  best = bestScores[runGameMode];
-  bestEl.textContent = best;
-  prepareGameplayRun(challenge?.seed ?? null);
-  reset(true);
-  if (runGameMode === 'daily') disableRecordChase();
-  else beginRecordChase();
-  AudioEngine.start();
-  prevSnake = null;
-  gameController.start(runGameFrame);
+  runLifecycle.begin({
+    prepare: () => {
+      stopRecordCelebration();
+      recordResultVisible = false;
+      challenge ||= gameMode === 'daily' ? ensureDailyChallenge() : null;
+      if (challenge) {
+        applyTheme(challenge.theme, { updateSelection: false });
+      } else if (themeSelection === 'random') {
+        const nextTheme = pickRandomThemeId(Object.keys(THEMES), currentTheme);
+        if (nextTheme) applyTheme(nextTheme, { updateSelection: false });
+      }
+      displayNameInviteSuppressedThisSession = true;
+      displayNameInvite.hidden = true;
+      overlay.classList.add('hidden');
+      overlay.setAttribute('aria-hidden', 'true');
+      shareBtn.style.display = 'none';
+      namePrompt.style.display = 'none';
+      submittedThisRound = false;
+      currentRunId = createRunId();
+      runControlMethod = null;
+      runUsesMixedControls = false;
+      nameInput.disabled = false;
+      scoreMethodLabel.classList.remove('unranked');
+      runGameMode = gameMode;
+      if (runGameMode === 'daily') {
+        startBtn.textContent = dailyAttempt?.ranked
+          ? dailyAttemptLabel(dailyAttempt.number)
+          : 'Practice Run';
+      }
+      hudMode.textContent = modeHudLabel(runGameMode);
+      best = bestScores[runGameMode];
+      bestEl.textContent = best;
+      prepareGameplayRun(challenge?.seed ?? null);
+    },
+    reset: () => reset(true),
+    afterReset: () => {
+      if (runGameMode === 'daily') disableRecordChase();
+      else beginRecordChase();
+      AudioEngine.start();
+    },
+    frame: runGameFrame
+  });
 }
 
 function setDir(x, y) {

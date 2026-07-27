@@ -15,7 +15,7 @@ test('game controller owns animation-frame lifetime and a clamped simulation clo
 
 test('main delegates frame scheduling and clock resets to the game controller', () => {
   assert.match(mainSource, /const gameController = createGameController\(\)/);
-  assert.match(mainSource, /gameController\.start\(runGameFrame\)/);
+  assert.match(mainSource, /const runLifecycle = createRunLifecycle\(\{ controller: gameController \}\)/);
   assert.match(mainSource, /function runGameFrame\(\{ rawDt, dt, clock \}\)/);
   assert.match(mainSource, /gameController\.resetClock\(\)/);
 });
