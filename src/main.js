@@ -1632,24 +1632,29 @@ function gameTick() {
   dir = appliedDirection;
   runTick++;
   canvasRenderer.capturePreviousSnake(snake);
-
-  // Record trail point at head position before moving
-  const oldHead = snake[0];
   canvasRenderer.recordMove(snake);
-  if (trailPoints.length > MAX_TRAIL) trailPoints.pop();
-  // Fade all trail points
-  for (const tr of trailPoints) tr.alpha *= 0.7;
-
-  const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
-
-  // Wall wrap disabled — die on wall
-  if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) return die();
-  if (snake.some(s => s.x === head.x && s.y === head.y)) return die();
-
-  snake.unshift(head);
-
-  if (head.x === food.x && head.y === food.y) {
-    score++;
+  const eatenFood = food;
+  const nextState = SnakeCore.advanceState({ snake, direction: dir, food, score, speed, alive }, nextDir, {
+    cols: COLS,
+    rows: ROWS,
+    baseInterval: BASE_INTERVAL,
+    minInterval: MIN_INTERVAL,
+    foodPlacement: runGameMode === 'daily' ? 'free-cells' : 'rejection'
+  }, gameplayRandom);
+
+  if (nextState.event === 'collision') {
+    dir = nextState.direction;
+    return die();
+  }
+
+  snake = nextState.snake;
+  dir = nextState.direction;
+  food = nextState.food;
+  score = nextState.score;
+  speed = nextState.speed;
+  alive = nextState.alive;
+
+  if (nextState.event === 'eat') {
     if (runGameMode === 'daily') dailyLastFoodElapsedMs = dailyTickElapsedMs;
     scoreEl.textContent = score;
     updateRecordChase();
@@ -1657,39 +1662,18 @@ function gameTick() {
     AudioEngine.sfxEat();
     AudioEngine.updateTempo(snake.length);
     const T = THEMES[currentTheme];
-    canvasRenderer.triggerFoodEat({ food, theme: T });
-    if (T.snakeStyle === 'dragon') dragonFireBurst = 1;
-    if (T.snakeStyle === 'fighter') fighterImpactBurst = 1;
-    // Particle burst on eat
-    spawnParticles(
-      food.x * CELL + CELL / 2,
-      food.y * CELL + CELL / 2,
-      12, T.food, 2, 1
-    );
-    // Also spawn accent particles
-    spawnParticles(
-      food.x * CELL + CELL / 2,
-      food.y * CELL + CELL / 2,
-      6, T.foodAccent, 1.5, 0.7
-    );
-    // Food scale punch
-    foodScaleTarget = 1.6;
-    foodScale = 0.3;
-    if (score > best) {
-      best = score;
+    canvasRenderer.triggerFoodEat({ food: eatenFood, theme: T });
+    if (score > best) {
+      best = score;
       bestScores[runGameMode] = best;
       bestEl.textContent = best;
       const bestKey = runGameMode === 'daily'
         ? ensureDailyChallenge().bestKey
         : BEST_KEYS[runGameMode];
       localStorage.setItem(bestKey, best);
-    }
-    placeFood();
-    speed = Math.max(MIN_INTERVAL, BASE_INTERVAL - score * 2);
-  } else {
-    snake.pop();
-  }
-}
+    }
+  }
+}
 
 function showRunResult(reason) {
   const isSprint = runGameMode === 'sprint';
