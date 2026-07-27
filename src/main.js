@@ -1,5 +1,6 @@
 import { createAudioEngine } from './audio/audio-engine.js';
 import { createControlManager } from './controls/control-manager.js';
+import { createGameController } from './game/game-controller.js';
 import { createCanvasRenderer } from './rendering/canvas-renderer.js';
 import { THEMES, FOOD_SPRITES, THEME_ICON_URLS, buildMusicArc } from './themes/catalog.js';
 import { validateThemeCatalog } from './themes/validate-theme.js';
@@ -365,8 +366,7 @@ let recordTargetPromise = Promise.resolve();
 let recordBrokenThisRun = false;
 let recordResultVisible = false;
 let recordCelebrationShown = false;
-let lastTick = 0, tickAccum = 0;
-let animationFrameId = null;
+const gameController = createGameController();
 let gameMode = localStorage.getItem('snake_game_mode') || 'classic';
 if (!['classic', 'sprint', 'daily'].includes(gameMode)) gameMode = 'classic';
 let runGameMode = gameMode;
@@ -1026,7 +1026,7 @@ function reset(startingRun = false) {
   speed = BASE_INTERVAL;
   alive = startingRun;
   paused = false;
-  tickAccum = 0;
+  gameController.resetClock();
   sprintRemainingMs = runGameMode === 'daily'
     ? (dailyChallenge?.durationMs || SPRINT_DURATION_MS)
     : SPRINT_DURATION_MS;
@@ -1845,7 +1845,7 @@ async function startGame(options = {}) {
       if (!challenge) startBtn.textContent = 'Play';
     }
   }
-  if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
+  gameController.stop();
   stopRecordCelebration();
   recordResultVisible = false;
   challenge ||= gameMode === 'daily' ? ensureDailyChallenge() : null;
@@ -1882,8 +1882,7 @@ async function startGame(options = {}) {
   else beginRecordChase();
   AudioEngine.start();
   prevSnake = null;
-  lastTick = performance.now();
-  animationFrameId = requestAnimationFrame(loop);
+  gameController.start(runGameFrame);
 }
 
 function setDir(x, y) {
@@ -1909,16 +1908,12 @@ function turnCounterClockwise() {
 }
 
 // --- Main loop — requestAnimationFrame for 120Hz ProMotion ---
-function loop(now) {
+function runGameFrame({ rawDt, dt, clock }) {
   const hasEffects = canvasRenderer.hasActiveEffects();
-  if (!alive && !hasEffects) {
-    animationFrameId = null;
-    return;
-  }
-  // Avoid catch-up bursts after throttled/backgrounded animation frames.
-  const rawDt = Math.max(0, now - lastTick);
-  const dt = Math.min(rawDt, 100);
-  lastTick = now;
+  if (!alive && !hasEffects) {
+    return false;
+  }
+  // Delta timing is clamped by gameController.
 
   if (alive && !paused) {
     if (countdownActive) {
@@ -1927,7 +1922,7 @@ function loop(now) {
         countdownActive = false;
         countdownRemainingMs = 0;
         countdownDisplay.textContent = 'GO!';
-        tickAccum = 0;
+        clock.tickAccum = 0;
         setTimeout(() => countdownDisplay.classList.remove('visible'), 350);
       } else {
         const countdownLabel = String(Math.ceil(countdownRemainingMs / 1000));
@@ -1936,16 +1931,16 @@ function loop(now) {
     } else {
       if (runGameMode === 'daily') {
         const durationMs = dailyChallenge?.durationMs || SPRINT_DURATION_MS;
-        const activeElapsedMs = dailyTickElapsedMs + tickAccum;
-        tickAccum += Math.min(dt, Math.max(0, durationMs - activeElapsedMs));
-        while (alive && tickAccum >= speed && dailyTickElapsedMs + speed <= durationMs) {
+        const activeElapsedMs = dailyTickElapsedMs + clock.tickAccum;
+        clock.tickAccum += Math.min(dt, Math.max(0, durationMs - activeElapsedMs));
+        while (alive && clock.tickAccum >= speed && dailyTickElapsedMs + speed <= durationMs) {
           const stepInterval = speed;
           dailyTickElapsedMs += stepInterval;
           canvasRenderer.capturePreviousSnake(snake);
           gameTick();
-          tickAccum -= stepInterval;
+          clock.tickAccum -= stepInterval;
         }
-        sprintRemainingMs = Math.max(0, durationMs - dailyTickElapsedMs - tickAccum);
+        sprintRemainingMs = Math.max(0, durationMs - dailyTickElapsedMs - clock.tickAccum);
         updateSprintTimer();
         if (alive && sprintRemainingMs <= 0) finishRun('time');
       } else {
@@ -1955,52 +1950,25 @@ function loop(now) {
           if (sprintRemainingMs <= 0) finishRun('time');
         }
         if (alive) {
-          tickAccum += dt;
-          while (alive && tickAccum >= speed) {
+          clock.tickAccum += dt;
+          while (alive && clock.tickAccum >= speed) {
             canvasRenderer.capturePreviousSnake(snake);
             gameTick();
-            tickAccum -= speed;
+            clock.tickAccum -= speed;
           }
         }
       }
     }
   }
 
-  // Update effects
+  // Update effects
   canvasRenderer.update(dt);
-  updateDeathSegments(dt);
-
-  // Screen shake
-  if (screenShake > 0) {
-    shakeX = (Math.random() - 0.5) * screenShake * 1.2;
-    shakeY = (Math.random() - 0.5) * screenShake * 1.2;
-    screenShake *= 0.85;
-    if (screenShake < 0.5) { screenShake = 0; shakeX = 0; shakeY = 0; }
-  }
-
-  const interp = alive && !paused ? tickAccum / speed : 1;
-
-  // Apply screen shake transform
-  if (screenShake > 0) {
-    ctx.save();
-    ctx.translate(shakeX, shakeY);
-  }
+
+  const interp = alive && !paused ? clock.tickAccum / speed : 1;
   canvasRenderer.draw(interp);
-  if (screenShake > 0) {
-    ctx.restore();
-  }
+  canvasRenderer.updateFps(document.getElementById('fps-counter'));
 
-  // FPS counter
-  fpsFrames++;
-  const fpsNow = performance.now();
-  if (fpsNow - fpsLast >= 500) {
-    fpsDisplay = Math.round(fpsFrames / ((fpsNow - fpsLast) / 1000));
-    fpsFrames = 0;
-    fpsLast = fpsNow;
-    document.getElementById('fps-counter').textContent = fpsDisplay + ' FPS';
-  }
-
-  animationFrameId = requestAnimationFrame(loop);
+  return true;
 }
 
 // --- Pause toggle ---
@@ -2027,8 +1995,7 @@ document.getElementById('pause-btn').addEventListener('click', togglePause);
 // Never let an inactive tab silently advance the run when rendering resumes.
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && alive && !paused) setPaused(true);
-  lastTick = performance.now();
-  tickAccum = 0;
+  gameController.resetClock();
 });
 window.addEventListener('blur', () => {
   if (alive && !paused) setPaused(true);
