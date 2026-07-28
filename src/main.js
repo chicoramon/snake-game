@@ -9,17 +9,18 @@ import { createThemePicker } from './ui/theme-picker.js';
 import { createDailyRulesDialog } from './ui/daily-rules-dialog.js';
 import { createWhatsNewDialog } from './ui/whats-new-dialog.js';
 import { createPlayerPanel } from './ui/player-panel.js';
+import { createPlayerIdentityController } from './player/player-identity-controller.js';
+import { createLeaderboardController } from './ui/leaderboard-controller.js';
 import { createGameController } from './game/game-controller.js';
 import { createRunLifecycle } from './game/run-lifecycle.js';
+import { createLiveGameSession } from './game/live-game-session.js';
 import {
   SPRINT_DURATION_MS as MODE_SPRINT_DURATION_MS,
   formatTimedRunTime,
-  createTimedRunState,
-  advanceCountdown,
-  advanceSprintTimer,
-  accumulateDailyFrame
+  createTimedRunState
 } from './game/run-modes.js';
 import { createCanvasRenderer } from './rendering/canvas-renderer.js';
+import { drawFoodSprite as drawFoodSpriteAsset } from './rendering/food-sprite.js';
 import { THEMES, FOOD_SPRITES, THEME_ICON_URLS, buildMusicArc } from './themes/catalog.js';
 import { validateThemeCatalog } from './themes/validate-theme.js';
 
@@ -103,6 +104,7 @@ let themePicker = null;
 let dailyRulesView = null;
 let whatsNewView = null;
 let playerPanelView = null;
+let playerIdentityController = null;
 
 // Add the newest release first and change its id whenever a release should
 // trigger the one-time update bulletin. Keep every item player-facing: new
@@ -906,16 +908,7 @@ function reset(startingRun = false) {
   timerBlock.classList.toggle('visible', startingRun && isTimedMode(runGameMode));
   updateSprintTimer(true);
   scoreEl.textContent = 0;
-  // Clear effects
-  particles.length = 0;
-  deathSegments.length = 0;
-  trailPoints.length = 0;
-  screenShake = 0; shakeX = 0; shakeY = 0;
-  deathFlash = 0;
-  foodScale = 1; foodScaleTarget = 1;
-  dragonFireBurst = 0;
-  fighterImpactBurst = 0;
-  // Reset pause button
+  // Reset pause button
   const pauseBtn = document.getElementById('pause-btn');
   pauseBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="2" y="1" width="2" height="8"/><rect x="6" y="1" width="2" height="8"/></svg>';
   pauseBtn.classList.remove('paused');
@@ -948,547 +941,7 @@ function haptic(style) {
   }
 }
 
-// --- Rendering (runs at native refresh — 120fps on ProMotion) ---
-let prevSnake = null;
-let foodPulse = 0;
-let deathFlash = 0;
-let fpsFrames = 0, fpsLast = performance.now(), fpsDisplay = 0;
-let foodScale = 1, foodScaleTarget = 1;
-let dragonFireBurst = 0;
-let fighterImpactBurst = 0;
-let screenShake = 0, shakeX = 0, shakeY = 0;
-
-// --- Particle System (from game-engine: object pooling for perf) ---
-const particles = [];
-const MAX_PARTICLES = 200;
-
-function spawnParticles(x, y, count, color, speedMul, lifeMul) {
-  for (let i = 0; i < count; i++) {
-    if (particles.length >= MAX_PARTICLES) {
-      // Reuse oldest dead particle
-      const dead = particles.findIndex(p => p.life <= 0);
-      if (dead === -1) break;
-      particles.splice(dead, 1);
-    }
-    const angle = Math.random() * Math.PI * 2;
-    const speed = (1 + Math.random() * 3) * speedMul;
-    const life = (0.3 + Math.random() * 0.5) * lifeMul;
-    particles.push({
-      x, y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      life, maxLife: life,
-      color,
-      size: 2 + Math.random() * 3
-    });
-  }
-}
-
-function updateParticles(dt) {
-  for (let i = particles.length - 1; i >= 0; i--) {
-    const p = particles[i];
-    p.x += p.vx;
-    p.y += p.vy;
-    p.vx *= 0.96; // drag
-    p.vy *= 0.96;
-    p.life -= dt / 1000;
-    if (p.life <= 0) {
-      particles.splice(i, 1);
-    }
-  }
-}
-
-function drawParticles() {
-  for (const p of particles) {
-    const alpha = Math.max(0, p.life / p.maxLife);
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = p.color;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-}
-
-// --- Death explosion: scatter snake segments ---
-let deathSegments = [];
-
-function spawnDeathExplosion() {
-  const T = THEMES[currentTheme];
-  const tail = T.snakeTail;
-  deathSegments = [];
-  for (let i = 0; i < snake.length; i++) {
-    const seg = snake[i];
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 2 + Math.random() * 4;
-    const ratio = i / Math.max(snake.length, 1);
-    const r = Math.round(tail[0] + (tail[0] * 0.4) * (1 - ratio));
-    const g = Math.round(tail[1] - tail[1] * 0.3 * ratio);
-    const b = Math.round(tail[2] - tail[2] * 0.25 * ratio);
-    deathSegments.push({
-      x: seg.x * CELL + CELL / 2,
-      y: seg.y * CELL + CELL / 2,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      size: i === 0 ? CELL * 0.8 : CELL * 0.6,
-      color: `rgb(${r},${g},${b})`,
-      life: 1.0,
-      rotation: Math.random() * Math.PI * 2,
-      rotSpeed: (Math.random() - 0.5) * 0.3
-    });
-  }
-  // Also spawn particles from each segment
-  for (const seg of snake) {
-    spawnParticles(
-      seg.x * CELL + CELL / 2,
-      seg.y * CELL + CELL / 2,
-      3, T.deathParticle, 1.5, 0.8
-    );
-  }
-}
-
-function updateDeathSegments(dt) {
-  for (let i = deathSegments.length - 1; i >= 0; i--) {
-    const s = deathSegments[i];
-    s.x += s.vx;
-    s.y += s.vy;
-    s.vx *= 0.95;
-    s.vy *= 0.95;
-    s.rotation += s.rotSpeed;
-    s.life -= dt / 1000;
-    if (s.life <= 0) deathSegments.splice(i, 1);
-  }
-}
-
-function drawDeathSegments() {
-  for (const s of deathSegments) {
-    const alpha = Math.max(0, s.life);
-    ctx.save();
-    ctx.translate(s.x, s.y);
-    ctx.rotate(s.rotation);
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = s.color;
-    ctx.fillRect(-s.size / 2, -s.size / 2, s.size, s.size);
-    ctx.restore();
-  }
-  ctx.globalAlpha = 1;
-}
-
-// --- Snake trail (fading afterimage) ---
-let trailPoints = [];
-const MAX_TRAIL = 12;
-
-function lerp(a, b, t) { return a + (b - a) * t; }
-
-// ============================================================
-// FOOD PIXEL SPRITES
-// ============================================================
-// 16×16 pixel art sprites with per-sprite color palettes
-// grid: 0=transparent, 1-5=palette indices
-function drawFoodSprite(ctx, cx, cy, cellSize, theme, scale, themeName) {
-  const data = FOOD_SPRITES[themeName] || FOOD_SPRITES.default;
-  const sprite = data.grid, palette = data.palette;
-  const rows = sprite.length, cols = sprite[0].length;
-  const pxSize = (cellSize * scale * 0.9) / rows;
-  const totalW = cols * pxSize, totalH = rows * pxSize;
-  const ox = cx - totalW / 2, oy = cy - totalH / 2;
-  ctx.imageSmoothingEnabled = false;
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      const v = sprite[row][col];
-      if (v === 0) continue;
-      ctx.fillStyle = palette[v];
-      ctx.fillRect(Math.round(ox + col * pxSize), Math.round(oy + row * pxSize),
-                   Math.ceil(pxSize), Math.ceil(pxSize));
-    }
-  }
-}
-
-function drawDragonHeadAndFire(hx, hy, T) {
-  const cx = hx + CELL / 2;
-  const cy = hy + CELL / 2;
-  const angle = Math.atan2(dir.y, dir.x);
-  const idleBreath = alive && !paused
-    ? Math.max(0, (Math.sin(foodPulse * 0.34) - 0.78) / 0.22) * 0.55
-    : 0;
-  const fireStrength = Math.max(dragonFireBurst, idleBreath);
-  dragonFireBurst = Math.max(0, dragonFireBurst - 0.022);
-
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.rotate(angle);
-
-  // The breath is canvas-only: it never changes collision, food, or scoring.
-  if (fireStrength > 0.02) {
-    const reach = 16 + fireStrength * 19;
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = 0.34 + fireStrength * 0.34;
-    ctx.fillStyle = T.fireOuter;
-    ctx.beginPath();
-    ctx.moveTo(7, -5); ctx.quadraticCurveTo(reach * 0.55, -10, reach, 0);
-    ctx.quadraticCurveTo(reach * 0.55, 10, 7, 5); ctx.closePath(); ctx.fill();
-    ctx.globalAlpha = 0.62 + fireStrength * 0.26;
-    ctx.fillStyle = T.fireMid;
-    ctx.beginPath();
-    ctx.moveTo(9, -3); ctx.quadraticCurveTo(reach * 0.58, -6, reach * 0.82, 0);
-    ctx.quadraticCurveTo(reach * 0.58, 6, 9, 3); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = T.fireCore;
-    ctx.beginPath();
-    ctx.moveTo(10, -1.5); ctx.lineTo(reach * 0.58, 0); ctx.lineTo(10, 1.5);
-    ctx.closePath(); ctx.fill();
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.globalAlpha = 1;
-  }
-
-  // Long snout, crown horns, and directional ember eyes.
-  ctx.fillStyle = T.dragonScale;
-  ctx.strokeStyle = '#11141a';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(-7, -7); ctx.lineTo(5, -8); ctx.lineTo(10, -4);
-  ctx.lineTo(11, 4); ctx.lineTo(5, 8); ctx.lineTo(-7, 7);
-  ctx.closePath(); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = T.dragonScaleLight;
-  ctx.fillRect(1, -5, 7, 2);
-  ctx.fillStyle = T.dragonHorn;
-  ctx.beginPath(); ctx.moveTo(-5, -7); ctx.lineTo(-10, -12); ctx.lineTo(0, -8); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(-5, 7); ctx.lineTo(-10, 12); ctx.lineTo(0, 8); ctx.fill();
-  ctx.fillStyle = T.dragonEye;
-  ctx.shadowColor = T.dragonEye; ctx.shadowBlur = 6;
-  ctx.fillRect(2, -5, 2.5, 2.5);
-  ctx.fillRect(2, 2.5, 2.5, 2.5);
-  ctx.shadowBlur = 0;
-  ctx.restore();
-}
-
-function draw(interp) {
-  const T = THEMES[currentTheme];
-  // Background
-  ctx.fillStyle = T.bg;
-  ctx.fillRect(0, 0, canvasW, canvasH);
-
-  // Grid
-  ctx.strokeStyle = T.grid;
-  ctx.lineWidth = 0.5;
-  for (let x = 0; x <= COLS; x++) {
-    ctx.beginPath(); ctx.moveTo(x * CELL, 0); ctx.lineTo(x * CELL, canvasH); ctx.stroke();
-  }
-  for (let y = 0; y <= ROWS; y++) {
-    ctx.beginPath(); ctx.moveTo(0, y * CELL); ctx.lineTo(canvasW, y * CELL); ctx.stroke();
-  }
-
-  // Optional theme surface treatment: a field of raised toy-brick studs.
-  if (T.boardPattern === 'studs') {
-    ctx.fillStyle = T.studColor || T.accent;
-    ctx.globalAlpha = 0.18;
-    for (let y = 0; y < ROWS; y++) {
-      for (let x = 0; x < COLS; x++) {
-        ctx.beginPath();
-        ctx.arc(x * CELL + CELL / 2, y * CELL + CELL / 2, 2.2, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-    ctx.globalAlpha = 1;
-  } else if (T.boardPattern === 'springfield') {
-    // A quiet cel-painted Springfield backdrop: clouds, distant rooftops, and the family home.
-    ctx.save();
-    ctx.globalAlpha = 0.12;
-    ctx.fillStyle = '#FFFFFF';
-    for (const cloud of [[55,55,44],[250,105,54],[330,38,34]]) {
-      ctx.beginPath();
-      ctx.arc(cloud[0], cloud[1], cloud[2] * 0.28, 0, Math.PI * 2);
-      ctx.arc(cloud[0] + cloud[2] * 0.3, cloud[1] - 5, cloud[2] * 0.36, 0, Math.PI * 2);
-      ctx.arc(cloud[0] + cloud[2] * 0.65, cloud[1], cloud[2] * 0.3, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.fillStyle = '#F14E28';
-    ctx.fillRect(0, canvasH - 92, canvasW, 92);
-    ctx.fillStyle = '#FFD90F';
-    ctx.beginPath();
-    ctx.moveTo(35, canvasH - 92); ctx.lineTo(105, canvasH - 148); ctx.lineTo(175, canvasH - 92);
-    ctx.closePath(); ctx.fill();
-    ctx.fillRect(52, canvasH - 92, 108, 66);
-    ctx.fillStyle = '#70D1FE';
-    ctx.fillRect(72, canvasH - 76, 25, 24);
-    ctx.fillRect(116, canvasH - 76, 25, 24);
-    ctx.fillStyle = '#94C11F';
-    ctx.fillRect(0, canvasH - 28, canvasW, 28);
-    ctx.restore();
-  } else if (T.boardPattern === 'winterfell') {
-    // Subtle icy masonry and distant battlements keep the board readable.
-    ctx.save();
-    ctx.globalAlpha = 0.16;
-    for (let y = 0; y < canvasH; y += 30) {
-      const offset = (Math.floor(y / 30) % 2) * 22;
-      for (let x = -offset; x < canvasW; x += 44) {
-        ctx.strokeStyle = '#7f8c99';
-        ctx.strokeRect(x, y, 42, 28);
-      }
-    }
-    const horizon = canvasH - 74;
-    ctx.fillStyle = '#171c24';
-    ctx.fillRect(0, horizon, canvasW, 74);
-    for (let x = 0; x < canvasW; x += 52) {
-      ctx.fillRect(x, horizon - 20, 34, 20);
-      ctx.fillRect(x, horizon - 30, 9, 10);
-      ctx.fillRect(x + 25, horizon - 30, 9, 10);
-    }
-    ctx.fillStyle = '#dce8f2';
-    for (let i = 0; i < 24; i++) {
-      const sx = (i * 83 + 19) % canvasW;
-      const sy = (i * 137 + 31) % canvasH;
-      ctx.fillRect(sx, sy, i % 3 === 0 ? 2 : 1, i % 3 === 0 ? 2 : 1);
-    }
-    ctx.restore();
-  } else if (T.boardPattern === 'kenstage') {
-    // Moonlit harbor, yacht silhouette, and red dock railings nod to Ken's
-    // classic arena while remaining subtle enough for competitive play.
-    ctx.save();
-    ctx.globalAlpha = 0.18;
-    const horizon = canvasH - 116;
-
-    ctx.fillStyle = '#183650';
-    ctx.fillRect(0, horizon, canvasW, 116);
-    ctx.fillStyle = '#3d81a5';
-    for (let y = horizon + 10; y < canvasH - 38; y += 13) {
-      const offset = ((y - horizon) / 13) % 2 ? 16 : 0;
-      for (let x = -offset; x < canvasW; x += 38) ctx.fillRect(x, y, 23, 2);
-    }
-
-    // Distant city lights and a simplified yacht.
-    ctx.fillStyle = '#ffd666';
-    for (let x = 14; x < canvasW; x += 47) ctx.fillRect(x, horizon - 16 - (x % 3) * 4, 3, 3);
-    ctx.fillStyle = '#c9d9e6';
-    ctx.beginPath();
-    ctx.moveTo(66, horizon + 20);
-    ctx.lineTo(248, horizon + 20);
-    ctx.lineTo(218, horizon + 45);
-    ctx.lineTo(92, horizon + 45);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillRect(124, horizon - 9, 72, 31);
-    ctx.fillStyle = '#10253a';
-    ctx.fillRect(136, horizon - 2, 18, 12);
-    ctx.fillRect(162, horizon - 2, 20, 12);
-
-    // Dock rail and planks frame the lower arena without covering cells.
-    ctx.fillStyle = '#8d1d27';
-    ctx.fillRect(0, canvasH - 43, canvasW, 5);
-    for (let x = 10; x < canvasW; x += 62) ctx.fillRect(x, canvasH - 73, 6, 35);
-    ctx.strokeStyle = '#9c5a31';
-    ctx.lineWidth = 2;
-    for (let x = -canvasH; x < canvasW; x += 34) {
-      ctx.beginPath();
-      ctx.moveTo(x, canvasH);
-      ctx.lineTo(x + 48, canvasH - 38);
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-
-  // Interpolated snake position
-  const drawSnake = prevSnake && prevSnake.length === snake.length && interp < 1;
-  const t = drawSnake ? Math.min(interp, 1) : 1;
-
-  // --- Snake trail (fading afterimage) ---
-  for (let i = 0; i < trailPoints.length; i++) {
-    const tr = trailPoints[i];
-    const alpha = tr.alpha * 0.6;
-    if (alpha < 0.02) continue;
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = T.trail;
-    ctx.beginPath();
-    ctx.arc(tr.x, tr.y, CELL / 2 - 3, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-
-  // Snake body with gradient + glow on head
-  for (let i = snake.length - 1; i >= 0; i--) {
-    const seg = snake[i];
-    const prev = drawSnake && prevSnake[i] ? prevSnake[i] : seg;
-    const px = lerp(prev.x, seg.x, t) * CELL;
-    const py = lerp(prev.y, seg.y, t) * CELL;
-
-    const ratio = i / Math.max(snake.length, 1);
-    const tail = T.snakeTail;
-    const r = Math.round(tail[0] + (tail[0] * 0.4) * (1 - ratio));
-    const g = Math.round(tail[1] - tail[1] * 0.3 * ratio);
-    const b = Math.round(tail[2] - tail[2] * 0.25 * ratio);
-
-    // Head glow
-    if (i === 0) {
-      ctx.shadowColor = T.snakeHead;
-      ctx.shadowBlur = 12 + Math.sin(foodPulse * 2) * 3;
-    }
-    const segmentColor = (T.snakeStyle === 'bricks' || T.snakeStyle === 'cel' || T.snakeStyle === 'fighter')
-      ? T.snakePalette[i % T.snakePalette.length]
-      : `rgb(${r},${g},${b})`;
-    ctx.fillStyle = segmentColor;
-
-    const pad = i === 0 ? 1 : 2;
-    if (T.snakeStyle === 'dragon') {
-      const dcx = px + CELL / 2;
-      const dcy = py + CELL / 2;
-      ctx.save();
-      ctx.translate(dcx, dcy);
-      ctx.fillStyle = i === 0 ? T.dragonScaleLight : (i % 2 ? T.dragonScale : segmentColor);
-      ctx.strokeStyle = '#11141a';
-      ctx.lineWidth = 1.3;
-      ctx.beginPath();
-      ctx.moveTo(0, -8); ctx.lineTo(8, -2); ctx.lineTo(6, 6);
-      ctx.lineTo(0, 8); ctx.lineTo(-6, 6); ctx.lineTo(-8, -2);
-      ctx.closePath(); ctx.fill(); ctx.stroke();
-      if (i > 0) {
-        ctx.fillStyle = T.dragonHorn;
-        ctx.beginPath(); ctx.moveTo(-3, -7); ctx.lineTo(0, -12); ctx.lineTo(3, -7); ctx.fill();
-      }
-      if (i === 1) {
-        ctx.globalAlpha = 0.82;
-        ctx.fillStyle = '#8b2635';
-        ctx.beginPath(); ctx.moveTo(-3, 0); ctx.lineTo(-15, -11); ctx.lineTo(-10, 5); ctx.fill();
-        ctx.beginPath(); ctx.moveTo(3, 0); ctx.lineTo(15, -11); ctx.lineTo(10, 5); ctx.fill();
-      }
-      ctx.restore();
-    } else if (T.snakeStyle === 'bricks') {
-      // Square brick body, lower shadow, and two raised studs per segment.
-      ctx.fillRect(px + pad, py + pad + 2, CELL - pad * 2, CELL - pad * 2 - 2);
-      ctx.fillStyle = 'rgba(0,0,0,0.28)';
-      ctx.fillRect(px + pad, py + CELL - pad - 3, CELL - pad * 2, 3);
-      ctx.fillStyle = segmentColor;
-      for (const studX of [px + 6, px + 14]) {
-        ctx.beginPath();
-        ctx.arc(studX, py + 5, i === 0 ? 3.2 : 2.8, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    } else if (T.snakeStyle === 'cel') {
-      // Heavy ink outline and a single bright highlight mimic the show's cel animation.
-      ctx.fillStyle = '#241F20';
-      roundRect(px + pad, py + pad, CELL - pad * 2, CELL - pad * 2, i === 0 ? 6 : 4);
-      ctx.fillStyle = segmentColor;
-      roundRect(px + pad + 2, py + pad + 2, CELL - pad * 2 - 4, CELL - pad * 2 - 4, i === 0 ? 4 : 2);
-      ctx.fillStyle = 'rgba(255,255,255,0.28)';
-      ctx.fillRect(px + pad + 4, py + pad + 4, Math.max(3, CELL - pad * 2 - 9), 2);
-    } else if (T.snakeStyle === 'fighter') {
-      // Red gi, black belt bands, and a blond pixel head turn the snake into
-      // a compact arcade fighter without changing its collision footprint.
-      ctx.fillStyle = '#11131a';
-      roundRect(px + pad, py + pad, CELL - pad * 2, CELL - pad * 2, i === 0 ? 5 : 3);
-      ctx.fillStyle = i === 0 ? T.fighterSkin : (i % 3 === 0 ? T.fighterGiShadow : T.fighterGi);
-      roundRect(px + pad + 1.5, py + pad + 1.5, CELL - pad * 2 - 3, CELL - pad * 2 - 3, i === 0 ? 4 : 2);
-      if (i === 0) {
-        ctx.fillStyle = T.fighterHair;
-        ctx.fillRect(px + 3, py + 2, 14, 4);
-        ctx.fillRect(px + 5, py, 3, 4);
-        ctx.fillRect(px + 11, py + 1, 4, 4);
-        ctx.fillStyle = T.fighterBand;
-        ctx.fillRect(px + 2, py + 6, 16, 2);
-      } else if (i % 4 === 0) {
-        ctx.fillStyle = T.fighterBand;
-        ctx.fillRect(px + pad + 1, py + 8, CELL - pad * 2 - 2, 4);
-      } else {
-        ctx.fillStyle = 'rgba(255,255,255,0.2)';
-        ctx.fillRect(px + pad + 4, py + pad + 3, 4, 2);
-      }
-    } else {
-      const radius = i === 0 ? 6 : 3;
-      roundRect(px + pad, py + pad, CELL - pad * 2, CELL - pad * 2, radius);
-    }
-    ctx.shadowBlur = 0;
-  }
-
-  // Eyes on head
-  const hSeg = snake[0];
-  const hPrev = drawSnake && prevSnake[0] ? prevSnake[0] : hSeg;
-  const hx = lerp(hPrev.x, hSeg.x, t) * CELL;
-  const hy = lerp(hPrev.y, hSeg.y, t) * CELL;
-  if (T.snakeStyle === 'dragon') {
-    drawDragonHeadAndFire(hx, hy, T);
-  } else {
-    ctx.fillStyle = '#fff';
-    const eyeOff1 = dir.x === 0 ? {x: 5, y: dir.y > 0 ? 12 : 5} : {x: dir.x > 0 ? 12 : 5, y: 5};
-    const eyeOff2 = dir.x === 0 ? {x: 13, y: dir.y > 0 ? 12 : 5} : {x: dir.x > 0 ? 12 : 5, y: 13};
-    ctx.beginPath(); ctx.arc(hx + eyeOff1.x, hy + eyeOff1.y, 2.5, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(hx + eyeOff2.x, hy + eyeOff2.y, 2.5, 0, Math.PI * 2); ctx.fill();
-    if (T.snakeStyle === 'fighter' && fighterImpactBurst > 0) {
-      const strength = fighterImpactBurst;
-      const cx = hx + CELL / 2;
-      const cy = hy + CELL / 2;
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.strokeStyle = T.fighterSpark;
-      ctx.lineWidth = 2;
-      ctx.shadowColor = T.fighterSpark;
-      ctx.shadowBlur = 8;
-      for (let ray = 0; ray < 8; ray++) {
-        const angle = ray * Math.PI / 4 + foodPulse * 0.08;
-        const inner = 11 + (1 - strength) * 5;
-        const outer = inner + 9 * strength;
-        ctx.beginPath();
-        ctx.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
-        ctx.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
-        ctx.stroke();
-      }
-      ctx.restore();
-      fighterImpactBurst = Math.max(0, fighterImpactBurst - 0.065);
-    }
-  }
-
-  // Food with pulsing glow + scale punch
-  foodPulse += 0.05;
-  foodScale = lerp(foodScale, foodScaleTarget, 0.2);
-  if (Math.abs(foodScale - foodScaleTarget) < 0.01) foodScaleTarget = 1;
-  const glow = 8 + Math.sin(foodPulse) * 4;
-  const foodR = (CELL / 2 - 2) * foodScale;
-  ctx.shadowColor = T.food;
-  ctx.shadowBlur = glow;
-  ctx.fillStyle = T.food;
-  ctx.beginPath();
-  ctx.arc(food.x * CELL + CELL/2, food.y * CELL + CELL/2, foodR, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.shadowBlur = 0;
-
-  // Food sprite (pixel art)
-  drawFoodSprite(ctx, food.x * CELL + CELL/2, food.y * CELL + CELL/2, CELL, T, foodScale, currentTheme);
-
-  // --- Particles & death segments ---
-  drawParticles();
-  drawDeathSegments();
-
-  // Death flash
-  if (deathFlash > 0) {
-    ctx.fillStyle = T.deathFlash + deathFlash + ')';
-    ctx.fillRect(0, 0, canvasW, canvasH);
-    deathFlash -= 0.04;
-  }
-
-  // Pause text
-  if (paused && alive) {
-    ctx.fillStyle = 'rgba(0,0,0,0.65)';
-    ctx.fillRect(0, 0, canvasW, canvasH);
-    ctx.fillStyle = T.accent;
-    ctx.font = 'bold 32px -apple-system, SF Pro Display';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('PAUSED', canvasW / 2, canvasH / 2);
-  }
-}
-
-function roundRect(x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.fill();
-}
-
-// --- Game logic ---
+// Rendering and visual effects live in ./rendering/canvas-renderer.js.
 function gameTick() {
   if (!alive || paused) return;
   const appliedDirection = SnakeCore.acceptDirection(dir, nextDir);
@@ -1612,6 +1065,42 @@ function die() {
   finishRun('collision');
 }
 
+const liveGameSession = createLiveGameSession({
+  renderer: canvasRenderer,
+  getState: () => ({
+    alive,
+    paused,
+    countdownActive,
+    countdownRemainingMs,
+    runGameMode,
+    dailyTickElapsedMs,
+    sprintRemainingMs,
+    speed
+  }),
+  onCountdownChange: remainingMs => {
+    countdownRemainingMs = remainingMs;
+    if (remainingMs > 0) countdownDisplay.textContent = String(Math.ceil(remainingMs / 1000));
+  },
+  onCountdownComplete: () => {
+    countdownActive = false;
+    countdownRemainingMs = 0;
+    countdownDisplay.textContent = 'GO!';
+    setTimeout(() => countdownDisplay.classList.remove('visible'), 350);
+  },
+  onSprintTimeChange: remainingMs => {
+    sprintRemainingMs = remainingMs;
+    updateSprintTimer();
+  },
+  onDailyElapsedChange: elapsedMs => { dailyTickElapsedMs = elapsedMs; },
+  onTick: () => {
+    canvasRenderer.capturePreviousSnake(snake);
+    gameTick();
+  },
+  onFinish: finishRun,
+  getDailyDuration: () => dailyChallenge?.durationMs || MODE_SPRINT_DURATION_MS,
+  getFpsElement: () => document.getElementById('fps-counter')
+});
+
 function showDailyPlayerSetup() {
   displayNameInviteSuppressedThisSession = true;
   displayNameInvite.hidden = true;
@@ -1713,7 +1202,7 @@ async function startGame(options = {}) {
       else beginRecordChase();
       AudioEngine.start();
     },
-    frame: runGameFrame
+    frame: liveGameSession.frame
   });
 }
 
@@ -1739,75 +1228,7 @@ function turnCounterClockwise() {
   setDir(...dirMap[next]);
 }
 
-// --- Main loop — requestAnimationFrame for 120Hz ProMotion ---
-function runGameFrame({ rawDt, dt, clock }) {
-  const hasEffects = canvasRenderer.hasActiveEffects();
-  if (!alive && !hasEffects) {
-    return false;
-  }
-  // Delta timing is clamped by gameController.
-
-  if (alive && !paused) {
-    if (countdownActive) {
-      countdownRemainingMs = advanceCountdown(countdownRemainingMs, rawDt);
-      if (countdownRemainingMs <= 0) {
-        countdownActive = false;
-        countdownRemainingMs = 0;
-        countdownDisplay.textContent = 'GO!';
-        clock.tickAccum = 0;
-        setTimeout(() => countdownDisplay.classList.remove('visible'), 350);
-      } else {
-        const countdownLabel = String(Math.ceil(countdownRemainingMs / 1000));
-        if (countdownDisplay.textContent !== countdownLabel) countdownDisplay.textContent = countdownLabel;
-      }
-    } else {
-      if (runGameMode === 'daily') {
-        const durationMs = dailyChallenge?.durationMs || MODE_SPRINT_DURATION_MS;
-        const dailyFrame = accumulateDailyFrame({
-          durationMs,
-          elapsedMs: dailyTickElapsedMs,
-          tickAccum: clock.tickAccum,
-          frameMs: dt
-        });
-        clock.tickAccum = dailyFrame.tickAccum;
-        while (alive && clock.tickAccum >= speed && dailyTickElapsedMs + speed <= durationMs) {
-          const stepInterval = speed;
-          dailyTickElapsedMs += stepInterval;
-          canvasRenderer.capturePreviousSnake(snake);
-          gameTick();
-          clock.tickAccum -= stepInterval;
-        }
-        sprintRemainingMs = dailyFrame.remainingMs;
-        updateSprintTimer();
-        if (alive && sprintRemainingMs <= 0) finishRun('time');
-      } else {
-        if (runGameMode === 'sprint') {
-          sprintRemainingMs = advanceSprintTimer(sprintRemainingMs, rawDt);
-          updateSprintTimer();
-          if (sprintRemainingMs <= 0) finishRun('time');
-        }
-        if (alive) {
-          clock.tickAccum += dt;
-          while (alive && clock.tickAccum >= speed) {
-            canvasRenderer.capturePreviousSnake(snake);
-            gameTick();
-            clock.tickAccum -= speed;
-          }
-        }
-      }
-    }
-  }
-
-  // Update effects
-  canvasRenderer.update(dt);
-
-  const interp = alive && !paused ? clock.tickAccum / speed : 1;
-  canvasRenderer.draw(interp);
-  canvasRenderer.updateFps(document.getElementById('fps-counter'));
-
-  return true;
-}
-
+// Frame progression is coordinated by ./game/live-game-session.js.
 // --- Pause toggle ---
 function setPaused(value) {
   if (!alive) return;
@@ -1898,7 +1319,9 @@ muteBtn.addEventListener('click', () => {
 themePicker = createThemePicker({
   themes: THEMES,
   themeIconUrls: THEME_ICON_URLS,
-  drawFoodSprite,
+  drawFoodSprite: (spriteContext, cx, cy, cellSize, theme, scale, themeId) => {
+    drawFoodSpriteAsset(spriteContext, cx, cy, cellSize, FOOD_SPRITES, scale, themeId);
+  },
   onThemeSelected: theme => applyTheme(theme),
   onRandomSelected: selectRandomThemeMode,
   onModeSelected: mode => {
@@ -2224,6 +1647,7 @@ let submittedThisRound = false;
 let currentUser = null;
 let playerProfile = null;
 let playerIdentityRevision = 0;
+let playerIdentityPromise = Promise.resolve();
 let pendingOtpEmail = '';
 let pendingOtpType = 'email';
 const AUTO_SUBMIT_KEY = 'snake_auto_submit';
@@ -2251,20 +1675,27 @@ function cleanDisplayName(value) {
   return Array.from(cleaned).slice(0, 20).join('');
 }
 
-function playerDisplayName(profile = playerProfile) {
+function escHtml(value) {
+  const element = document.createElement('div');
+  element.textContent = value;
+  return element.innerHTML;
+}
+
+/* Legacy player identity implementation retained only as historical context during the extraction.
+function legacyPlayerDisplayName(profile = playerProfile) {
   return profile ? `${profile.initials}\u00b7${profile.player_code}` : '';
 }
 
-function setPlayerMessage(message, isError = false) {
+function legacySetPlayerMessage(message, isError = false) {
   playerMessage.textContent = message;
   playerMessage.classList.toggle('error', isError);
 }
 
-function isPermanentPlayer() {
+function legacyIsPermanentPlayer() {
   return !!currentUser && currentUser.is_anonymous !== true;
 }
 
-function renderPlayerIdentity() {
+function legacyRenderPlayerIdentity() {
   const displayName = playerDisplayName();
   const permanent = isPermanentPlayer();
   playerMenuLabel.textContent = displayName ? `Player: ${displayName}` : 'Player: Guest';
@@ -2280,7 +1711,7 @@ function renderPlayerIdentity() {
   renderDisplayNameInvitation();
 }
 
-async function loadPlayerProfile(user = currentUser, revision = playerIdentityRevision) {
+async function legacyLoadPlayerProfile(user = currentUser, revision = playerIdentityRevision) {
   // Auth events can overlap during email restoration: the outgoing anonymous
   // session and the restored email session may both finish network requests.
   // Only the newest session is allowed to change the visible player identity.
@@ -2302,7 +1733,7 @@ async function loadPlayerProfile(user = currentUser, revision = playerIdentityRe
   return playerProfile;
 }
 
-async function syncPlayerSession(session) {
+async function legacySyncPlayerSession(session) {
   const revision = ++playerIdentityRevision;
   const user = session?.user || null;
   currentUser = user;
@@ -2312,7 +1743,7 @@ async function syncPlayerSession(session) {
   if (gameMode === 'daily') refreshDailyChallenge({ force: true });
 }
 
-async function initPlayerIdentity() {
+async function legacyInitPlayerIdentity() {
   renderPlayerIdentity();
   if (!sb?.auth) {
     playerIdentityStatus.textContent = 'Player service unavailable';
@@ -2329,7 +1760,7 @@ async function initPlayerIdentity() {
 
 let playerIdentityPromise = Promise.resolve();
 
-function startPlayerIdentity() {
+function legacyStartPlayerIdentity() {
   try {
     playerIdentityPromise = Promise.resolve(initPlayerIdentity()).catch(error => {
       console.warn('Player identity startup failed:', error);
@@ -2364,7 +1795,7 @@ function startPlayerIdentity() {
   }
 }
 
-async function savePlayerInitials(value) {
+async function legacySavePlayerInitials(value) {
   const initials = cleanInitials(value);
   if (!initials || !sb || !currentUser) throw new Error('Enter 1 to 3 letters or numbers');
   const savedProfile = await playerProfileService.saveInitials(currentUser, initials);
@@ -2373,7 +1804,7 @@ async function savePlayerInitials(value) {
   return playerProfile;
 }
 
-async function savePlayerDisplayName(value) {
+async function legacySavePlayerDisplayName(value) {
   if (!sb || !currentUser || !playerProfile) throw new Error('Choose your arcade initials first');
   const displayName = cleanDisplayName(value);
   if (displayName && Array.from(displayName).length < 2) throw new Error('Display name must contain 2 to 20 characters');
@@ -2384,6 +1815,7 @@ async function savePlayerDisplayName(value) {
   return playerProfile.display_name;
 }
 
+*/
 function getPendingScores() {
   try {
     const value = JSON.parse(localStorage.getItem(PENDING_SCORES_KEY) || '[]');
@@ -2440,7 +1872,7 @@ async function sendBestScore(payload, { quiet = false, queueOnFailure = true } =
         ? `${playerDisplayName()} \u2022 ${result?.is_new_top ? 'new leaderboard #1' : `rank #${result?.leaderboard_rank ?? '—'}`}`
         : `${playerDisplayName()} \u2022 score did not beat your best`;
     }
-    if (leaderboardOverlay.classList.contains('visible')) loadLeaderboard();
+    if (leaderboardOverlay.classList.contains('visible')) leaderboardUi?.loadLeaderboard();
     return true;
   } catch (error) {
     console.warn('Best score submit failed:', error);
@@ -2518,8 +1950,8 @@ async function submitDailyAttempt() {
     scoreMethodLabel.classList.remove('unranked');
     submitScoreBtn.textContent = 'Verified';
     if (leaderboardOverlay.classList.contains('visible')) {
-      loadDailyArchiveData({ force: true });
-      loadLeaderboard();
+      leaderboardUi?.loadDailyArchiveData({ force: true });
+      leaderboardUi?.loadLeaderboard();
     }
     return data;
   } catch (error) {
@@ -2622,7 +2054,8 @@ async function submitScore() {
 submitScoreBtn.addEventListener('click', submitScore);
 window.addEventListener('online', retryPendingScores);
 
-function openPlayerPanel({ focusDisplayName = false } = {}) {
+/* Legacy player-panel handlers retained only as historical context during the extraction.
+function legacyOpenPlayerPanel({ focusDisplayName = false } = {}) {
   displayNameInviteSuppressedThisSession = true;
   displayNameInvite.hidden = true;
   setPlayerMessage('');
@@ -2636,14 +2069,14 @@ function openPlayerPanel({ focusDisplayName = false } = {}) {
   }
 }
 
-function closePlayerPanel() {
+function legacyClosePlayerPanel() {
   playerPanel.classList.remove('visible');
   renderDisplayNameInvitation();
 }
 
 displayNameInviteLater.addEventListener('click', snoozeDisplayNameInvitation);
 
-async function handleSavePlayerInitials(value) {
+async function legacyHandleSavePlayerInitials(value) {
   playerInitialsSave.disabled = true;
   setPlayerMessage('Saving player...');
   try {
@@ -2659,7 +2092,7 @@ async function handleSavePlayerInitials(value) {
   }
 }
 
-async function handleSavePlayerDisplayName(value) {
+async function legacyHandleSavePlayerDisplayName(value) {
   playerDisplayNameSave.disabled = true;
   setPlayerMessage('Saving public display name...');
   try {
@@ -2678,7 +2111,7 @@ async function handleSavePlayerDisplayName(value) {
   }
 }
 
-function handleAutoSubmitChanged(enabled) {
+function legacyHandleAutoSubmitChanged(enabled) {
   autoSubmitEnabled = enabled;
   localStorage.setItem(AUTO_SUBMIT_KEY, String(autoSubmitEnabled));
   setPlayerMessage(autoSubmitEnabled ? 'Personal bests will submit automatically' : 'You will choose when to submit each score');
@@ -2690,7 +2123,7 @@ function validPlayerEmail() {
   return email;
 }
 
-async function beginEmailCode(action) {
+async function legacyBeginEmailCode(action) {
   if (!sb?.auth) return;
   const email = validPlayerEmail();
   playerSaveEmail.disabled = true;
@@ -2722,7 +2155,7 @@ async function beginEmailCode(action) {
   }
 }
 
-async function handleVerifyPlayerOtp(token) {
+async function legacyHandleVerifyPlayerOtp(token) {
   if (!pendingOtpEmail || token.length !== 8) {
     setPlayerMessage('Enter the complete 8-digit code', true);
     return;
@@ -2763,6 +2196,60 @@ async function handleVerifyPlayerOtp(token) {
   }
 }
 
+*/
+playerIdentityController = createPlayerIdentityController({
+  elements: {
+    playerMenuLabel, playerIdentityStatus, playerProfileSetup, playerDisplaySetup,
+    playerDisplayNameInput, playerAccountSetup, playerMessage, playerPanel,
+    playerInitialsSave, playerInitialsInput, playerDisplayNameSave, playerEmailInput,
+    playerSaveEmail, playerRestoreEmail, playerOtpInput, playerOtpGroup,
+    playerVerifyOtp, displayNameInvite, displayNameInviteLater
+  },
+  getClient: () => sb,
+  profileService: playerProfileService,
+  authService: playerAuthService,
+  getState: () => ({
+    currentUser, playerProfile, playerIdentityRevision, playerIdentityPromise,
+    pendingOtpEmail, pendingOtpType, autoSubmitEnabled,
+    setDisplayNameInviteSuppressed: value => { displayNameInviteSuppressedThisSession = value; }
+  }),
+  setState: patch => {
+    if ('currentUser' in patch) currentUser = patch.currentUser;
+    if ('playerProfile' in patch) playerProfile = patch.playerProfile;
+    if ('playerIdentityRevision' in patch) playerIdentityRevision = patch.playerIdentityRevision;
+    if ('playerIdentityPromise' in patch) playerIdentityPromise = patch.playerIdentityPromise;
+    if ('pendingOtpEmail' in patch) pendingOtpEmail = patch.pendingOtpEmail;
+    if ('pendingOtpType' in patch) pendingOtpType = patch.pendingOtpType;
+    if ('autoSubmitEnabled' in patch) autoSubmitEnabled = patch.autoSubmitEnabled;
+  },
+  cleanInitials,
+  cleanDisplayName,
+  escHtml,
+  isSchemaError,
+  onIdentitySettled: () => {
+    retryPendingScores();
+    if (gameMode === 'daily') refreshDailyChallenge({ force: true });
+  },
+  renderDisplayNameInvitation,
+  completeDisplayNameInvitation,
+  snoozeDisplayNameInvitation
+});
+
+function playerDisplayName(profile = playerProfile) { return playerIdentityController.playerDisplayName(profile); }
+function setPlayerMessage(message, isError = false) { return playerIdentityController.setPlayerMessage(message, isError); }
+function isPermanentPlayer() { return playerIdentityController.isPermanentPlayer(); }
+function renderPlayerIdentity() { return playerIdentityController.render(); }
+function startPlayerIdentity() { return playerIdentityController.start(); }
+function savePlayerInitials(value) { return playerIdentityController.saveInitials(value); }
+function savePlayerDisplayName(value) { return playerIdentityController.saveDisplayName(value); }
+function openPlayerPanel(options) { return playerIdentityController.openPanel(options); }
+function closePlayerPanel() { return playerIdentityController.closePanel(); }
+function handleSavePlayerInitials(value) { return playerIdentityController.handleSaveInitials(value); }
+function handleSavePlayerDisplayName(value) { return playerIdentityController.handleSaveDisplayName(value); }
+function handleAutoSubmitChanged(enabled) { return playerIdentityController.handleAutoSubmitChanged(enabled); }
+function beginEmailCode(action) { return playerIdentityController.beginEmailCode(action); }
+function handleVerifyPlayerOtp(token) { return playerIdentityController.verifyOtp(token); }
+
 playerPanelView = createPlayerPanel({
   cleanInitials,
   cleanDisplayName: value => Array.from(value.replace(/[<>\u0000-\u001f\u007f]/g, '')).slice(0, 20).join(''),
@@ -2775,7 +2262,15 @@ playerPanelView = createPlayerPanel({
   onVerifyOtp: handleVerifyPlayerOtp
 });
 playerPanelView.bind();
+// Keep the menu button independently wired so a blocked auth SDK can never
+// prevent a player from opening the local identity panel.
+playerBtn.addEventListener('click', () => openPlayerPanel());
+document.addEventListener('click', event => {
+  if (!event.target.closest('#player-btn')) return;
+  playerPanel.classList.add('visible');
+}, true);
 
+/* Legacy leaderboard controller retained temporarily as source context during extraction.
 const publicPlayerCardCache = new Map();
 let publicPlayerCardTrigger = null;
 let publicPlayerCardRequestId = 0;
@@ -3229,7 +2724,8 @@ lbNext.addEventListener('click', () => {
   loadLeaderboard();
 });
 
-// --- Init ---
+*/
+// --- Init ---
 // iOS Safari and some embedded WebKit views occasionally omit the synthetic
 // click after a touch. Forward the completed tap explicitly and suppress the
 // duplicate trusted click when the browser does emit one.
@@ -3262,6 +2758,24 @@ dailyRulesView = createDailyRulesDialog({
   onDismiss: () => hideDailyRules({ restoreFocus: true })
 });
 dailyRulesView.bind();
+const leaderboardUi = createLeaderboardController({
+  elements: {
+    leaderboardOverlay, lbGameModeFilters, lbControlFilters, lbThemeFilters,
+    lbBody, lbLoading, lbEmpty, lbTable, lbPagination, lbPrev, lbNext,
+    lbPageInfo, lbBack, lbBtn, publicPlayerCardPanel, publicPlayerCardName,
+    publicPlayerArcadeId, publicPlayerCardMessage, publicPlayerCardClose
+  },
+  leaderboardService,
+  themes: THEMES,
+  controls: CONTROL_LABELS,
+  getState: () => ({ sb, currentUser, dailyChallenge, gameMode }),
+  currentUtcDateKey,
+  escHtml,
+  isSchemaError,
+  refreshDailyChallenge,
+  ensureDailyChallenge,
+  formatDailyFoodTime
+});
 
 startBtn.addEventListener('click', () => startGame());
 

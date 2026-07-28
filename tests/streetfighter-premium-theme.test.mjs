@@ -12,8 +12,8 @@ const musicOverride = html.match(
 
 test('Street Fighter uses its premium arena and fighter rendering', () => {
   assert.match(html, /boardPattern:\s*['"]kenstage['"],\s*snakeStyle:\s*['"]fighter['"]/);
-  assert.match(html, /T\.boardPattern\s*===\s*['"]kenstage['"]/);
-  assert.match(html, /T\.snakeStyle\s*===\s*['"]fighter['"]/);
+  assert.match(html, /theme\.boardPattern\s*===\s*['"]kenstage['"]/);
+  assert.match(html, /theme\.snakeStyle\s*===\s*['"]fighter['"]/);
   assert.match(html, /fighterImpactBurst\s*=\s*1/);
 });
 

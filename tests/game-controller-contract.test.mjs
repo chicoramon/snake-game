@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const controllerSource = readFileSync(new URL('../src/game/game-controller.js', import.meta.url), 'utf8');
 const mainSource = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const sessionSource = readFileSync(new URL('../src/game/live-game-session.js', import.meta.url), 'utf8');
 
 test('game controller owns animation-frame lifetime and a clamped simulation clock', () => {
   assert.match(controllerSource, /export function createGameController/);
@@ -16,7 +17,9 @@ test('game controller owns animation-frame lifetime and a clamped simulation clo
 test('main delegates frame scheduling and clock resets to the game controller', () => {
   assert.match(mainSource, /const gameController = createGameController\(\)/);
   assert.match(mainSource, /const runLifecycle = createRunLifecycle\(\{ controller: gameController \}\)/);
-  assert.match(mainSource, /function runGameFrame\(\{ rawDt, dt, clock \}\)/);
+  assert.match(mainSource, /frame: liveGameSession\.frame/);
+  assert.match(sessionSource, /export function createLiveGameSession/);
+  assert.match(sessionSource, /function frame\(\{ rawDt, dt, clock \}\)/);
   assert.match(mainSource, /gameController\.resetClock\(\)/);
 });
 

@@ -12,6 +12,8 @@ const html = readAppSource();
 const playerProfileServiceSource = readFileSync(join(rootDir, 'src', 'player', 'player-profile-service.js'), 'utf8');
 const playerAuthServiceSource = readFileSync(join(rootDir, 'src', 'player', 'player-auth-service.js'), 'utf8');
 const leaderboardServiceSource = readFileSync(join(rootDir, 'src', 'leaderboard', 'leaderboard-service.js'), 'utf8');
+const playerIdentitySource = readFileSync(join(rootDir, 'src', 'player', 'player-identity-controller.js'), 'utf8');
+const leaderboardUiSource = readFileSync(join(rootDir, 'src', 'ui', 'leaderboard-controller.js'), 'utf8');
 
 test('display-name migration validates writes and exposes only the public card fields', () => {
   assert.match(sql, /add column if not exists display_name text/i);
@@ -34,8 +36,8 @@ test('display-name migration validates writes and exposes only the public card f
 test('Player menu supports saving and clearing an optional display name', () => {
   assert.match(html, /id="player-display-name-input"[^>]*maxlength="20"/i);
   assert.match(html, /id="player-display-name-save"/i);
-  assert.match(html, /async function savePlayerDisplayName\(value\)/);
-  assert.match(html, /playerProfileService\.saveDisplayName\(currentUser, displayName\)/);
+  assert.match(playerIdentitySource, /async function saveDisplayName\(value\)/);
+  assert.match(playerIdentitySource, /profileService\.saveDisplayName\(currentUser, displayName\)/);
   assert.match(playerProfileServiceSource, /rpc\('set_player_display_name'/);
   assert.match(playerProfileServiceSource, /p_display_name: displayName \|\| null/);
   assert.match(html, /id: '2026-07-24-player-cards'/);
@@ -43,16 +45,15 @@ test('Player menu supports saving and clearing an optional display name', () => 
 
 test('email restoration cannot let a stale anonymous session overwrite its player profile', () => {
   assert.match(html, /let playerIdentityRevision = 0/);
-  assert.match(html, /async function loadPlayerProfile\(user = currentUser, revision = playerIdentityRevision\)/);
-  assert.match(html, /playerProfileService\.loadProfile\(user\)/);
+  assert.match(playerIdentitySource, /async function loadProfile\(user = getState\(\)\.currentUser, revision = getState\(\)\.playerIdentityRevision\)/);
+  assert.match(playerIdentitySource, /profileService\.loadProfile\(user\)/);
   assert.match(playerProfileServiceSource, /\.eq\('id', user\.id\)/);
-  assert.match(html, /revision !== playerIdentityRevision \|\| currentUser\?\.id !== user\.id/);
-  assert.match(html, /activeSession = await playerAuthService\.getSession\(\)/);
+  assert.match(playerIdentitySource, /revision !== getState\(\)\.playerIdentityRevision \|\| getState\(\)\.currentUser\?\.id !== user\.id/);
+  assert.match(playerIdentitySource, /activeSession = await authService\.getSession\(\)/);
   assert.match(playerAuthServiceSource, /onAuthStateChange/);
-  assert.match(html, /activeSession\?\.user\?\.id \|\| null\) !== \(eventSession\?\.user\?\.id \|\| null/);
-  assert.match(html, /playerIdentityPromise = syncPlayerSession\(/);
-  assert.match(html, /If the initial profile read raced that persistence/);
-  assert.match(html, /currentSession\?\.user\?\.id === session\.user\.id/);
+  assert.match(playerIdentitySource, /activeSession\?\.user\?\.id \|\| null\) !== \(eventSession\?\.user\?\.id \|\| null/);
+  assert.match(playerIdentitySource, /setState\(\{ playerIdentityPromise: syncPromise \}\)/);
+  assert.match(playerIdentitySource, /currentSession\?\.user\?\.id === session\.user\.id/);
 });
 
 test('main menu gently invites named players to add a public display name', () => {
@@ -77,15 +78,15 @@ test("display-name invitation never competes with gameplay or automatic What's N
 
 test('all leaderboard identity surfaces use the public player-card interaction', () => {
   assert.match(html, /id="public-player-card-panel"/i);
-  assert.match(html, /function leaderboardPlayerIdentity\(row\)/);
-  assert.match(html, /class="lb-player-link"[^>]*data-player-id=/);
-  assert.match(html, /leaderboardService\.fetchPublicPlayerCard\(playerId\)/);
+  assert.match(leaderboardUiSource, /function leaderboardPlayerIdentity\(row\)/);
+  assert.match(leaderboardUiSource, /class="lb-player-link"[^>]*data-player-id=/);
+  assert.match(leaderboardUiSource, /leaderboardService\.fetchPublicPlayerCard\(playerId\)/);
   assert.match(leaderboardServiceSource, /rpc\('get_public_player_card'/);
-  assert.match(html, /leaderboardOverlay\.addEventListener\('click'/);
-  assert.match(html, /const identity = leaderboardPlayerIdentity\(row\)/);
-  assert.match(html, /class="daily-legend-player">\$\{leaderboardPlayerIdentity\(row\)\}/);
-  assert.match(html, /Current leader \$\{leader\}/);
-  assert.match(html, /Winner \$\{winner\}/);
+  assert.match(leaderboardUiSource, /leaderboardOverlay\.addEventListener\('click'/);
+  assert.match(leaderboardUiSource, /const identity = leaderboardPlayerIdentity\(row\)/);
+  assert.match(leaderboardUiSource, /class="daily-legend-player">\$\{leaderboardPlayerIdentity\(row\)\}/);
+  assert.match(leaderboardUiSource, /Current leader \$\{leader\}/);
+  assert.match(leaderboardUiSource, /Winner \$\{winner\}/);
 });
 
 test("What's New contains player-facing news rather than build details", () => {

@@ -1,3 +1,5 @@
+import { drawFoodSprite as drawFoodSpriteAsset } from './food-sprite.js';
+
 // Canvas rendering and visual effects are intentionally isolated from the
 // game rules. The module receives a read-only game-state snapshot and exposes
 // event methods for gameplay to trigger without knowing how anything is drawn.
@@ -118,26 +120,7 @@ export function createCanvasRenderer({
   }
 
   function drawFoodSprite(cx, cy, scale, themeId) {
-    const data = foodSprites[themeId] || foodSprites.default;
-    const sprite = data.grid;
-    const palette = data.palette;
-    const pixelSize = (cellSize * scale * 0.9) / sprite.length;
-    const originX = cx - (sprite[0].length * pixelSize) / 2;
-    const originY = cy - (sprite.length * pixelSize) / 2;
-    ctx.imageSmoothingEnabled = false;
-    for (let row = 0; row < sprite.length; row++) {
-      for (let column = 0; column < sprite[row].length; column++) {
-        const value = sprite[row][column];
-        if (!value) continue;
-        ctx.fillStyle = palette[value];
-        ctx.fillRect(
-          Math.round(originX + column * pixelSize),
-          Math.round(originY + row * pixelSize),
-          Math.ceil(pixelSize),
-          Math.ceil(pixelSize)
-        );
-      }
-    }
+    drawFoodSpriteAsset(ctx, cx, cy, cellSize, foodSprites, scale, themeId);
   }
 
   function drawBoardPattern(theme) {

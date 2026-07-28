@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const rendererSource = readFileSync(new URL('../src/rendering/canvas-renderer.js', import.meta.url), 'utf8');
 const mainSource = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const sessionSource = readFileSync(new URL('../src/game/live-game-session.js', import.meta.url), 'utf8');
 
 test('canvas renderer owns drawing and transient visual effects behind an explicit API', () => {
   assert.match(rendererSource, /export function createCanvasRenderer/);
@@ -20,5 +21,6 @@ test('main drives canvas effects through renderer events and state snapshots', (
   assert.match(mainSource, /canvasRenderer\.recordMove\(snake\)/);
   assert.match(mainSource, /canvasRenderer\.triggerFoodEat\(\{ food: eatenFood, theme: T \}\)/);
   assert.match(mainSource, /canvasRenderer\.triggerCollision\(\{ snake, theme: THEMES\[currentTheme\] \}\)/);
-  assert.match(mainSource, /canvasRenderer\.draw\(interp\)/);
+  assert.match(mainSource, /const liveGameSession = createLiveGameSession/);
+  assert.match(sessionSource, /renderer\.draw\(state\.alive && !state\.paused \? clock\.tickAccum \/ state\.speed : 1\)/);
 });
