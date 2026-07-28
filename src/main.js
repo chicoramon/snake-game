@@ -2,6 +2,14 @@ import { createAudioEngine } from './audio/audio-engine.js';
 import { createControlManager } from './controls/control-manager.js';
 import { createGameController } from './game/game-controller.js';
 import { createRunLifecycle } from './game/run-lifecycle.js';
+import {
+  SPRINT_DURATION_MS as MODE_SPRINT_DURATION_MS,
+  formatTimedRunTime,
+  createTimedRunState,
+  advanceCountdown,
+  advanceSprintTimer,
+  accumulateDailyFrame
+} from './game/run-modes.js';
 import { createCanvasRenderer } from './rendering/canvas-renderer.js';
 import { THEMES, FOOD_SPRITES, THEME_ICON_URLS, buildMusicArc } from './themes/catalog.js';
 import { validateThemeCatalog } from './themes/validate-theme.js';
@@ -950,16 +958,11 @@ function hideDailyRules({ restoreFocus = false } = {}) {
   if (restoreFocus) startBtn.focus();
 }
 
-function formatSprintTime(ms) {
-  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
-  return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, '0')}`;
-}
-
-function updateSprintTimer(force = false) {
+function updateSprintTimer(force = false) {
   const second = Math.max(0, Math.ceil(sprintRemainingMs / 1000));
   if (!force && second === lastTimerSecond) return;
   lastTimerSecond = second;
-  timerEl.textContent = formatSprintTime(sprintRemainingMs);
+  timerEl.textContent = formatTimedRunTime(sprintRemainingMs);
   timerEl.classList.toggle('urgent', second > 0 && second <= 10);
 }
 
@@ -1029,14 +1032,16 @@ function reset(startingRun = false) {
   alive = startingRun;
   paused = false;
   gameController.resetClock();
-  sprintRemainingMs = runGameMode === 'daily'
-    ? (dailyChallenge?.durationMs || SPRINT_DURATION_MS)
-    : SPRINT_DURATION_MS;
+  const timedRun = createTimedRunState({
+    mode: runGameMode,
+    dailyDurationMs: dailyChallenge?.durationMs || MODE_SPRINT_DURATION_MS
+  });
+  sprintRemainingMs = timedRun.remainingMs;
   lastTimerSecond = 60;
   dailyTickElapsedMs = 0;
   dailyLastFoodElapsedMs = null;
   countdownActive = startingRun && isTimedMode(runGameMode);
-  countdownRemainingMs = countdownActive ? SPRINT_COUNTDOWN_MS : 0;
+  countdownRemainingMs = countdownActive ? timedRun.countdownMs : 0;
   countdownDisplay.textContent = countdownActive ? '3' : '';
   countdownDisplay.classList.toggle('visible', countdownActive);
   timerBlock.classList.toggle('visible', startingRun && isTimedMode(runGameMode));
@@ -1907,7 +1912,7 @@ function runGameFrame({ rawDt, dt, clock }) {
 
   if (alive && !paused) {
     if (countdownActive) {
-      countdownRemainingMs -= rawDt;
+      countdownRemainingMs = advanceCountdown(countdownRemainingMs, rawDt);
       if (countdownRemainingMs <= 0) {
         countdownActive = false;
         countdownRemainingMs = 0;
@@ -1920,9 +1925,14 @@ function runGameFrame({ rawDt, dt, clock }) {
       }
     } else {
       if (runGameMode === 'daily') {
-        const durationMs = dailyChallenge?.durationMs || SPRINT_DURATION_MS;
-        const activeElapsedMs = dailyTickElapsedMs + clock.tickAccum;
-        clock.tickAccum += Math.min(dt, Math.max(0, durationMs - activeElapsedMs));
+        const durationMs = dailyChallenge?.durationMs || MODE_SPRINT_DURATION_MS;
+        const dailyFrame = accumulateDailyFrame({
+          durationMs,
+          elapsedMs: dailyTickElapsedMs,
+          tickAccum: clock.tickAccum,
+          frameMs: dt
+        });
+        clock.tickAccum = dailyFrame.tickAccum;
         while (alive && clock.tickAccum >= speed && dailyTickElapsedMs + speed <= durationMs) {
           const stepInterval = speed;
           dailyTickElapsedMs += stepInterval;
@@ -1930,12 +1940,12 @@ function runGameFrame({ rawDt, dt, clock }) {
           gameTick();
           clock.tickAccum -= stepInterval;
         }
-        sprintRemainingMs = Math.max(0, durationMs - dailyTickElapsedMs - clock.tickAccum);
+        sprintRemainingMs = dailyFrame.remainingMs;
         updateSprintTimer();
         if (alive && sprintRemainingMs <= 0) finishRun('time');
       } else {
         if (runGameMode === 'sprint') {
-          sprintRemainingMs -= rawDt;
+          sprintRemainingMs = advanceSprintTimer(sprintRemainingMs, rawDt);
           updateSprintTimer();
           if (sprintRemainingMs <= 0) finishRun('time');
         }
@@ -1999,13 +2009,10 @@ document.addEventListener('visibilitychange', () => {
   gameController.resetClock();
 }, { capture: true });
 window.addEventListener('pagehide', pauseForInactivity, { capture: true });
-window.addEventListener('blur', () => {
-  // Ignore transient browser-chrome blurs while the document remains visible.
-  // A real tab switch also emits visibilitychange/pagehide synchronously.
-  queueMicrotask(() => {
-    if (document.visibilityState !== 'visible') pauseForInactivity();
-  });
-}, { capture: true });
+// Safari can deliver `blur` before it updates `visibilityState`, and it may
+// suspend the tab before a later lifecycle event is dispatched. Pause here
+// synchronously rather than waiting for visibility to settle.
+window.addEventListener('blur', pauseForInactivity, { capture: true });
 
 // ============================================================
 // 8-BIT CHIPTUNE ENGINE  —  Theme-aware, adaptive to snake length
