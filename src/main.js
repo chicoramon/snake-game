@@ -1,5 +1,6 @@
 import { createAudioEngine } from './audio/audio-engine.js';
 import { createControlManager } from './controls/control-manager.js';
+import { createDailyRunService } from './daily/daily-run-service.js';
 import { createGameController } from './game/game-controller.js';
 import { createRunLifecycle } from './game/run-lifecycle.js';
 import {
@@ -812,27 +813,7 @@ function ensureDailyChallenge() {
 }
 
 function mapDailyChallenge(row, authoritative = true) {
-  if (!row) return null;
-  const date = String(row.challenge_date || row.date || currentUtcDateKey());
-  const theme = THEMES[row.theme] ? row.theme : 'default';
-  const bestKey = `snake_daily_best_${date}`;
-  return {
-    id: row.challenge_id == null ? null : Number(row.challenge_id),
-    date,
-    number: Number(row.challenge_number) || 1,
-    seed: Number(row.seed) >>> 0,
-    theme,
-    durationMs: Number(row.duration_ms) || SPRINT_DURATION_MS,
-    boardCols: Number(row.board_cols) || BOARD_COLS,
-    boardRows: Number(row.board_rows) || BOARD_ROWS,
-    rulesetVersion: row.ruleset_version || GAME_RULESET_VERSION,
-    attemptsUsed: Number(row.attempts_used) || 0,
-    attemptsRemaining: Number(row.attempts_remaining) < 0
-      ? -1
-      : Math.max(0, Number(row.attempts_remaining) || 0),
-    bestKey,
-    authoritative
-  };
+  return dailyRunService.mapChallenge(row, { authoritative });
 }
 
 function hasUnlimitedDailyAttempts(challenge = dailyChallenge) {
@@ -879,15 +860,8 @@ async function refreshDailyChallenge({ force = false } = {}) {
   renderDailyChallengeInfo();
   try {
     await playerIdentityPromise;
-    if (!sb || !currentUser) throw new Error('Player session unavailable');
-    const { data, error } = await sb.rpc('get_daily_challenge');
-    if (error) throw error;
+    const challenge = await dailyRunService.loadChallenge();
     if (requestId !== dailyChallengeRequest) return dailyChallenge;
-    const row = Array.isArray(data) ? data[0] : data;
-    const challenge = mapDailyChallenge(row, true);
-    if (!challenge || challenge.rulesetVersion !== GAME_RULESET_VERSION || challenge.boardCols !== BOARD_COLS || challenge.boardRows !== BOARD_ROWS) {
-      throw new Error('Daily challenge uses an unsupported ruleset or board');
-    }
     dailyChallenge = challenge;
     bestScores.daily = parseInt(localStorage.getItem(challenge.bestKey), 10) || 0;
     if (gameMode === 'daily') {
@@ -1777,33 +1751,11 @@ async function reserveDailyAttempt() {
   }
 
   dailyReservationRequestId ||= createRunId();
-  const { data, error } = await sb.rpc('start_daily_attempt', {
-    p_request_id: dailyReservationRequestId
-  });
-  if (error) throw error;
-  const row = Array.isArray(data) ? data[0] : data;
-  if (!row) throw new Error('Daily attempt reservation returned no data');
-
-  const reservedChallenge = mapDailyChallenge({
-    ...row,
-    attempts_used: Number(row.attempts_remaining) < 0
-      ? Number(row.attempt_number) || 0
-      : (row.ranked ? 3 - Number(row.attempts_remaining) : 3)
-  }, true);
+  const reservation = await dailyRunService.reserveAttempt(dailyReservationRequestId);
+  const reservedChallenge = reservation.challenge;
   dailyChallenge = reservedChallenge;
   bestScores.daily = parseInt(localStorage.getItem(reservedChallenge.bestKey), 10) || 0;
-  dailyAttempt = {
-    ranked: row.ranked === true,
-    preview: false,
-    id: row.attempt_id || null,
-    number: row.attempt_number == null ? null : Number(row.attempt_number),
-    attemptsRemaining: Number(row.attempts_remaining) < 0
-      ? -1
-      : Math.max(0, Number(row.attempts_remaining) || 0),
-    runToken: row.run_token || null,
-    submitted: false,
-    result: null
-  };
+  dailyAttempt = reservation.attempt;
   dailyReservationRequestId = null;
   renderDailyChallengeInfo();
   return reservedChallenge;
@@ -2129,6 +2081,17 @@ const SB_URL = 'https://suuwudlnsapyvthjscwp.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1dXd1ZGxuc2FweXZ0aGpzY3dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MTc3ODcsImV4cCI6MjA4MDQ5Mzc4N30.eI0bkImttIQ_AeiCj59lUpjbcrSU4skFbsDIXVCHkEk';
 let sb = null;
 try { sb = supabase.createClient(SB_URL, SB_KEY); } catch(e) { console.warn('Supabase init failed:', e); }
+
+const dailyRunService = createDailyRunService({
+  getClient: () => sb,
+  getUser: () => currentUser,
+  getThemes: () => THEMES,
+  getCurrentDate: currentUtcDateKey,
+  boardCols: BOARD_COLS,
+  boardRows: BOARD_ROWS,
+  rulesetVersion: GAME_RULESET_VERSION,
+  defaultDurationMs: SPRINT_DURATION_MS
+});
 
 
 // --- Leaderboard record chase ---
@@ -2696,21 +2659,13 @@ async function submitDailyAttempt() {
   submitScoreBtn.disabled = true;
   try {
     const controlMethod = runUsesMixedControls ? 'mixed' : (runControlMethod || controlMode);
-    const { data, error } = await sb.functions.invoke('submit-daily-attempt', {
-      body: {
-        attemptId: dailyAttempt.id,
-        runToken: dailyAttempt.runToken,
-        replay: runReplay,
-        finalFoodMs: dailyLastFoodElapsedMs,
-        controlMethod
-      }
+    const data = await dailyRunService.submitAttempt({
+      attemptId: dailyAttempt.id,
+      runToken: dailyAttempt.runToken,
+      replay: runReplay,
+      finalFoodMs: dailyLastFoodElapsedMs,
+      controlMethod
     });
-    if (error) {
-      let details = null;
-      try { details = await error.context?.json(); } catch (_) {}
-      throw new Error(details?.error || error.message || 'Daily submission failed');
-    }
-    if (!data?.verified) throw new Error(data?.error || 'Daily replay was not verified');
     dailyAttempt.submitted = true;
     dailyAttempt.result = data;
     dailyAttempt.attemptsRemaining = Number(data.attemptsRemaining) < 0
