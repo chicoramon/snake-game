@@ -245,9 +245,12 @@ function getViewportHeight() {
   return vp ? vp.height : window.innerHeight;
 }
 
-function getViewportWidth() {
-  const vp = window.visualViewport;
-  return vp ? vp.width : window.innerWidth;
+function getViewportWidth() {
+  // Safari can briefly report a shrunken visual viewport while its browser
+  // chrome is animating. The layout viewport is the reliable width for a
+  // fixed-size game board, so use the larger valid value.
+  const vp = window.visualViewport;
+  return Math.max(window.innerWidth || 0, document.documentElement.clientWidth || 0, vp?.width || 0);
 }
 
 function resize() {
@@ -273,15 +276,34 @@ function resize() {
   canvas.height = canvasH * dpr;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
-resize();
-window.addEventListener('resize', () => { resize(); if (alive) canvasRenderer.draw(1); });
-// Also handle mobile URL bar show/hide (visualViewport)
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', () => { resize(); if (alive) canvasRenderer.draw(1); });
-}
+let resizeFrameId = null;
+let resizeSettleTimer = null;
+function scheduleResize({ settle = false } = {}) {
+  if (resizeFrameId !== null) cancelAnimationFrame(resizeFrameId);
+  resizeFrameId = requestAnimationFrame(() => {
+    resizeFrameId = null;
+    resize();
+    if (alive) canvasRenderer.draw(1);
+  });
+  if (settle) {
+    clearTimeout(resizeSettleTimer);
+    // Safari's browser chrome can report an intermediate viewport size first.
+    resizeSettleTimer = setTimeout(() => scheduleResize(), 280);
+  }
+}
+resize();
+window.addEventListener('resize', () => scheduleResize({ settle: true }));
+window.addEventListener('orientationchange', () => scheduleResize({ settle: true }));
+window.addEventListener('pageshow', () => scheduleResize({ settle: true }));
+// Also handle mobile URL bar show/hide (visualViewport).
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => scheduleResize({ settle: true }));
+  window.visualViewport.addEventListener('scroll', () => scheduleResize({ settle: true }));
+}
 
 // --- State ---
 let snake, dir, nextDir, food, score, best, speed, alive, paused;
+let runActivatedAt = 0;
 let runControlMethod = null;
 let runUsesMixedControls = false;
 let currentRunId = null;
@@ -909,11 +931,14 @@ function reset(startingRun = false) {
   updateSprintTimer(true);
   scoreEl.textContent = 0;
   // Reset pause button
-  const pauseBtn = document.getElementById('pause-btn');
+  const pauseBtn = document.getElementById('pause-btn');
+  const dailyPauseDisabled = runGameMode === 'daily';
   pauseBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="2" y="1" width="2" height="8"/><rect x="6" y="1" width="2" height="8"/></svg>';
   pauseBtn.classList.remove('paused');
-  pauseBtn.setAttribute('aria-label', 'Pause game');
-  pauseBtn.title = 'Pause (P)';
+  pauseBtn.hidden = dailyPauseDisabled;
+  pauseBtn.disabled = dailyPauseDisabled;
+  pauseBtn.setAttribute('aria-label', dailyPauseDisabled ? 'Daily Run cannot be paused' : 'Pause game');
+  pauseBtn.title = dailyPauseDisabled ? 'Daily Run cannot be paused' : 'Pause (P)';
   // Keep the game identity primary; the selected theme has its own label.
   overlayTitle.textContent = currentTheme === 'got' ? 'DRAGON' : 'SNAKE';
   themeLabel.textContent = THEMES[currentTheme].name + ' Theme';
@@ -997,7 +1022,21 @@ function gameTick() {
 function showRunResult(reason) {
   const isSprint = runGameMode === 'sprint';
   const isDaily = runGameMode === 'daily';
-  overlayTitle.innerHTML = reason === 'time'
+  if (isDaily && reason === 'interrupted') {
+    overlayTitle.textContent = 'RUN INTERRUPTED';
+    overlayMsg.textContent = 'Daily Run ended because the game lost focus. Daily Runs cannot be paused.';
+    startBtn.textContent = 'Try Again';
+    shareBtn.style.display = 'none';
+    namePrompt.style.display = 'none';
+    scoreMethodLabel.textContent = 'Daily Run invalidated — focus was lost';
+    scoreMethodLabel.classList.add('unranked');
+    overlay.classList.remove('hidden');
+    overlay.setAttribute('aria-hidden', 'false');
+    recordResultVisible = false;
+    hideRecordChase();
+    return;
+  }
+  overlayTitle.innerHTML = reason === 'time'
     ? 'TIME UP!'
     : '<svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="#ff003c"><rect x="2" y="1" width="6" height="2"/><rect x="1" y="3" width="8" height="2"/><rect x="1" y="5" width="2" height="2"/><rect x="7" y="5" width="2" height="2"/><rect x="3" y="5" width="4" height="2" fill="rgba(0,0,0,0.3)"/><rect x="2" y="7" width="2" height="2"/><rect x="6" y="7" width="2" height="2"/><rect x="3" y="9" width="4" height="1"/></svg> Game Over';
   overlayMsg.textContent = isDaily
@@ -1198,6 +1237,7 @@ async function startGame(options = {}) {
     },
     reset: () => reset(true),
     afterReset: () => {
+      runActivatedAt = performance.now();
       if (runGameMode === 'daily') disableRecordChase();
       else beginRecordChase();
       AudioEngine.start();
@@ -1230,8 +1270,8 @@ function turnCounterClockwise() {
 
 // Frame progression is coordinated by ./game/live-game-session.js.
 // --- Pause toggle ---
-function setPaused(value) {
-  if (!alive) return;
+function setPaused(value) {
+  if (!alive || runGameMode === 'daily') return;
   if (paused === value) return;
   paused = value;
   const btn = document.getElementById('pause-btn');
@@ -1253,13 +1293,37 @@ document.getElementById('pause-btn').addEventListener('click', togglePause);
 // Pause as soon as the game stops being the active page. `pagehide` covers
 // Safari's tab/background transitions, where `blur` is not always delivered
 // before the page is suspended.
-function pauseForInactivity() {
+function pauseForInactivity(event) {
   if (!alive || paused) return;
+  // Mobile Safari can emit a stale window blur immediately after the Play
+  // gesture closes an overlay. The page remains visible, so this is not an
+  // actual interruption. Hidden/pagehide events are never ignored.
+  const isFreshVisibleBlur = event?.type === 'blur'
+    && document.visibilityState === 'visible'
+    && performance.now() - runActivatedAt < 700;
+  if (isFreshVisibleBlur) return;
+  // Daily Run is deliberately unpausable. A browser interruption cannot
+  // preserve a ranked attempt because that would create a pause loophole.
+  if (runGameMode === 'daily') {
+    invalidateDailyRun();
+    return;
+  }
   setPaused(true);
   // Drop any time already accumulated for the next simulation step. A
   // browser may have queued a frame immediately before it announced that the
   // tab lost focus; that frame must never turn into a late snake movement.
   gameController.resetClock();
+}
+
+function invalidateDailyRun() {
+  if (!alive || runGameMode !== 'daily') return;
+  alive = false;
+  paused = false;
+  countdownActive = false;
+  countdownDisplay.classList.remove('visible');
+  AudioEngine.stop();
+  gameController.resetClock();
+  showRunResult('interrupted');
 }
 
 document.addEventListener('visibilitychange', () => {
@@ -1271,6 +1335,10 @@ window.addEventListener('pagehide', pauseForInactivity, { capture: true });
 // suspend the tab before a later lifecycle event is dispatched. Pause here
 // synchronously rather than waiting for visibility to settle.
 window.addEventListener('blur', pauseForInactivity, { capture: true });
+window.addEventListener('focus', () => {
+  gameController.resetClock();
+  scheduleResize({ settle: true });
+}, { capture: true });
 
 // ============================================================
 // 8-BIT CHIPTUNE ENGINE  —  Theme-aware, adaptive to snake length
@@ -1652,6 +1720,7 @@ let pendingOtpEmail = '';
 let pendingOtpType = 'email';
 const AUTO_SUBMIT_KEY = 'snake_auto_submit';
 const PENDING_SCORES_KEY = 'snake_pending_scores';
+const PENDING_DAILY_ATTEMPT_KEY = 'snake_pending_daily_attempt';
 let autoSubmitEnabled = localStorage.getItem(AUTO_SUBMIT_KEY) !== 'false';
 autoSubmitToggle.checked = autoSubmitEnabled;
 
@@ -1928,15 +1997,17 @@ async function submitDailyAttempt() {
 
   submitScoreBtn.textContent = 'Verifying...';
   submitScoreBtn.disabled = true;
+  const payload = {
+    attemptId: dailyAttempt.id,
+    runToken: dailyAttempt.runToken,
+    replay: runReplay,
+    finalFoodMs: dailyLastFoodElapsedMs,
+    controlMethod: runUsesMixedControls ? 'mixed' : (runControlMethod || controlMode)
+  };
+  savePendingDailyAttempt(payload);
   try {
-    const controlMethod = runUsesMixedControls ? 'mixed' : (runControlMethod || controlMode);
-    const data = await dailyRunService.submitAttempt({
-      attemptId: dailyAttempt.id,
-      runToken: dailyAttempt.runToken,
-      replay: runReplay,
-      finalFoodMs: dailyLastFoodElapsedMs,
-      controlMethod
-    });
+    const data = await dailyRunService.submitAttempt(payload);
+    clearPendingDailyAttempt(payload.attemptId);
     dailyAttempt.submitted = true;
     dailyAttempt.result = data;
     dailyAttempt.attemptsRemaining = Number(data.attemptsRemaining) < 0
@@ -1956,11 +2027,57 @@ async function submitDailyAttempt() {
     return data;
   } catch (error) {
     console.warn('Daily attempt submission failed:', error);
+    if (isTerminalDailySubmissionError(error)) clearPendingDailyAttempt(payload.attemptId);
     scoreMethodLabel.textContent = `${error.message || 'Submission failed'} • retry before the run token expires`;
     scoreMethodLabel.classList.add('unranked');
     submitScoreBtn.textContent = navigator.onLine ? 'Retry Submission' : 'Retry When Online';
     submitScoreBtn.disabled = !navigator.onLine;
     return null;
+  }
+}
+
+function savePendingDailyAttempt(payload) {
+  if (!currentUser?.id || !payload?.attemptId) return;
+  try {
+    localStorage.setItem(PENDING_DAILY_ATTEMPT_KEY, JSON.stringify({
+      playerId: currentUser.id,
+      payload,
+      savedAt: Date.now()
+    }));
+  } catch {}
+}
+
+function getPendingDailyAttempt() {
+  try {
+    const pending = JSON.parse(localStorage.getItem(PENDING_DAILY_ATTEMPT_KEY) || 'null');
+    return pending?.playerId && pending?.payload?.attemptId ? pending : null;
+  } catch {
+    return null;
+  }
+}
+
+function clearPendingDailyAttempt(attemptId = null) {
+  const pending = getPendingDailyAttempt();
+  if (attemptId && pending?.payload?.attemptId !== attemptId) return;
+  try { localStorage.removeItem(PENDING_DAILY_ATTEMPT_KEY); } catch {}
+}
+
+function isTerminalDailySubmissionError(error) {
+  const status = Number(error?.status);
+  return status >= 400 && status < 500 && status !== 408 && status !== 429;
+}
+
+async function retryPendingDailyAttempt() {
+  if (!navigator.onLine || !sb || !currentUser) return;
+  const pending = getPendingDailyAttempt();
+  if (!pending || pending.playerId !== currentUser.id) return;
+  try {
+    await dailyRunService.submitAttempt(pending.payload);
+    clearPendingDailyAttempt(pending.payload.attemptId);
+    if (gameMode === 'daily') refreshDailyChallenge({ force: true });
+  } catch (error) {
+    if (isTerminalDailySubmissionError(error)) clearPendingDailyAttempt(pending.payload.attemptId);
+    else console.warn('Pending Daily submission will retry when the connection recovers:', error);
   }
 }
 
@@ -2052,7 +2169,10 @@ async function submitScore() {
 }
 
 submitScoreBtn.addEventListener('click', submitScore);
-window.addEventListener('online', retryPendingScores);
+window.addEventListener('online', () => {
+  retryPendingScores();
+  retryPendingDailyAttempt();
+});
 
 /* Legacy player-panel handlers retained only as historical context during the extraction.
 function legacyOpenPlayerPanel({ focusDisplayName = false } = {}) {
@@ -2228,6 +2348,7 @@ playerIdentityController = createPlayerIdentityController({
   isSchemaError,
   onIdentitySettled: () => {
     retryPendingScores();
+    retryPendingDailyAttempt();
     if (gameMode === 'daily') refreshDailyChallenge({ force: true });
   },
   renderDisplayNameInvitation,

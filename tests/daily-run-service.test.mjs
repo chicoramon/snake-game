@@ -60,3 +60,25 @@ test('Daily Run service owns reservation and verified submission requests', asyn
   assert.equal(result.verified, true);
   assert.deepEqual(calls.map(call => call.name), ['start_daily_attempt', 'submit-daily-attempt']);
 });
+
+test('Daily Run service preserves function error status for safe retry decisions', async () => {
+  const service = createService({
+    functions: {
+      invoke: async () => ({
+        data: null,
+        error: {
+          message: 'Function returned an error',
+          context: {
+            status: 503,
+            json: async () => ({ error: 'Temporary verification outage' })
+          }
+        }
+      })
+    }
+  });
+
+  await assert.rejects(
+    () => service.submitAttempt({ attemptId: 'attempt-1' }),
+    error => error.message === 'Temporary verification outage' && error.status === 503
+  );
+});

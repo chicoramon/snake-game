@@ -172,7 +172,8 @@
     line-height: 1;
   }
   #pause-btn:active { background: var(--accent-glow-mid); transform: scale(0.9); }
-  #pause-btn.paused { background: var(--accent-glow-mid); border-color: var(--accent-glow); }
+  #pause-btn.paused { background: var(--accent-glow-mid); border-color: var(--accent-glow); }
+  #pause-btn[hidden] { display: none; }
   canvas {
     display: block;
     image-rendering: pixelated;

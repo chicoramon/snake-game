@@ -51,3 +51,10 @@ test('the proposed Daily speed increase remains deferred', () => {
   assert.match(html, /const MIN_INTERVAL = 55/);
   assert.match(edgeFunction, /attemptsRemaining: unlimitedRankedRuns \? -1/);
 });
+
+test('Daily submissions persist a retryable outbox record before server verification', () => {
+  assert.match(html, /const PENDING_DAILY_ATTEMPT_KEY = 'snake_pending_daily_attempt'/);
+  assert.match(html, /savePendingDailyAttempt\(payload\);/);
+  assert.match(html, /async function retryPendingDailyAttempt\(\)/);
+  assert.match(html, /retryPendingDailyAttempt\(\);/);
+});

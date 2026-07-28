@@ -30,6 +30,18 @@ test('Daily Run shows its rules before the first timed run', async ({ page }) =>
   await expect(page.locator('#dailyRulesDialog')).not.toHaveClass(/visible/);
 });
 
+test('Daily Run leaderboard opens without client errors', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error));
+  await openMenu(page, { blockSupabase: true });
+  await page.locator('.game-mode-btn[data-game-mode="daily"]').click();
+  await page.locator('#lbBtn').click();
+  await expect(page.locator('#leaderboardOverlay')).toHaveClass(/visible/);
+  await expect(page.locator('#dailyArchivePanel')).toBeVisible();
+  await expect(page.locator('#lbEmpty')).toContainText(/unavailable/i);
+  expect(pageErrors.map(error => error.message).join('\n')).not.toMatch(/refreshDailyChallenge|ensureDailyChallenge|formatDailyFoodTime/);
+});
+
 test('Random mode remains selected until play and starts a playable run', async ({ page }) => {
   await openMenu(page, { blockSupabase: true });
   await page.locator('#options-btn').click();

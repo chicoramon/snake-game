@@ -6,7 +6,10 @@ export function createLeaderboardController({
   getState,
   currentUtcDateKey,
   escHtml,
-  isSchemaError
+  isSchemaError,
+  refreshDailyChallenge,
+  ensureDailyChallenge,
+  formatDailyFoodTime
 }) {
   const {
     leaderboardOverlay, lbGameModeFilters, lbControlFilters, lbThemeFilters,

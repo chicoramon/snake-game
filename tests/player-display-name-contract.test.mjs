@@ -106,3 +106,10 @@ test("What's New initially renders only the latest update with a dated archive",
   assert.match(html, /document\.createElement\('time'\)/);
   assert.match(html, /date\.dateTime = release\.id\.slice\(0, 10\)/);
 });
+
+test('Daily leaderboard controller receives its Daily Run dependencies explicitly', () => {
+  assert.match(leaderboardUiSource, /refreshDailyChallenge,/);
+  assert.match(leaderboardUiSource, /ensureDailyChallenge,/);
+  assert.match(leaderboardUiSource, /formatDailyFoodTime/);
+  assert.match(html, /refreshDailyChallenge,\s+ensureDailyChallenge,\s+formatDailyFoodTime/);
+});

@@ -12,6 +12,16 @@ export function createDailyRunService({
   rulesetVersion,
   defaultDurationMs
 }) {
+  const submissionTimeoutMs = 15_000;
+
+  function withTimeout(promise, timeoutMs, message) {
+    let timeoutId;
+    const timeout = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error(message)), timeoutMs);
+    });
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+  }
+
   function requireClient() {
     const client = getClient?.();
     if (!client || !getUser?.()) throw new Error('Player session unavailable');
@@ -84,11 +94,17 @@ export function createDailyRunService({
   }
 
   async function submitAttempt(payload) {
-    const { data, error } = await requireClient().functions.invoke('submit-daily-attempt', { body: payload });
+    const { data, error } = await withTimeout(
+      requireClient().functions.invoke('submit-daily-attempt', { body: payload }),
+      submissionTimeoutMs,
+      'Daily submission timed out. Retry to confirm your result.'
+    );
     if (error) {
       let details = null;
       try { details = await error.context?.json(); } catch (_) {}
-      throw new Error(details?.error || error.message || 'Daily submission failed');
+      const submissionError = new Error(details?.error || error.message || 'Daily submission failed');
+      submissionError.status = error.context?.status || error.status || null;
+      throw submissionError;
     }
     if (!data?.verified) throw new Error(data?.error || 'Daily replay was not verified');
     return data;

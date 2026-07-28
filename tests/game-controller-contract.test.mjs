@@ -23,8 +23,15 @@ test('main delegates frame scheduling and clock resets to the game controller', 
   assert.match(mainSource, /gameController\.resetClock\(\)/);
 });
 
-test('leaving the page pauses an active run before the browser can suspend it', () => {
-  assert.match(mainSource, /function pauseForInactivity\(\) \{/);
+test('leaving the page pauses regular runs and invalidates Daily Run', () => {
+  assert.match(mainSource, /function pauseForInactivity\(event\) \{/);
+  assert.match(mainSource, /const isFreshVisibleBlur = event\?\.type === 'blur'/);
+  assert.match(mainSource, /if \(runGameMode === 'daily'\) \{\s+invalidateDailyRun\(\);\s+return;/);
+  assert.match(mainSource, /if \(!alive \|\| runGameMode === 'daily'\) return;/);
+  assert.match(mainSource, /pauseBtn\.hidden = dailyPauseDisabled;/);
+  assert.match(mainSource, /pauseBtn\.disabled = dailyPauseDisabled;/);
+  assert.match(mainSource, /function invalidateDailyRun\(\) \{/);
+  assert.match(mainSource, /showRunResult\('interrupted'\)/);
   assert.match(mainSource, /document\.visibilityState !== 'visible'\) pauseForInactivity\(\)/);
   assert.match(mainSource, /window\.addEventListener\('pagehide', pauseForInactivity, \{ capture: true \}\)/);
   assert.match(mainSource, /window\.addEventListener\('blur', pauseForInactivity, \{ capture: true \}\)/);
