@@ -1,8 +1,8 @@
 export function createLeaderboardController({
   elements,
   leaderboardService,
-  themes,
   controls,
+  themes,
   getState,
   currentUtcDateKey,
   escHtml,
@@ -12,7 +12,7 @@ export function createLeaderboardController({
   formatDailyFoodTime
 }) {
   const {
-    leaderboardOverlay, lbGameModeFilters, lbControlFilters, lbThemeFilters,
+    leaderboardOverlay, lbGameModeFilters, lbControlFilters,
     lbBody, lbLoading, lbEmpty, lbTable, lbPagination, lbPrev, lbNext,
     lbPageInfo, lbBack, lbBtn, publicPlayerCardPanel, publicPlayerCardName,
     publicPlayerArcadeId, publicPlayerCardMessage, publicPlayerCardClose
@@ -342,16 +342,9 @@ function buildFilters() {
     'control',
     value => value === 'all' ? 'All' : controls[value]
   );
-  buildFilterGroup(
-    lbThemeFilters,
-    ['all', ...Object.keys(themes)],
-    'theme',
-    value => value === 'all' ? 'All' : value.charAt(0).toUpperCase() + value.slice(1)
-  );
   const daily = lbState.gameMode === 'daily';
   dailyArchivePanel.hidden = !daily;
   lbControlFilters.closest('.lb-filter-group').hidden = daily;
-  lbThemeFilters.closest('.lb-filter-group').hidden = daily;
   const themeHeading = lbTable.querySelector('th.lb-theme-col');
   if (themeHeading) themeHeading.textContent = daily ? 'Final Food' : 'Theme';
   if (daily) renderDailyArchive();
@@ -385,7 +378,7 @@ async function loadLeaderboard() {
   const result = await leaderboardService.fetchPage({
     gameMode: lbState.gameMode,
     control: lbState.control,
-    theme: lbState.theme,
+    theme: 'all',
     date: lbState.dailyDate || challenge?.date,
     limit: LB_PAGE_SIZE,
     offset: from

@@ -8,10 +8,15 @@ async function openGame(page, { blockSupabase = false } = {}) {
   await expect(page.locator('#overlay')).toBeVisible();
   await expect(page.locator('#startBtn')).toBeVisible();
 
-  // A first visit deliberately shows player-facing release notes. A smoke test
-  // acknowledges that modal before exercising the underlying main-menu flow.
+  // A first visit can show the orientation and player-facing release notes.
+  // A smoke test acknowledges both before exercising the main menu.
+  const onboardingPanel = page.locator('#onboarding-panel');
   const whatsNewPanel = page.locator('#whats-new-panel');
   await page.waitForTimeout(1_000);
+  if (await onboardingPanel.isVisible()) {
+    await page.locator('#onboarding-skip').click();
+    await expect(onboardingPanel).not.toHaveClass(/visible/);
+  }
   if (await whatsNewPanel.isVisible()) {
     await page.locator('#whats-new-close').click();
     await expect(whatsNewPanel).not.toHaveClass(/visible/);

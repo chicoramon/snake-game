@@ -8,6 +8,7 @@ import { createPlayerProfileService } from './player/player-profile-service.js';
 import { createThemePicker } from './ui/theme-picker.js';
 import { createDailyRulesDialog } from './ui/daily-rules-dialog.js';
 import { createWhatsNewDialog } from './ui/whats-new-dialog.js';
+import { createOnboardingDialog } from './ui/onboarding-dialog.js';
 import { createPlayerPanel } from './ui/player-panel.js';
 import { createPlayerIdentityController } from './player/player-identity-controller.js';
 import { createLeaderboardController } from './ui/leaderboard-controller.js';
@@ -103,6 +104,7 @@ const recordBannerCopy = document.getElementById('record-banner-copy');
 let themePicker = null;
 let dailyRulesView = null;
 let whatsNewView = null;
+let onboardingView = null;
 let playerPanelView = null;
 let playerIdentityController = null;
 
@@ -111,6 +113,16 @@ let playerIdentityController = null;
 // features, modes, controls, themes, options, and competitive experiences only.
 // Do not include bugs, fixes, caching, builds, deployments, or backend details.
 const WHATS_NEW_RELEASES = Object.freeze([
+  {
+    id: '2026-07-28-arcade-orientation',
+    version: 'Update 2026.07.28',
+    title: 'Find Your Game Faster',
+    items: [
+      'New players now get a quick interactive arcade orientation for modes, controls, leaderboards, and player saving.',
+      'Replay the tour any time from the new How to Play option in the main menu.',
+      'Leaderboard filters are now focused on mode and control, while each score still shows its theme.'
+    ]
+  },
   {
     id: '2026-07-24-player-cards',
     version: 'Update 2026.07.24',
@@ -219,7 +231,7 @@ function closeWhatsNew({ restoreFocus = true } = {}) {
 whatsNewView = createWhatsNewDialog({
   releases: WHATS_NEW_RELEASES,
   force: FORCE_WHATS_NEW,
-  canOpen: () => !alive && !overlay.classList.contains('hidden'),
+  canOpen: () => !alive && !overlay.classList.contains('hidden') && (!onboardingView || onboardingView.hasCompleted()),
   onBeforeOpen: ({ suppressDisplayNameInvite }) => {
     if (suppressDisplayNameInvite) displayNameInviteSuppressedThisSession = true;
     displayNameInvite.hidden = true;
@@ -2391,6 +2403,21 @@ document.addEventListener('click', event => {
   playerPanel.classList.add('visible');
 }, true);
 
+onboardingView = createOnboardingDialog({
+  onControlSelect: mode => controls.applyMode(mode),
+  onGameModeSelect: mode => applyGameMode(mode),
+  onOpenPlayer: () => openPlayerPanel(),
+  onPlay: () => startGame(),
+  force: new URLSearchParams(location.search).has('onboarding'),
+  onBeforeOpen: () => {
+    displayNameInviteSuppressedThisSession = true;
+    displayNameInvite.hidden = true;
+  },
+  onAfterClose: renderDisplayNameInvitation
+});
+onboardingView.bind();
+onboardingView.scheduleInitialOpen();
+
 /* Legacy leaderboard controller retained temporarily as source context during extraction.
 const publicPlayerCardCache = new Map();
 let publicPlayerCardTrigger = null;
@@ -2881,14 +2908,14 @@ dailyRulesView = createDailyRulesDialog({
 dailyRulesView.bind();
 const leaderboardUi = createLeaderboardController({
   elements: {
-    leaderboardOverlay, lbGameModeFilters, lbControlFilters, lbThemeFilters,
+    leaderboardOverlay, lbGameModeFilters, lbControlFilters,
     lbBody, lbLoading, lbEmpty, lbTable, lbPagination, lbPrev, lbNext,
     lbPageInfo, lbBack, lbBtn, publicPlayerCardPanel, publicPlayerCardName,
     publicPlayerArcadeId, publicPlayerCardMessage, publicPlayerCardClose
   },
   leaderboardService,
-  themes: THEMES,
   controls: CONTROL_LABELS,
+  themes: THEMES,
   getState: () => ({ sb, currentUser, dailyChallenge, gameMode }),
   currentUtcDateKey,
   escHtml,

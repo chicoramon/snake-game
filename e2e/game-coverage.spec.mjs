@@ -8,10 +8,33 @@ async function openMenu(page, { blockSupabase = false, query = '' } = {}) {
   await expect(page.locator('#overlay')).toBeVisible();
   await expect(page.locator('#startBtn')).toBeVisible();
   await page.waitForTimeout(450);
+  if (await page.locator('#onboarding-panel').isVisible()) {
+    await page.locator('#onboarding-skip').click();
+  }
   if (await page.locator('#whats-new-panel').isVisible()) {
     await page.locator('#whats-new-close').click();
   }
 }
+
+test('new players can replay the arcade tour and select a control', async ({ page }) => {
+  await page.goto('./');
+  await expect(page.locator('#onboarding-panel')).toHaveClass(/visible/);
+  await expect(page.locator('#onboarding-progress')).toHaveText('1 / 5');
+
+  await page.locator('#onboarding-play-now').click();
+  await expect(page.locator('#overlay')).toHaveClass(/hidden/);
+
+  await page.goto('./');
+  await expect(page.locator('#overlay')).toBeVisible();
+  await page.locator('#how-to-play-btn').click();
+  await expect(page.locator('#onboarding-panel')).toHaveClass(/visible/);
+  await page.locator('#onboarding-next').click();
+  await page.locator('[data-onboarding-control="turn"]').click();
+  await page.locator('[data-training-turn="left"]').click();
+  await page.locator('[data-training-turn="right"]').click();
+  await expect(page.locator('#onboarding-next')).toHaveText('NEXT');
+  await expect(page.locator('#control-training-message')).toContainText(/READY/i);
+});
 
 async function startRun(page) {
   await page.locator('#startBtn').click();
@@ -38,6 +61,8 @@ test('Daily Run leaderboard opens without client errors', async ({ page }) => {
   await page.locator('#lbBtn').click();
   await expect(page.locator('#leaderboardOverlay')).toHaveClass(/visible/);
   await expect(page.locator('#dailyArchivePanel')).toBeVisible();
+  await expect(page.locator('#lbThemeFilters')).toHaveCount(0);
+  await expect(page.locator('.lb-table .lb-theme-col')).toHaveText('Final Food');
   await expect(page.locator('#lbEmpty')).toContainText(/unavailable/i);
   expect(pageErrors.map(error => error.message).join('\n')).not.toMatch(/refreshDailyChallenge|ensureDailyChallenge|formatDailyFoodTime/);
 });
@@ -80,6 +105,8 @@ test('player, update, leaderboard, and public dialogs can be opened and dismisse
 
   await page.locator('#lbBtn').click();
   await expect(page.locator('#leaderboardOverlay')).toHaveClass(/visible/);
+  await expect(page.locator('#lbThemeFilters')).toHaveCount(0);
+  await expect(page.locator('.lb-table .lb-theme-col')).toHaveText('Theme');
   await page.locator('#lbBack').click();
   await expect(page.locator('#leaderboardOverlay')).not.toHaveClass(/visible/);
 });

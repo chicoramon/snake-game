@@ -58,6 +58,14 @@ Implemented locally on 2026-07-23 as a permanent **WHAT'S NEW** main-menu bullet
 - Allow release QA at any time with the `?whatsnew=1` preview query.
 - Never open over an active run or repeatedly interrupt a player who already viewed that release.
 
+## Arcade Onboarding — Implemented (2026-07-28)
+
+- A device that has not yet acknowledged the tour receives a five-step, skippable pixel-arcade orientation covering controls, modes, leaderboards, and saving a player by email.
+- The controls step includes a two-turn practice drill and applies the chosen control method immediately.
+- A **How to Play** main-menu entry replays the tour at any time.
+- Completion is stored locally so the automatic tour appears only once per device; `?onboarding=1` forces it open for QA.
+- The leaderboard theme filter was removed to free space. Theme information remains visible on each non-Daily leaderboard score.
+
 ## Junior Mode
 
 Planned as an inviting, clearly separate mode for children and first-time players. It must preserve the fixed board dimensions and should never weaken or contaminate the existing competitive leaderboards.

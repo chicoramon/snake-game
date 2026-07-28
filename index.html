@@ -34,7 +34,8 @@
 <title>Snake Game</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="./snake-core.js"></script>
-<link rel="stylesheet" href="./src/styles/game.css">
+<link rel="stylesheet" href="./src/styles/game.css">
+<link rel="stylesheet" href="./src/styles/onboarding.css">
 </head>
 <body>
 
@@ -82,6 +83,7 @@
   <button id="mute-btn" title="Toggle music"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="1" y="3" width="2" height="4"/><rect x="3" y="2" width="2" height="6"/><rect x="5" y="1" width="1" height="8"/><rect x="7" y="3" width="1" height="4"/><rect x="9" y="2" width="1" height="6"/></svg> Music</button>
   <button id="options-btn" title="Themes"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="1" y="1" width="2" height="2"/><rect x="7" y="1" width="2" height="2"/><rect x="4" y="3" width="2" height="2"/><rect x="1" y="5" width="2" height="2"/><rect x="7" y="5" width="2" height="2"/><rect x="4" y="7" width="2" height="2"/></svg> Themes</button>
   <button id="controls-btn" title="Choose and customize controls"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="3" y="0" width="4" height="2"/><rect x="1" y="2" width="2" height="2"/><rect x="7" y="2" width="2" height="2"/><rect x="3" y="2" width="4" height="2"/><rect x="3" y="4" width="4" height="2"/><rect x="1" y="6" width="2" height="2"/><rect x="7" y="6" width="2" height="2"/><rect x="3" y="6" width="4" height="2"/><rect x="3" y="8" width="4" height="2"/></svg> Controls</button>
+  <button id="how-to-play-btn" title="Replay the arcade orientation" type="button">? How to Play</button>
   <button id="player-btn" title="Player identity and score saving"><svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="3" y="1" width="4" height="2"/><rect x="2" y="3" width="6" height="3"/><rect x="1" y="7" width="8" height="2"/></svg> <span id="player-menu-label">Player: Guest</span><span id="player-add-name-badge" hidden>ADD NAME</span></button>
   <div id="display-name-invite" role="status" aria-live="polite" hidden>
     <p>Give <span id="display-name-invite-id"></span> a public name?</p>
@@ -101,6 +103,61 @@
     <div id="whats-new-current"></div>
     <div id="whats-new-releases"></div>
     <button id="whats-new-close" type="button">Got It</button>
+  </div>
+</div>
+
+<div id="onboarding-panel" role="dialog" aria-modal="true" aria-labelledby="onboarding-title" aria-hidden="true">
+  <div class="onboarding-card">
+    <div class="onboarding-topline"><span class="menu-kicker">Arcade Orientation</span><span id="onboarding-progress">1 / 5</span></div>
+    <section data-onboarding-step>
+      <div class="onboarding-hero" aria-hidden="true"><span>◢</span><span>●</span><span>◣</span></div>
+      <h2 id="onboarding-title">Ready, Player?</h2>
+      <p class="onboarding-lead">Nine worlds. Three challenges. One shot at the top.</p>
+      <div class="onboarding-marquee">INSERT COIN • START QUICK TOUR</div>
+      <button id="onboarding-play-now" class="onboarding-primary" type="button">Play Now</button>
+    </section>
+    <section data-onboarding-step hidden>
+      <h2>Choose Your Moves</h2>
+      <p class="onboarding-lead">Pick a control, then complete a two-turn drill.</p>
+      <div class="onboarding-control-grid" aria-label="Choose a control method">
+        <button data-onboarding-control="tap" type="button"><strong>Tap</strong><span>Left / right board half</span></button>
+        <button data-onboarding-control="turn" type="button"><strong>Turn</strong><span>Two turn buttons</span></button>
+        <button data-onboarding-control="dpad" type="button"><strong>D-Pad</strong><span>Four directions</span></button>
+      </div>
+      <p class="onboarding-keyboard">Keyboard is always available: Arrow Keys or WASD.</p>
+      <div id="control-training-pad" hidden data-mode="" data-turns="0" aria-label="Control training board">
+        <span class="training-snake" aria-hidden="true">■■■●</span>
+        <button data-training-turn="left" type="button">Left</button>
+        <button data-training-turn="right" type="button">Right</button>
+      </div>
+      <p id="control-training-message" class="onboarding-status">Choose a control to begin.</p>
+    </section>
+    <section data-onboarding-step hidden>
+      <h2>Pick Your Challenge</h2>
+      <p class="onboarding-lead">Your choice sets the pace. You can switch any time.</p>
+      <div class="onboarding-mode-grid">
+        <button data-onboarding-mode="classic" type="button"><strong>Classic</strong><span>Survive. Grow. Chase a high score.</span></button>
+        <button data-onboarding-mode="sprint" type="button"><strong>Sprint 60</strong><span>Score as much as possible in one minute.</span></button>
+        <button data-onboarding-mode="daily" type="button"><strong>Daily Run</strong><span>One seeded worldwide challenge each day.</span></button>
+      </div>
+    </section>
+    <section data-onboarding-step hidden>
+      <h2>Climb the Board</h2>
+      <p class="onboarding-lead">Every mode has its own contest. Your best score earns your place.</p>
+      <div class="onboarding-podium" aria-label="Example leaderboard"><span>1&nbsp; ACE·A7F2 <b>31</b></span><span>2&nbsp; RAM·C51B <b>28</b></span><span>3&nbsp; YOU·F4D9 <b>12</b></span></div>
+      <p class="onboarding-status">Filter by mode or control. Themes stay visible with every score.</p>
+    </section>
+    <section data-onboarding-step hidden>
+      <h2>Keep Your Player</h2>
+      <p class="onboarding-lead">Your arcade identity starts on this device.</p>
+      <div class="onboarding-save-copy"><strong>Add an email when you are ready.</strong><span>Restore the same player, scores, and identity on another device or after browser data is cleared.</span></div>
+      <button data-onboarding-save-player class="onboarding-primary" type="button">Save My Player</button>
+    </section>
+    <div class="onboarding-actions">
+      <button id="onboarding-back" type="button" hidden>Back</button>
+      <button id="onboarding-next" class="onboarding-primary" type="button">Next</button>
+      <button id="onboarding-skip" type="button">Skip Tour</button>
+    </div>
   </div>
 </div>
 
@@ -138,11 +195,7 @@
     <span class="lb-filter-label">Control</span>
     <div class="lb-filters" id="lbControlFilters"></div>
   </div>
-  <div class="lb-filter-group">
-    <span class="lb-filter-label">Theme</span>
-    <div class="lb-filters" id="lbThemeFilters"></div>
-  </div>
-  <div id="lbLoading">Loading...</div>
+  <div id="lbLoading">Loading...</div>
   <div id="lbEmpty">No scores yet. Be the first!</div>
   <table class="lb-table" id="lbTable"><thead><tr><th class="lb-rank">#</th><th>Name</th><th class="lb-theme-col">Theme</th><th class="lb-score">Score</th></tr></thead><tbody id="lbBody"></tbody></table>
   <div class="lb-pagination" id="lbPagination">

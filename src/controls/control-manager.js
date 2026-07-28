@@ -443,5 +443,5 @@ document.addEventListener('mouseup', onBtnDragEnd);
 
 
 
-  return { getMode: () => controlMode };
+  return { getMode: () => controlMode, applyMode: applyControlMode };
 }
