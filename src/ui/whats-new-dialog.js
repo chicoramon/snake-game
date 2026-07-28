@@ -52,6 +52,7 @@ export function createWhatsNewDialog({
     if (!older.length) return;
 
     const toggle = document.createElement('button');
+    toggle.id = 'whats-new-older-toggle';
     toggle.type = 'button';
     toggle.setAttribute('aria-expanded', 'false');
     toggle.textContent = `View Older Updates (${older.length})`;

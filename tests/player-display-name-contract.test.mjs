@@ -99,6 +99,7 @@ test("What's New contains player-facing news rather than build details", () => {
 test("What's New initially renders only the latest update with a dated archive", () => {
   assert.match(html, /const latest = releases\?\.\[0\]/);
   assert.match(html, /releases\.slice\(1\)/);
+  assert.match(html, /toggle\.id = 'whats-new-older-toggle'/);
   assert.match(html, /toggle\.setAttribute\('aria-expanded', 'false'\)/);
   assert.match(html, /archive\.hidden = true/);
   assert.match(html, /document\.createElement\('details'\)/);

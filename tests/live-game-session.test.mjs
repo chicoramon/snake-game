@@ -25,6 +25,31 @@ test('live session advances normal gameplay with a single accumulated frame delt
   assert.deepEqual(renderer.updates, [100]);
 });
 
+test('Daily ticks expose their fixed-step time before gameplay evaluates food', () => {
+  const renderer = createRenderer();
+  const state = {
+    alive: true,
+    paused: false,
+    countdownActive: false,
+    runGameMode: 'daily',
+    speed: 110,
+    dailyTickElapsedMs: 0
+  };
+  const tickElapsed = [];
+  const session = createLiveGameSession({
+    renderer,
+    getState: () => state,
+    onDailyElapsedChange: elapsedMs => { state.dailyTickElapsedMs = elapsedMs; },
+    onSprintTimeChange: () => {},
+    onTick: () => { tickElapsed.push(state.dailyTickElapsedMs); },
+    getDailyDuration: () => 60000
+  });
+
+  session.frame({ rawDt: 110, dt: 110, clock: { tickAccum: 0 } });
+
+  assert.deepEqual(tickElapsed, [110]);
+});
+
 test('live session stops only after gameplay and visual effects are both inactive', () => {
   const renderer = createRenderer();
   const state = { alive: false, paused: false, countdownActive: false, runGameMode: 'classic', speed: 50 };

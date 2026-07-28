@@ -48,6 +48,9 @@ export function createLiveGameSession({
         while ((state = getState()).alive && clock.tickAccum >= state.speed && elapsedMs + state.speed <= durationMs) {
           const interval = state.speed;
           elapsedMs += interval;
+          // Keep gameplay in lockstep with the server replay: a food eaten
+          // during this move must see this move's fixed-step timestamp.
+          onDailyElapsedChange?.(elapsedMs);
           onTick();
           clock.tickAccum -= interval;
         }
