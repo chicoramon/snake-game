@@ -1,6 +1,14 @@
 import { createAudioEngine } from './audio/audio-engine.js';
 import { createControlManager } from './controls/control-manager.js';
 import { createDailyRunService } from './daily/daily-run-service.js';
+import { createLeaderboardService } from './leaderboard/leaderboard-service.js';
+import { createSupabaseClient } from './services/supabase-client.js';
+import { createPlayerAuthService } from './player/player-auth-service.js';
+import { createPlayerProfileService } from './player/player-profile-service.js';
+import { createThemePicker } from './ui/theme-picker.js';
+import { createDailyRulesDialog } from './ui/daily-rules-dialog.js';
+import { createWhatsNewDialog } from './ui/whats-new-dialog.js';
+import { createPlayerPanel } from './ui/player-panel.js';
 import { createGameController } from './game/game-controller.js';
 import { createRunLifecycle } from './game/run-lifecycle.js';
 import {
@@ -29,10 +37,6 @@ const nameInput = document.getElementById('nameInput');
 const submitScoreBtn = document.getElementById('submitScoreBtn');
 const scoreMethodLabel = document.getElementById('scoreMethodLabel');
 const dailyChallengeInfo = document.getElementById('dailyChallengeInfo');
-const dailyRulesDialog = document.getElementById('dailyRulesDialog');
-const dailyRulesBegin = document.getElementById('dailyRulesBegin');
-const dailyRulesLater = document.getElementById('dailyRulesLater');
-const dailyRulesFootnote = document.getElementById('dailyRulesFootnote');
 const leaderboardOverlay = document.getElementById('leaderboardOverlay');
 const lbGameModeFilters = document.getElementById('lbGameModeFilters');
 const lbControlFilters = document.getElementById('lbControlFilters');
@@ -95,6 +99,10 @@ const recordChaseEl = document.getElementById('record-chase');
 const recordCelebrationEl = document.getElementById('record-celebration');
 const recordFireworksCanvas = document.getElementById('record-fireworks');
 const recordBannerCopy = document.getElementById('record-banner-copy');
+let themePicker = null;
+let dailyRulesView = null;
+let whatsNewView = null;
+let playerPanelView = null;
 
 // Add the newest release first and change its id whenever a release should
 // trigger the one-time update bulletin. Keep every item player-facing: new
@@ -133,86 +141,11 @@ const WHATS_NEW_RELEASES = Object.freeze([
     ]
   }
 ]);
-const CURRENT_RELEASE_ID = WHATS_NEW_RELEASES[0].id;
-const WHATS_NEW_SEEN_KEY = 'snake_whats_new_seen';
 const FORCE_WHATS_NEW = new URLSearchParams(location.search).has('whatsnew');
 const DISPLAY_NAME_INVITE_KEY = 'snake_display_name_invite_v1';
 const DISPLAY_NAME_INVITE_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
 const DISPLAY_NAME_INVITE_MAX_DISMISSALS = 2;
-let displayNameInviteSuppressedThisSession = FORCE_WHATS_NEW || !hasSeenCurrentRelease();
-
-function hasSeenCurrentRelease() {
-  try { return localStorage.getItem(WHATS_NEW_SEEN_KEY) === CURRENT_RELEASE_ID; }
-  catch { return false; }
-}
-
-function markCurrentReleaseSeen() {
-  try { localStorage.setItem(WHATS_NEW_SEEN_KEY, CURRENT_RELEASE_ID); } catch {}
-  whatsNewBadge.hidden = true;
-}
-
-function renderWhatsNew() {
-  const latestRelease = WHATS_NEW_RELEASES[0];
-  whatsNewCurrent.textContent = `Latest release • ${latestRelease.version}`;
-  whatsNewReleases.replaceChildren();
-
-  const createReleaseSection = release => {
-    const section = document.createElement('section');
-    section.className = 'whats-new-release';
-    const heading = document.createElement('h3');
-    heading.textContent = release.title;
-    const meta = document.createElement('div');
-    meta.className = 'whats-new-release-meta';
-    meta.textContent = release.version;
-    const list = document.createElement('ul');
-    release.items.forEach(item => {
-      const entry = document.createElement('li');
-      entry.textContent = item;
-      list.appendChild(entry);
-    });
-    section.append(heading, meta, list);
-    return section;
-  };
-
-  whatsNewReleases.appendChild(createReleaseSection(latestRelease));
-
-  const olderReleases = WHATS_NEW_RELEASES.slice(1);
-  if (!olderReleases.length) return;
-
-  const toggle = document.createElement('button');
-  toggle.id = 'whats-new-older-toggle';
-  toggle.type = 'button';
-  toggle.setAttribute('aria-expanded', 'false');
-  toggle.textContent = `View Older Updates (${olderReleases.length})`;
-
-  const archive = document.createElement('div');
-  archive.className = 'whats-new-archive';
-  archive.hidden = true;
-
-  olderReleases.forEach(release => {
-    const entry = document.createElement('details');
-    const summary = document.createElement('summary');
-    const date = document.createElement('time');
-    date.dateTime = release.id.slice(0, 10);
-    date.textContent = release.version.replace(/^Update\s+/i, '');
-    const title = document.createElement('span');
-    title.textContent = release.title;
-    summary.append(date, title);
-    entry.append(summary, createReleaseSection(release));
-    archive.appendChild(entry);
-  });
-
-  toggle.addEventListener('click', () => {
-    const expanded = toggle.getAttribute('aria-expanded') === 'true';
-    toggle.setAttribute('aria-expanded', String(!expanded));
-    toggle.textContent = expanded
-      ? `View Older Updates (${olderReleases.length})`
-      : 'Hide Older Updates';
-    archive.hidden = expanded;
-  });
-
-  whatsNewReleases.append(toggle, archive);
-}
+let displayNameInviteSuppressedThisSession = false;
 
 function readDisplayNameInviteState() {
   try {
@@ -274,39 +207,26 @@ function completeDisplayNameInvitation() {
 }
 
 function openWhatsNew({ suppressDisplayNameInvite = false } = {}) {
-  if (alive || overlay.classList.contains('hidden')) return;
-  if (suppressDisplayNameInvite) displayNameInviteSuppressedThisSession = true;
-  displayNameInvite.hidden = true;
-  renderWhatsNew();
-  whatsNewPanel.classList.add('visible');
-  whatsNewPanel.setAttribute('aria-hidden', 'false');
-  whatsNewClose.focus();
+  return whatsNewView?.open({ suppressDisplayNameInvite });
 }
 
 function closeWhatsNew({ restoreFocus = true } = {}) {
-  markCurrentReleaseSeen();
-  whatsNewPanel.classList.remove('visible');
-  whatsNewPanel.setAttribute('aria-hidden', 'true');
-  renderDisplayNameInvitation();
-  if (restoreFocus) whatsNewBtn.focus();
+  return whatsNewView?.close({ restoreFocus });
 }
 
-whatsNewBadge.hidden = !FORCE_WHATS_NEW && hasSeenCurrentRelease();
-whatsNewBtn.addEventListener('click', () => openWhatsNew());
-whatsNewClose.addEventListener('click', () => closeWhatsNew());
-whatsNewPanel.addEventListener('click', event => {
-  if (event.target === whatsNewPanel) closeWhatsNew();
+whatsNewView = createWhatsNewDialog({
+  releases: WHATS_NEW_RELEASES,
+  force: FORCE_WHATS_NEW,
+  canOpen: () => !alive && !overlay.classList.contains('hidden'),
+  onBeforeOpen: ({ suppressDisplayNameInvite }) => {
+    if (suppressDisplayNameInvite) displayNameInviteSuppressedThisSession = true;
+    displayNameInvite.hidden = true;
+  },
+  onAfterClose: renderDisplayNameInvitation
 });
-whatsNewPanel.addEventListener('keydown', event => {
-  if (event.key === 'Escape') closeWhatsNew();
-});
-setTimeout(() => {
-  if (FORCE_WHATS_NEW || !hasSeenCurrentRelease()) {
-    openWhatsNew({ suppressDisplayNameInvite: true });
-  } else {
-    renderDisplayNameInvitation();
-  }
-}, 350);
+displayNameInviteSuppressedThisSession = FORCE_WHATS_NEW || !whatsNewView.hasSeenCurrentRelease();
+whatsNewView.bind();
+whatsNewView.scheduleInitialOpen();
 
 // --- Responsive canvas ---
 const CELL = 20;
@@ -732,10 +652,7 @@ function pickRandomThemeId(themeIds, activeId, randomValue = getCosmeticRandomUn
 }
 
 function updateThemeSelectionUI() {
-  document.getElementById('random-theme-btn').classList.toggle('selected', themeSelection === 'random');
-  document.querySelectorAll('.theme-btn[data-theme]').forEach(button => {
-    button.classList.toggle('selected', themeSelection !== 'random' && button.dataset.theme === themeSelection);
-  });
+  themePicker?.syncThemeSelection(themeSelection);
 }
 
 function selectRandomThemeMode() {
@@ -769,11 +686,8 @@ function applyTheme(id, { updateSelection = true } = {}) {
   r.setProperty('--death', t.deathFlash + 'ff)');
   // Update theme color meta
   document.querySelector('meta[name="theme-color"]').content = t.bg;
-  // Update selected state in options
-  document.querySelectorAll('.theme-btn[data-theme]').forEach(b => {
-    b.classList.toggle('selected', themeSelection !== 'random' && b.dataset.theme === themeSelection);
-  });
-  document.getElementById('random-theme-btn').classList.toggle('selected', themeSelection === 'random');
+  // Update selected state in the extracted picker view.
+  updateThemeSelectionUI();
   themeLabel.textContent = t.name + ' Theme';
   overlayTitle.textContent = id === 'got' ? 'DRAGON' : 'SNAKE';
 }
@@ -918,18 +832,11 @@ function shouldShowDailyRules() {
 }
 
 function showDailyRules() {
-  dailyRulesFootnote.textContent = dailyChallenge?.authoritative
-    ? 'Your ranked run is reserved after you press Begin, immediately before the countdown.'
-    : 'Preview results remain on this device until ranked Daily Run is available.';
-  dailyRulesDialog.classList.add('visible');
-  dailyRulesDialog.setAttribute('aria-hidden', 'false');
-  setTimeout(() => dailyRulesBegin.focus(), 0);
+  dailyRulesView?.show({ authoritative: dailyChallenge?.authoritative });
 }
 
 function hideDailyRules({ restoreFocus = false } = {}) {
-  dailyRulesDialog.classList.remove('visible');
-  dailyRulesDialog.setAttribute('aria-hidden', 'true');
-  if (restoreFocus) startBtn.focus();
+  dailyRulesView?.hide({ restoreFocus });
 }
 
 function updateSprintTimer(force = false) {
@@ -952,30 +859,8 @@ function applyGameMode(mode) {
   hudMode.textContent = modeHudLabel(mode);
   dailyChallengeInfo.hidden = mode !== 'daily';
   if (challenge) renderDailyChallengeInfo();
-  const randomThemeBtn = document.getElementById('random-theme-btn');
-  const themesButton = document.getElementById('options-btn');
-  if (randomThemeBtn) {
-    const dailyThemeIsLocked = mode === 'daily';
-    randomThemeBtn.hidden = dailyThemeIsLocked;
-    randomThemeBtn.disabled = dailyThemeIsLocked;
-  }
-  if (themesButton) themesButton.hidden = mode === 'daily';
-  document.querySelectorAll('.game-mode-btn').forEach(btn => {
-    const selected = btn.dataset.gameMode === mode;
-    btn.classList.toggle('active', selected);
-    btn.setAttribute('aria-pressed', String(selected));
-  });
-}
-
-document.querySelectorAll('.game-mode-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const selectedMode = btn.dataset.gameMode;
-    applyGameMode(selectedMode);
-    // Daily Run starts with a deterministic offline preview. Selecting it
-    // must always replace that preview with today's authoritative live state.
-    if (selectedMode === 'daily') refreshDailyChallenge({ force: true });
-  });
-});
+  themePicker?.syncModeSelection(mode);
+}
 applyGameMode(gameMode);
 
 function prepareGameplayRun(seed = null) {
@@ -2009,45 +1894,23 @@ muteBtn.addEventListener('click', () => {
   muteBtn.classList.toggle('muted', m);
 });
 
-// --- Options Menu ---
-const optionsBtn = document.getElementById('options-btn');
-const optionsPanel = document.getElementById('options-panel');
-const optionsBack = document.getElementById('options-back');
-optionsBtn.addEventListener('click', () => {
-  optionsPanel.classList.add('visible');
-});
-optionsBack.addEventListener('click', () => {
-  optionsPanel.classList.remove('visible');
-});
-document.getElementById('random-theme-btn').addEventListener('click', () => {
-  selectRandomThemeMode();
+// --- Main menu theme/options view ---
+themePicker = createThemePicker({
+  themes: THEMES,
+  themeIconUrls: THEME_ICON_URLS,
+  drawFoodSprite,
+  onThemeSelected: theme => applyTheme(theme),
+  onRandomSelected: selectRandomThemeMode,
+  onModeSelected: mode => {
+    applyGameMode(mode);
+    // Daily Run starts with a deterministic offline preview. Selecting it
+    // must always replace that preview with today's authoritative live state.
+    if (mode === 'daily') refreshDailyChallenge({ force: true });
+  }
 });
-
-document.querySelectorAll('.theme-btn[data-theme]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    applyTheme(btn.dataset.theme);
-  });
-});
-
-// --- Theme Picker Icons ---
-Object.keys(THEMES).forEach(key => {
-  const el = document.getElementById('ti-' + key);
-  if (!el) return;
-  if (THEME_ICON_URLS[key]) {
-    const img = document.createElement('img');
-    img.src = THEME_ICON_URLS[key];
-    img.style.cssText = 'width:48px;height:48px;image-rendering:pixelated';
-    el.innerHTML = '';
-    el.appendChild(img);
-  } else {
-    // Default theme: draw canvas food sprite
-    const c = document.createElement('canvas');
-    c.width = 48; c.height = 48;
-    drawFoodSprite(c.getContext('2d'), 24, 24, 48, THEMES[key], 1.0, key);
-    el.innerHTML = '';
-    el.appendChild(c);
-  }
-});
+themePicker.bind();
+themePicker.syncThemeSelection(themeSelection);
+themePicker.syncModeSelection(gameMode);
 
 // --- Controls Customization ---
 // --- PWA Setup ---
@@ -2080,7 +1943,15 @@ Object.keys(THEMES).forEach(key => {
 const SB_URL = 'https://suuwudlnsapyvthjscwp.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1dXd1ZGxuc2FweXZ0aGpzY3dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MTc3ODcsImV4cCI6MjA4MDQ5Mzc4N30.eI0bkImttIQ_AeiCj59lUpjbcrSU4skFbsDIXVCHkEk';
 let sb = null;
-try { sb = supabase.createClient(SB_URL, SB_KEY); } catch(e) { console.warn('Supabase init failed:', e); }
+sb = createSupabaseClient({
+  supabaseGlobal: window.supabase,
+  url: SB_URL,
+  anonKey: SB_KEY
+});
+
+const playerProfileService = createPlayerProfileService({ getClient: () => sb });
+const playerAuthService = createPlayerAuthService({ getClient: () => sb });
+const leaderboardService = createLeaderboardService({ getClient: () => sb });
 
 const dailyRunService = createDailyRunService({
   getClient: () => sb,
@@ -2108,14 +1979,7 @@ let recordNextLaunch = 0;
 
 async function fetchRecordTopScore(mode) {
   if (!sb) return null;
-  const { data, error } = await sb.from('leaderboard')
-    .select('score')
-    .eq('game_mode', mode)
-    .order('score', { ascending: false })
-    .order('created_at', { ascending: true })
-    .limit(1);
-  if (error) throw error;
-  return data?.length ? Number(data[0].score) : 0;
+  return leaderboardService.fetchRecordTopScore(mode);
 }
 
 function hideRecordChase() {
@@ -2427,20 +2291,9 @@ async function loadPlayerProfile(user = currentUser, revision = playerIdentityRe
     return null;
   }
   try {
-    let result = await sb.from('player_profiles')
-      .select('initials, player_code, display_name')
-      .eq('id', user.id)
-      .maybeSingle();
-    if (['42703', 'PGRST204'].includes(result.error?.code)) {
-      result = await sb.from('player_profiles')
-        .select('initials, player_code')
-        .eq('id', user.id)
-        .maybeSingle();
-    }
-    const { data, error } = result;
+    const data = await playerProfileService.loadProfile(user);
     if (revision !== playerIdentityRevision || currentUser?.id !== user.id) return null;
-    if (!error && data) playerProfile = data;
-    else if (error && !['42P01', 'PGRST205'].includes(error.code)) console.warn('Player profile load failed:', error);
+    if (data) playerProfile = data;
   } catch (error) {
     if (revision !== playerIdentityRevision || currentUser?.id !== user.id) return null;
     console.warn('Player profile unavailable:', error);
@@ -2466,14 +2319,7 @@ async function initPlayerIdentity() {
     return;
   }
   try {
-    const { data: sessionData, error: sessionError } = await sb.auth.getSession();
-    if (sessionError) throw sessionError;
-    let session = sessionData?.session || null;
-    if (!session) {
-      const { data, error } = await sb.auth.signInAnonymously();
-      if (error) throw error;
-      session = data?.session || (data?.user ? { user: data.user } : null);
-    }
+    const session = await playerAuthService.getOrCreateSession();
     await syncPlayerSession(session);
   } catch (error) {
     console.warn('Player identity init failed:', error);
@@ -2492,15 +2338,15 @@ function startPlayerIdentity() {
 
     if (sb?.auth?.onAuthStateChange) {
       try {
-        sb.auth.onAuthStateChange((_event, eventSession) => {
+        playerAuthService.subscribe(eventSession => {
           setTimeout(async () => {
             // Supabase may deliver an older INITIAL_SESSION callback after a
             // restore has already replaced it. Re-read the active session so
             // that stale callbacks cannot put the restored player back into a
             // temporary guest state.
-            const { data, error } = await sb.auth.getSession();
-            if (error) return;
-            const activeSession = data?.session || null;
+            let activeSession;
+            try { activeSession = await playerAuthService.getSession(); }
+            catch { return; }
             if ((activeSession?.user?.id || null) !== (eventSession?.user?.id || null)) return;
             playerIdentityPromise = syncPlayerSession(activeSession);
             await playerIdentityPromise;
@@ -2521,9 +2367,7 @@ function startPlayerIdentity() {
 async function savePlayerInitials(value) {
   const initials = cleanInitials(value);
   if (!initials || !sb || !currentUser) throw new Error('Enter 1 to 3 letters or numbers');
-  const { data, error } = await sb.rpc('set_player_initials', { p_initials: initials });
-  if (error) throw error;
-  const savedProfile = Array.isArray(data) ? data[0] : data;
+  const savedProfile = await playerProfileService.saveInitials(currentUser, initials);
   playerProfile = { ...(playerProfile || {}), ...(savedProfile || {}) };
   renderPlayerIdentity();
   return playerProfile;
@@ -2533,11 +2377,7 @@ async function savePlayerDisplayName(value) {
   if (!sb || !currentUser || !playerProfile) throw new Error('Choose your arcade initials first');
   const displayName = cleanDisplayName(value);
   if (displayName && Array.from(displayName).length < 2) throw new Error('Display name must contain 2 to 20 characters');
-  const { data, error } = await sb.rpc('set_player_display_name', {
-    p_display_name: displayName || null
-  });
-  if (error) throw error;
-  const saved = Array.isArray(data) ? data[0] : data;
+  const saved = await playerProfileService.saveDisplayName(currentUser, displayName);
   playerProfile = { ...playerProfile, display_name: saved?.display_name || null };
   if (playerProfile.display_name) completeDisplayNameInvitation();
   renderPlayerIdentity();
@@ -2585,8 +2425,7 @@ async function sendBestScore(payload, { quiet = false, queueOnFailure = true } =
     submitScoreBtn.textContent = 'Saving...';
   }
   try {
-    const { data, error } = await sb.rpc('submit_best_score', payload);
-    if (error) throw error;
+    const data = await leaderboardService.submitBestScore(payload);
     const result = Array.isArray(data) ? data[0] : data;
     if (payload.p_run_id === currentRunId) submittedThisRound = true;
     if (payload.p_run_id === currentRunId && result?.is_new_top) {
@@ -2802,25 +2641,14 @@ function closePlayerPanel() {
   renderDisplayNameInvitation();
 }
 
-playerBtn.addEventListener('click', () => openPlayerPanel());
-displayNameInviteAdd.addEventListener('click', () => openPlayerPanel({ focusDisplayName: true }));
 displayNameInviteLater.addEventListener('click', snoozeDisplayNameInvitation);
 
-playerBack.addEventListener('click', closePlayerPanel);
-playerPanel.addEventListener('click', event => {
-  if (event.target === playerPanel) closePlayerPanel();
-});
-
-playerInitialsInput.addEventListener('input', () => {
-  playerInitialsInput.value = cleanInitials(playerInitialsInput.value);
-});
-
-playerInitialsSave.addEventListener('click', async () => {
+async function handleSavePlayerInitials(value) {
   playerInitialsSave.disabled = true;
   setPlayerMessage('Saving player...');
   try {
     await playerIdentityPromise;
-    await savePlayerInitials(playerInitialsInput.value);
+    await savePlayerInitials(value);
     playerInitialsInput.value = '';
     setPlayerMessage(`Player ${playerDisplayName()} created`);
     retryPendingScores();
@@ -2829,25 +2657,14 @@ playerInitialsSave.addEventListener('click', async () => {
   } finally {
     playerInitialsSave.disabled = false;
   }
-});
+}
 
-playerDisplayNameInput.addEventListener('input', () => {
-  const caretAtEnd = playerDisplayNameInput.selectionStart === playerDisplayNameInput.value.length;
-  playerDisplayNameInput.value = Array.from(
-    playerDisplayNameInput.value.replace(/[<>\u0000-\u001f\u007f]/g, '')
-  ).slice(0, 20).join('');
-  if (caretAtEnd) {
-    const end = playerDisplayNameInput.value.length;
-    playerDisplayNameInput.setSelectionRange(end, end);
-  }
-});
-
-playerDisplayNameSave.addEventListener('click', async () => {
+async function handleSavePlayerDisplayName(value) {
   playerDisplayNameSave.disabled = true;
   setPlayerMessage('Saving public display name...');
   try {
     await playerIdentityPromise;
-    const displayName = await savePlayerDisplayName(playerDisplayNameInput.value);
+    const displayName = await savePlayerDisplayName(value);
     if (currentUser) publicPlayerCardCache.delete(currentUser.id);
     setPlayerMessage(displayName
       ? `Display name saved as ${displayName}`
@@ -2859,13 +2676,13 @@ playerDisplayNameSave.addEventListener('click', async () => {
   } finally {
     playerDisplayNameSave.disabled = false;
   }
-});
+}
 
-autoSubmitToggle.addEventListener('change', () => {
-  autoSubmitEnabled = autoSubmitToggle.checked;
+function handleAutoSubmitChanged(enabled) {
+  autoSubmitEnabled = enabled;
   localStorage.setItem(AUTO_SUBMIT_KEY, String(autoSubmitEnabled));
   setPlayerMessage(autoSubmitEnabled ? 'Personal bests will submit automatically' : 'You will choose when to submit each score');
-});
+}
 
 function validPlayerEmail() {
   const email = playerEmailInput.value.trim().toLowerCase();
@@ -2883,15 +2700,10 @@ async function beginEmailCode(action) {
     await playerIdentityPromise;
     if (action === 'save') {
       if (!currentUser || isPermanentPlayer()) throw new Error('This player is already saved');
-      const { error } = await sb.auth.updateUser({ email });
-      if (error) throw error;
+      await playerAuthService.saveEmail(email);
       pendingOtpType = 'email_change';
     } else {
-      const { error } = await sb.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: false }
-      });
-      if (error) throw error;
+      await playerAuthService.sendRestoreCode(email);
       pendingOtpType = 'email';
     }
     pendingOtpEmail = email;
@@ -2910,14 +2722,7 @@ async function beginEmailCode(action) {
   }
 }
 
-playerSaveEmail.addEventListener('click', () => beginEmailCode('save'));
-playerRestoreEmail.addEventListener('click', () => beginEmailCode('restore'));
-playerOtpInput.addEventListener('input', () => {
-  playerOtpInput.value = playerOtpInput.value.replace(/\D/g, '').slice(0, 8);
-});
-
-playerVerifyOtp.addEventListener('click', async () => {
-  const token = playerOtpInput.value.trim();
+async function handleVerifyPlayerOtp(token) {
   if (!pendingOtpEmail || token.length !== 8) {
     setPlayerMessage('Enter the complete 8-digit code', true);
     return;
@@ -2925,25 +2730,24 @@ playerVerifyOtp.addEventListener('click', async () => {
   playerVerifyOtp.disabled = true;
   setPlayerMessage('Verifying...');
   try {
-    const { data, error } = await sb.auth.verifyOtp({
+    const session = await playerAuthService.verifyCode({
       email: pendingOtpEmail,
       token,
       type: pendingOtpType
     });
-    if (error) throw error;
     playerIdentityPromise = syncPlayerSession(
-      data?.session || (data?.user ? { user: data.user } : null)
+      session
     );
     await playerIdentityPromise;
     // Some mobile browsers persist the new auth session a task after OTP
     // verification. If the initial profile read raced that persistence, retry
     // once using the now-authoritative session rather than asking the player
     // to create initials that already belong to their restored account.
-    if (!playerProfile && data?.user && sb?.auth?.getSession) {
+    if (!playerProfile && session?.user && sb?.auth?.getSession) {
       await new Promise(resolve => setTimeout(resolve, 0));
-      const { data: currentSessionData, error: currentSessionError } = await sb.auth.getSession();
-      const currentSession = currentSessionData?.session || null;
-      if (!currentSessionError && currentSession?.user?.id === data.user.id) {
+      let currentSession = null;
+      try { currentSession = await playerAuthService.getSession(); } catch {}
+      if (currentSession?.user?.id === session.user.id) {
         playerIdentityPromise = syncPlayerSession(currentSession);
         await playerIdentityPromise;
       }
@@ -2957,7 +2761,20 @@ playerVerifyOtp.addEventListener('click', async () => {
   } finally {
     playerVerifyOtp.disabled = false;
   }
+}
+
+playerPanelView = createPlayerPanel({
+  cleanInitials,
+  cleanDisplayName: value => Array.from(value.replace(/[<>\u0000-\u001f\u007f]/g, '')).slice(0, 20).join(''),
+  onOpen: openPlayerPanel,
+  onClose: closePlayerPanel,
+  onSaveInitials: handleSavePlayerInitials,
+  onSaveDisplayName: handleSavePlayerDisplayName,
+  onAutoSubmitChanged: handleAutoSubmitChanged,
+  onBeginEmailCode: beginEmailCode,
+  onVerifyOtp: handleVerifyPlayerOtp
 });
+playerPanelView.bind();
 
 const publicPlayerCardCache = new Map();
 let publicPlayerCardTrigger = null;
@@ -2999,9 +2816,7 @@ async function showPublicPlayerCard(playerId, trigger) {
     let card = publicPlayerCardCache.get(playerId);
     if (!card) {
       if (!sb) throw new Error('Player cards are unavailable offline');
-      const { data, error } = await sb.rpc('get_public_player_card', { p_player_id: playerId });
-      if (error) throw error;
-      card = Array.isArray(data) ? data[0] : data;
+      card = await leaderboardService.fetchPublicPlayerCard(playerId);
       if (!card) throw new Error('Player card unavailable');
       publicPlayerCardCache.set(playerId, card);
     }
@@ -3207,15 +3022,7 @@ async function loadDailyArchiveData({ force = false } = {}) {
     renderDailyArchive();
     return;
   }
-  const [daysResult, statsResult] = await Promise.all([
-    sb.from('daily_leaderboard_days')
-      .select('challenge_date, challenge_number, theme, participant_count, winner_name, winner_player_code, winner_player_id, winning_score, winning_final_food_ms')
-      .order('challenge_date', { ascending: false })
-      .limit(400),
-    sb.from('daily_player_stats')
-      .select('player_id, name, player_code, days_played, wins, podiums, top_tens, best_finish, win_rate_pct, current_play_streak, longest_play_streak, current_win_streak, longest_win_streak')
-      .limit(500)
-  ]);
+  const { daysResult, statsResult } = await leaderboardService.loadDailyArchive();
   lbState.dailyArchiveError = !!daysResult.error || !!statsResult.error;
   if (!daysResult.error) lbState.dailyDays = daysResult.data || [];
   if (!statsResult.error) lbState.dailyStats = statsResult.data || [];
@@ -3330,51 +3137,17 @@ async function loadLeaderboard() {
   lbLoading.style.display = 'block';
   lbEmpty.style.display = 'none';
   lbTable.style.display = 'none';
-  lbPagination.style.display = 'none';
+  lbPagination.style.display = 'none';
   const from = lbState.page * LB_PAGE_SIZE;
-  const to = from + LB_PAGE_SIZE - 1;
-  const runQuery = columns => {
-    let query = sb.from('leaderboard')
-      .select(columns, { count: 'exact' })
-      .order('score', { ascending: false })
-      .order('created_at', { ascending: true })
-      .range(from, to);
-    query = query.eq('game_mode', lbState.gameMode);
-    if (lbState.control !== 'all') query = query.eq('control_method', lbState.control);
-    if (lbState.theme !== 'all') query = query.eq('theme', lbState.theme);
-    return query;
-  };
-  const runOverallQuery = async () => {
-    const rpcResult = await sb.rpc('get_overall_leaderboard', {
-      p_game_mode: lbState.gameMode,
-      p_theme: lbState.theme === 'all' ? null : lbState.theme,
-      p_limit: LB_PAGE_SIZE,
-      p_offset: from
-    });
-    const rows = Array.isArray(rpcResult.data) ? rpcResult.data : [];
-    return {
-      ...rpcResult,
-      data: rows,
-      count: rows.length > 0 ? Number(rows[0].total_count) : 0
-    };
-  };
-  let result;
-  if (lbState.gameMode === 'daily') {
-    const challenge = dailyChallenge || ensureDailyChallenge();
-    const leaderboardDate = lbState.dailyDate || challenge.date;
-    result = await sb.from('daily_leaderboard')
-      .select('challenge_date, name, player_code, player_id, score, final_food_ms, control_method, theme, attempt_number, completed_at, leaderboard_rank', { count: 'exact' })
-      .eq('challenge_date', leaderboardDate)
-      .order('leaderboard_rank', { ascending: true })
-      .range(from, to);
-  } else if (lbState.control === 'all') {
-    result = await runOverallQuery();
-  } else {
-    result = await runQuery('name, score, theme, control_method, game_mode, created_at, player_id, player_code');
-    if (['42703', 'PGRST204'].includes(result.error?.code)) {
-      result = await runQuery('name, score, theme, control_method, game_mode, created_at');
-    }
-  }
+  const challenge = lbState.gameMode === 'daily' ? (dailyChallenge || ensureDailyChallenge()) : null;
+  const result = await leaderboardService.fetchPage({
+    gameMode: lbState.gameMode,
+    control: lbState.control,
+    theme: lbState.theme,
+    date: lbState.dailyDate || challenge?.date,
+    limit: LB_PAGE_SIZE,
+    offset: from
+  });
   const { data, error, count } = result;
   if (requestId !== lbState.requestId) return;
   lbLoading.style.display = 'none';
@@ -3480,16 +3253,15 @@ overlay.addEventListener('touchend', event => {
   button.click();
 }, { passive: false });
 
-dailyRulesBegin.addEventListener('click', () => {
-  try { localStorage.setItem(DAILY_RULES_SEEN_KEY, '1'); } catch (_) {}
-  hideDailyRules();
-  startGame({ skipDailyRules: true });
+dailyRulesView = createDailyRulesDialog({
+  onBegin: () => {
+    try { localStorage.setItem(DAILY_RULES_SEEN_KEY, '1'); } catch (_) {}
+    hideDailyRules();
+    startGame({ skipDailyRules: true });
+  },
+  onDismiss: () => hideDailyRules({ restoreFocus: true })
 });
-
-dailyRulesLater.addEventListener('click', () => hideDailyRules({ restoreFocus: true }));
-dailyRulesDialog.addEventListener('keydown', event => {
-  if (event.key === 'Escape') hideDailyRules({ restoreFocus: true });
-});
+dailyRulesView.bind();
 
 startBtn.addEventListener('click', () => startGame());
 

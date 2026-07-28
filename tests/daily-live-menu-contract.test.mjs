@@ -7,7 +7,7 @@ const html = readAppSource();
 test('selecting Daily Run fetches the authoritative live challenge', () => {
   assert.match(
     html,
-    /if\s*\(selectedMode\s*===\s*['"]daily['"]\)\s*refreshDailyChallenge\(\{\s*force:\s*true\s*\}\)/
+    /onModeSelected:\s*mode\s*=>\s*\{[\s\S]*?if\s*\(mode\s*===\s*['"]daily['"]\)\s*refreshDailyChallenge\(\{\s*force:\s*true\s*\}\)/
   );
   assert.match(html, /Loading live Daily Run…/);
 });

@@ -10,5 +10,9 @@ export function readAppSource() {
     readFileSync(new URL('../src/game/run-lifecycle.js', import.meta.url), 'utf8'),
     readFileSync(new URL('../src/rendering/canvas-renderer.js', import.meta.url), 'utf8'),
     readFileSync(new URL('../src/themes/catalog.js', import.meta.url), 'utf8'),
+    readFileSync(new URL('../src/ui/theme-picker.js', import.meta.url), 'utf8'),
+    readFileSync(new URL('../src/ui/daily-rules-dialog.js', import.meta.url), 'utf8'),
+    readFileSync(new URL('../src/ui/whats-new-dialog.js', import.meta.url), 'utf8'),
+    readFileSync(new URL('../src/ui/player-panel.js', import.meta.url), 'utf8'),
   ].join('\n');
 }

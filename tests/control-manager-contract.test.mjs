@@ -22,7 +22,7 @@ test('main composes controls through explicit gameplay callbacks', () => {
 test('controls extraction does not absorb application bootstrap services', () => {
   assert.doesNotMatch(controlsSource, /SB_URL|supabase\.createClient|serviceWorker\.register/);
   assert.match(mainSource, /let sb = null;/);
-  assert.match(mainSource, /supabase\.createClient\(SB_URL, SB_KEY\)/);
+  assert.match(mainSource, /createSupabaseClient\(\{/);
   assert.match(mainSource, /navigator\.serviceWorker\.register/);
   assert.match(mainSource, /import\.meta\.env\.PROD && 'serviceWorker' in navigator/);
   assert.match(mainSource, /import\.meta\.env\.DEV && 'serviceWorker' in navigator/);
