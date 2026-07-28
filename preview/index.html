@@ -34,8 +34,8 @@
 <title>Snake Game</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="./snake-core.js"></script>
-  <script type="module" crossorigin src="./assets/index-CR51kcGe.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-B4CejGZ2.css">
+  <script type="module" crossorigin src="./assets/index-Bm2HWR1s.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-DAnZrk2q.css">
 </head>
 <body>
 
@@ -156,7 +156,7 @@
             <span class="scene-number">01</span>
             <div><p class="onboarding-kicker">Choose Your Instinct</p><h2>Take Control</h2></div>
           </div>
-          <p class="onboarding-lead">Every control is equally ranked. Pick what feels fastest, then clear the two-turn drill.</p>
+          <p class="onboarding-lead">Every control is equally ranked. Pick what feels fastest, then clear its hands-on drill.</p>
 
           <div class="onboarding-control-selector" aria-label="Choose a control method">
             <button data-onboarding-control="tap" type="button" aria-pressed="false">
@@ -175,15 +175,26 @@
 
           <div id="control-training-pad" hidden data-mode="" data-turns="0" aria-label="Control training board">
             <div class="trainer-hud"><span>Training Grid</span><strong id="trainer-control-label">Select Input</strong></div>
-            <div class="trainer-board">
-              <div class="trainer-grid" aria-hidden="true"></div>
-              <div class="trainer-food" aria-hidden="true"></div>
-              <div class="trainer-snake" aria-hidden="true">
-                <i></i><i></i><i></i><i></i><i class="trainer-head"><b></b><b></b></i>
+            <div class="trainer-playfield">
+              <div class="trainer-board">
+                <div class="trainer-grid" aria-hidden="true"></div>
+                <div class="trainer-food" aria-hidden="true"></div>
+                <div class="trainer-snake" aria-hidden="true">
+                  <i></i><i></i><i></i><i></i><i class="trainer-head"><b></b><b></b></i>
+                </div>
+                <div class="trainer-divider" aria-hidden="true"></div>
               </div>
-              <div class="trainer-divider" aria-hidden="true"></div>
-              <button data-training-turn="left" type="button"><span>↶</span><small>Left</small></button>
-              <button data-training-turn="right" type="button"><span>↷</span><small>Right</small></button>
+              <div class="trainer-primary-inputs">
+                <button data-training-turn="left" type="button"><span>↶</span><small>Left</small></button>
+                <button data-training-turn="right" type="button"><span>↷</span><small>Right</small></button>
+              </div>
+              <div class="trainer-dpad-inputs" aria-label="Training D-Pad">
+                <button class="dpad-up" data-training-dir="up" type="button" aria-label="Up">▲</button>
+                <button class="dpad-left" data-training-dir="left" type="button" aria-label="Left">◀</button>
+                <span class="dpad-center" aria-hidden="true"></span>
+                <button class="dpad-right" data-training-dir="right" type="button" aria-label="Right">▶</button>
+                <button class="dpad-down" data-training-dir="down" type="button" aria-label="Down">▼</button>
+              </div>
             </div>
           </div>
           <p id="control-training-message" class="onboarding-status" role="status">Select your control system.</p>
