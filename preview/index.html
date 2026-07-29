@@ -34,8 +34,8 @@
 <title>Snake Game</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="./snake-core.js"></script>
-  <script type="module" crossorigin src="./assets/index-Bp9uUhYq.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-D45f3gYb.css">
+  <script type="module" crossorigin src="./assets/index-Bm2HWR1s.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-DAnZrk2q.css">
 </head>
 <body>
 
@@ -161,32 +161,32 @@
           <div class="onboarding-control-selector" aria-label="Choose a control method">
             <button data-onboarding-control="tap" type="button" aria-pressed="false">
               <span class="control-pixel-icon tap-icon" aria-hidden="true"><i></i><i></i></span>
-              <strong>Tap</strong><small>Invisible halves</small><em class="control-cert">Certified</em>
+              <strong>Tap</strong><small>Invisible halves</small>
             </button>
             <button data-onboarding-control="turn" type="button" aria-pressed="false">
               <span class="control-pixel-icon turn-icon" aria-hidden="true">↶ ↷</span>
-              <strong>Turn</strong><small>Two buttons</small><em class="control-cert">Certified</em>
+              <strong>Turn</strong><small>Two buttons</small>
             </button>
             <button data-onboarding-control="dpad" type="button" aria-pressed="false">
               <span class="control-pixel-icon dpad-icon" aria-hidden="true"><i></i></span>
-              <strong>D-Pad</strong><small>Four directions</small><em class="control-cert">Certified</em>
+              <strong>D-Pad</strong><small>Four directions</small>
             </button>
           </div>
 
           <div id="control-training-pad" hidden data-mode="" data-turns="0" aria-label="Control training board">
-            <div class="trainer-hud">
-              <span>Live Training // 110ms</span>
-              <strong id="trainer-control-label">Select Input</strong>
-            </div>
-            <p id="control-training-message" class="onboarding-status trainer-live-status" role="status">Select your control system.</p>
-            <div class="trainer-live-layout">
+            <div class="trainer-hud"><span>Training Grid</span><strong id="trainer-control-label">Select Input</strong></div>
+            <div class="trainer-playfield">
               <div class="trainer-board">
-                <canvas id="onboarding-training-canvas" aria-label="Live Snake control training arena"></canvas>
-                <div class="trainer-tap-labels" aria-hidden="true"><span>↶ Tap</span><span>Tap ↷</span></div>
+                <div class="trainer-grid" aria-hidden="true"></div>
+                <div class="trainer-food" aria-hidden="true"></div>
+                <div class="trainer-snake" aria-hidden="true">
+                  <i></i><i></i><i></i><i></i><i class="trainer-head"><b></b><b></b></i>
+                </div>
+                <div class="trainer-divider" aria-hidden="true"></div>
               </div>
-              <div class="trainer-primary-inputs" aria-label="Training turn controls">
-                <button data-training-turn="left" type="button"><span>↶</span><small>Left Turn</small></button>
-                <button data-training-turn="right" type="button"><span>↷</span><small>Right Turn</small></button>
+              <div class="trainer-primary-inputs">
+                <button data-training-turn="left" type="button"><span>↶</span><small>Left</small></button>
+                <button data-training-turn="right" type="button"><span>↷</span><small>Right</small></button>
               </div>
               <div class="trainer-dpad-inputs" aria-label="Training D-Pad">
                 <button class="dpad-up" data-training-dir="up" type="button" aria-label="Up">▲</button>
@@ -196,10 +196,8 @@
                 <button class="dpad-down" data-training-dir="down" type="button" aria-label="Down">▼</button>
               </div>
             </div>
-            <div class="trainer-checkpoints" aria-hidden="true">
-              <i></i><i></i><i></i><i></i>
-            </div>
           </div>
+          <p id="control-training-message" class="onboarding-status" role="status">Select your control system.</p>
           <p class="onboarding-keyboard">Desktop pilots: Arrow Keys or WASD always work.</p>
         </section>
 
