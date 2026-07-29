@@ -107,56 +107,180 @@
 </div>
 
 <div id="onboarding-panel" role="dialog" aria-modal="true" aria-labelledby="onboarding-title" aria-hidden="true">
-  <div class="onboarding-card">
-    <div class="onboarding-topline"><span class="menu-kicker">Arcade Orientation</span><span id="onboarding-progress">1 / 5</span></div>
-    <section data-onboarding-step>
-      <div class="onboarding-hero" aria-hidden="true"><span>◢</span><span>●</span><span>◣</span></div>
-      <h2 id="onboarding-title">Ready, Player?</h2>
-      <p class="onboarding-lead">Nine worlds. Three challenges. One shot at the top.</p>
-      <div class="onboarding-marquee">INSERT COIN • START QUICK TOUR</div>
-      <button id="onboarding-play-now" class="onboarding-primary" type="button">Play Now</button>
-    </section>
-    <section data-onboarding-step hidden>
-      <h2>Choose Your Moves</h2>
-      <p class="onboarding-lead">Pick a control, then complete a two-turn drill.</p>
-      <div class="onboarding-control-grid" aria-label="Choose a control method">
-        <button data-onboarding-control="tap" type="button"><strong>Tap</strong><span>Left / right board half</span></button>
-        <button data-onboarding-control="turn" type="button"><strong>Turn</strong><span>Two turn buttons</span></button>
-        <button data-onboarding-control="dpad" type="button"><strong>D-Pad</strong><span>Four directions</span></button>
+  <div class="onboarding-cabinet">
+    <div class="onboarding-bezel">
+      <header class="onboarding-header">
+        <div class="onboarding-brand" aria-hidden="true">
+          <svg viewBox="0 0 36 20" shape-rendering="crispEdges">
+            <path d="M2 2h12v4H6v4h16V6h8v4h4v8H18v-4H2z"/>
+            <rect x="8" y="4" width="3" height="3" class="onboarding-eye"/>
+            <rect x="29" y="12" width="3" height="3" class="onboarding-food"/>
+          </svg>
+          <span>Snake Arcade</span>
+        </div>
+        <div class="onboarding-level">
+          <span id="onboarding-stage-label">Boot Sequence</span>
+          <strong id="onboarding-progress">1 / 5</strong>
+        </div>
+      </header>
+
+      <div class="onboarding-progress-track" aria-hidden="true">
+        <span data-onboarding-pip></span><span data-onboarding-pip></span><span data-onboarding-pip></span>
+        <span data-onboarding-pip></span><span data-onboarding-pip></span>
       </div>
-      <p class="onboarding-keyboard">Keyboard is always available: Arrow Keys or WASD.</p>
-      <div id="control-training-pad" hidden data-mode="" data-turns="0" aria-label="Control training board">
-        <span class="training-snake" aria-hidden="true">■■■●</span>
-        <button data-training-turn="left" type="button">Left</button>
-        <button data-training-turn="right" type="button">Right</button>
-      </div>
-      <p id="control-training-message" class="onboarding-status">Choose a control to begin.</p>
-    </section>
-    <section data-onboarding-step hidden>
-      <h2>Pick Your Challenge</h2>
-      <p class="onboarding-lead">Your choice sets the pace. You can switch any time.</p>
-      <div class="onboarding-mode-grid">
-        <button data-onboarding-mode="classic" type="button"><strong>Classic</strong><span>Survive. Grow. Chase a high score.</span></button>
-        <button data-onboarding-mode="sprint" type="button"><strong>Sprint 60</strong><span>Score as much as possible in one minute.</span></button>
-        <button data-onboarding-mode="daily" type="button"><strong>Daily Run</strong><span>One seeded worldwide challenge each day.</span></button>
-      </div>
-    </section>
-    <section data-onboarding-step hidden>
-      <h2>Climb the Board</h2>
-      <p class="onboarding-lead">Every mode has its own contest. Your best score earns your place.</p>
-      <div class="onboarding-podium" aria-label="Example leaderboard"><span>1&nbsp; ACE·A7F2 <b>31</b></span><span>2&nbsp; RAM·C51B <b>28</b></span><span>3&nbsp; YOU·F4D9 <b>12</b></span></div>
-      <p class="onboarding-status">Filter by mode or control. Themes stay visible with every score.</p>
-    </section>
-    <section data-onboarding-step hidden>
-      <h2>Keep Your Player</h2>
-      <p class="onboarding-lead">Your arcade identity starts on this device.</p>
-      <div class="onboarding-save-copy"><strong>Add an email when you are ready.</strong><span>Restore the same player, scores, and identity on another device or after browser data is cleared.</span></div>
-      <button data-onboarding-save-player class="onboarding-primary" type="button">Save My Player</button>
-    </section>
-    <div class="onboarding-actions">
-      <button id="onboarding-back" type="button" hidden>Back</button>
-      <button id="onboarding-next" class="onboarding-primary" type="button">Next</button>
-      <button id="onboarding-skip" type="button">Skip Tour</button>
+
+      <main class="onboarding-screen">
+        <section class="onboarding-scene onboarding-scene-welcome" data-onboarding-step>
+          <div class="onboarding-attract" aria-hidden="true">
+            <div class="attract-stars"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="attract-snake">
+              <span></span><span></span><span></span><span></span><span class="attract-head"><i></i><i></i></span>
+            </div>
+            <div class="attract-food"></div>
+          </div>
+          <p class="onboarding-kicker">Player One // New Signal</p>
+          <h2 id="onboarding-title">The Arcade<br><em>Awaits</em></h2>
+          <p class="onboarding-lead">Master the controls. Find your mode. Put your name above everyone else.</p>
+          <div class="onboarding-stat-strip" aria-label="Game highlights">
+            <span><b>03</b> Game Modes</span>
+            <span><b>03</b> Control Styles</span>
+            <span><b>#1</b> Place to Claim</span>
+          </div>
+          <button id="onboarding-play-now" class="onboarding-quick-play" type="button">
+            <span aria-hidden="true">▶</span> Skip Briefing &amp; Play
+          </button>
+        </section>
+
+        <section class="onboarding-scene onboarding-scene-controls" data-onboarding-step hidden>
+          <div class="onboarding-scene-heading">
+            <span class="scene-number">01</span>
+            <div><p class="onboarding-kicker">Choose Your Instinct</p><h2>Take Control</h2></div>
+          </div>
+          <p class="onboarding-lead">Every control is equally ranked. Pick what feels fastest, then clear its hands-on drill.</p>
+
+          <div class="onboarding-control-selector" aria-label="Choose a control method">
+            <button data-onboarding-control="tap" type="button" aria-pressed="false">
+              <span class="control-pixel-icon tap-icon" aria-hidden="true"><i></i><i></i></span>
+              <strong>Tap</strong><small>Invisible halves</small>
+            </button>
+            <button data-onboarding-control="turn" type="button" aria-pressed="false">
+              <span class="control-pixel-icon turn-icon" aria-hidden="true">↶ ↷</span>
+              <strong>Turn</strong><small>Two buttons</small>
+            </button>
+            <button data-onboarding-control="dpad" type="button" aria-pressed="false">
+              <span class="control-pixel-icon dpad-icon" aria-hidden="true"><i></i></span>
+              <strong>D-Pad</strong><small>Four directions</small>
+            </button>
+          </div>
+
+          <div id="control-training-pad" hidden data-mode="" data-turns="0" aria-label="Control training board">
+            <div class="trainer-hud"><span>Training Grid</span><strong id="trainer-control-label">Select Input</strong></div>
+            <div class="trainer-playfield">
+              <div class="trainer-board">
+                <div class="trainer-grid" aria-hidden="true"></div>
+                <div class="trainer-food" aria-hidden="true"></div>
+                <div class="trainer-snake" aria-hidden="true">
+                  <i></i><i></i><i></i><i></i><i class="trainer-head"><b></b><b></b></i>
+                </div>
+                <div class="trainer-divider" aria-hidden="true"></div>
+              </div>
+              <div class="trainer-primary-inputs">
+                <button data-training-turn="left" type="button"><span>↶</span><small>Left</small></button>
+                <button data-training-turn="right" type="button"><span>↷</span><small>Right</small></button>
+              </div>
+              <div class="trainer-dpad-inputs" aria-label="Training D-Pad">
+                <button class="dpad-up" data-training-dir="up" type="button" aria-label="Up">▲</button>
+                <button class="dpad-left" data-training-dir="left" type="button" aria-label="Left">◀</button>
+                <span class="dpad-center" aria-hidden="true"></span>
+                <button class="dpad-right" data-training-dir="right" type="button" aria-label="Right">▶</button>
+                <button class="dpad-down" data-training-dir="down" type="button" aria-label="Down">▼</button>
+              </div>
+            </div>
+          </div>
+          <p id="control-training-message" class="onboarding-status" role="status">Select your control system.</p>
+          <p class="onboarding-keyboard">Desktop pilots: Arrow Keys or WASD always work.</p>
+        </section>
+
+        <section class="onboarding-scene onboarding-scene-modes" data-onboarding-step hidden>
+          <div class="onboarding-scene-heading">
+            <span class="scene-number">02</span>
+            <div><p class="onboarding-kicker">Select Mission</p><h2>Three Ways to Rule</h2></div>
+          </div>
+          <div class="onboarding-mode-grid">
+            <button data-onboarding-mode="classic" type="button" aria-pressed="false">
+              <span class="mode-code">01 // Endurance</span>
+              <strong>Classic</strong>
+              <span>Grow until one mistake ends the run.</span>
+              <i class="mode-meter"><b style="--meter:58%"></b></i>
+              <small>No clock • Rising speed</small>
+            </button>
+            <button data-onboarding-mode="sprint" type="button" aria-pressed="false">
+              <span class="mode-code">02 // Time Attack</span>
+              <strong>Sprint 60</strong>
+              <span>One minute. Maximum food. Zero hesitation.</span>
+              <i class="mode-clock" aria-hidden="true">60</i>
+              <small>60 seconds • Fast scoring</small>
+            </button>
+            <button data-onboarding-mode="daily" type="button" aria-pressed="false">
+              <span class="mode-code">03 // World Event</span>
+              <strong>Daily Run</strong>
+              <span>The same seeded challenge for every player.</span>
+              <i class="mode-globe" aria-hidden="true">✦</i>
+              <small>Changes at 00:00 UTC</small>
+            </button>
+          </div>
+          <p id="onboarding-mode-status" class="onboarding-status">Choose a mission or continue with Classic.</p>
+        </section>
+
+        <section class="onboarding-scene onboarding-scene-leaderboard" data-onboarding-step hidden>
+          <div class="onboarding-scene-heading">
+            <span class="scene-number">03</span>
+            <div><p class="onboarding-kicker">Competitive Network</p><h2>Claim The Crown</h2></div>
+          </div>
+          <div class="onboarding-record-chase">
+            <div class="record-target"><span>Global target</span><strong>32</strong></div>
+            <div class="record-signal"><i></i><span>Heartbeat warning activates near #1</span></div>
+          </div>
+          <div class="onboarding-podium" aria-label="Example leaderboard">
+            <div class="podium-filter"><span class="active">Classic</span><span>All Controls</span></div>
+            <ol>
+              <li><b>1</b><span>ACE·A7F2<small>Game of Thrones</small></span><strong>32</strong></li>
+              <li><b>2</b><span>RAM·C51B<small>Sonic</small></span><strong>28</strong></li>
+              <li class="you"><b>7</b><span>YOU·F4D9<small>LEGO</small></span><strong>12</strong></li>
+            </ol>
+          </div>
+          <p class="onboarding-status">Your strongest score earns one place. Break #1 and the arcade celebrates.</p>
+        </section>
+
+        <section class="onboarding-scene onboarding-scene-player" data-onboarding-step hidden>
+          <div class="onboarding-scene-heading">
+            <span class="scene-number">04</span>
+            <div><p class="onboarding-kicker">Protect Your Progress</p><h2>Keep Your Legacy</h2></div>
+          </div>
+          <div class="onboarding-player-pass">
+            <div class="player-pass-top"><span>Snake Arcade ID</span><i>Device Player</i></div>
+            <div class="player-pass-id"><strong>YOU</strong><span>·F4D9</span></div>
+            <div class="player-pass-stats"><span>Scores<b>Saved</b></span><span>Identity<b>Local</b></span></div>
+          </div>
+          <div class="onboarding-save-route" aria-label="Benefits of saving by email">
+            <span><i>1</i><b>Play</b><small>Your player exists on this device.</small></span>
+            <em>›</em>
+            <span><i>2</i><b>Add Email</b><small>Verify with a private code.</small></span>
+            <em>›</em>
+            <span><i>3</i><b>Restore</b><small>Return on another device.</small></span>
+          </div>
+          <p class="onboarding-lead">Email is optional. Saving lets you recover the same identity and scores if browser data is cleared.</p>
+          <button data-onboarding-save-player class="onboarding-save-player" type="button">
+            Open Player Setup <span aria-hidden="true">→</span>
+          </button>
+        </section>
+      </main>
+
+      <footer class="onboarding-actions">
+        <button id="onboarding-back" type="button" hidden><span aria-hidden="true">‹</span> Back</button>
+        <button id="onboarding-skip" type="button">Skip</button>
+        <button id="onboarding-next" class="onboarding-primary" type="button">Start Tour <span aria-hidden="true">›</span></button>
+      </footer>
     </div>
   </div>
 </div>

@@ -34,6 +34,20 @@ test('new players can replay the arcade tour and select a control', async ({ pag
   await page.locator('[data-training-turn="right"]').click();
   await expect(page.locator('#onboarding-next')).toHaveText('NEXT');
   await expect(page.locator('#control-training-message')).toContainText(/READY/i);
+
+  await page.locator('[data-onboarding-control="dpad"]').click();
+  await expect(page.locator('#onboarding-next')).toBeDisabled();
+  for (const direction of ['up', 'left', 'down']) {
+    await page.locator(`[data-training-dir="${direction}"]`).click();
+    await expect(page.locator('#onboarding-next')).toBeDisabled();
+  }
+  await page.locator('[data-training-dir="right"]').click();
+  await expect(page.locator('#onboarding-next')).toBeEnabled();
+  await expect(page.locator('#control-training-message')).toContainText(/READY/i);
+
+  await page.locator('[data-onboarding-control="turn"]').click();
+  await expect(page.locator('#onboarding-next')).toBeEnabled();
+  await expect(page.locator('#control-training-message')).toContainText(/READY/i);
 });
 
 async function startRun(page) {

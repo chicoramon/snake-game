@@ -38,10 +38,46 @@ export function createOnboardingDialog({
   const backButton = document.getElementById('onboarding-back');
   const skipButton = document.getElementById('onboarding-skip');
   const playButton = document.getElementById('onboarding-play-now');
+  const screen = panel.querySelector('.onboarding-screen');
   const trainingPad = document.getElementById('control-training-pad');
   const trainingMessage = document.getElementById('control-training-message');
+  const trainingControlLabel = document.getElementById('trainer-control-label');
+  const modeStatus = document.getElementById('onboarding-mode-status');
+  const stageLabel = document.getElementById('onboarding-stage-label');
   const steps = [...panel.querySelectorAll('[data-onboarding-step]')];
-  const state = { ...loadProgress(storage), control: null, turns: 0 };
+  const progressPips = [...panel.querySelectorAll('[data-onboarding-pip]')];
+  const stageLabels = ['Boot Sequence', 'Control System', 'Mission Select', 'Ranked Network', 'Player Legacy'];
+  const controlLabels = { tap: 'Tap Grid', turn: 'Turn Buttons', dpad: 'D-Pad' };
+  const drillSequences = {
+    tap: ['left', 'right'],
+    turn: ['left', 'right'],
+    dpad: ['up', 'left', 'down', 'right']
+  };
+  const drillPrompts = {
+    tap: {
+      left: 'Target 01 // Tap the left half.',
+      right: 'Target 02 // Clean turn. Tap the right half.'
+    },
+    turn: {
+      left: 'Target 01 // Hit the left-turn button.',
+      right: 'Target 02 // Now hit the right-turn button.'
+    },
+    dpad: {
+      up: 'Target 01 of 04 // Press Up.',
+      left: 'Target 02 of 04 // Press Left.',
+      down: 'Target 03 of 04 // Press Down.',
+      right: 'Target 04 of 04 // Press Right.'
+    }
+  };
+  const modeLabels = {
+    classic: 'Classic selected // Endurance rules',
+    sprint: 'Sprint 60 selected // One-minute attack',
+    daily: 'Daily Run selected // Today’s world challenge'
+  };
+  const state = { ...loadProgress(storage), control: null, mode: null, turns: 0 };
+  const trainingProgress = Object.fromEntries(
+    Object.keys(drillSequences).map(control => [control, 0])
+  );
   if (force) {
     state.completed = false;
     state.step = 0;
@@ -51,15 +87,47 @@ export function createOnboardingDialog({
     try { storage.setItem(ONBOARDING_KEY, JSON.stringify({ completed: state.completed, step: state.step })); } catch {}
   }
 
+  function trainingComplete() {
+    return Boolean(state.control)
+      && trainingProgress[state.control] >= drillSequences[state.control].length;
+  }
+
+  function renderTrainingProgress(mode) {
+    const sequence = drillSequences[mode];
+    const completed = trainingProgress[mode];
+    state.turns = completed;
+    trainingPad.dataset.turns = String(completed);
+    trainingPad.querySelectorAll('.completed').forEach(target => target.classList.remove('completed'));
+    sequence.slice(0, completed).forEach(input => {
+      const selector = mode === 'dpad'
+        ? `[data-training-dir="${input}"]`
+        : `[data-training-turn="${input}"]`;
+      trainingPad.querySelector(selector)?.classList.add('completed');
+    });
+    trainingMessage.textContent = completed >= sequence.length
+      ? `${controlLabels[mode]} certified // Ready for the arcade.`
+      : drillPrompts[mode][sequence[completed]];
+  }
+
   function render() {
-    steps.forEach((step, index) => step.hidden = index !== state.step);
+    panel.dataset.step = String(state.step);
+    steps.forEach((step, index) => {
+      const active = index === state.step;
+      step.hidden = !active;
+      step.classList.toggle('active', active);
+    });
+    progressPips.forEach((pip, index) => {
+      pip.classList.toggle('complete', index < state.step);
+      pip.classList.toggle('active', index === state.step);
+    });
+    stageLabel.textContent = stageLabels[state.step];
     progressEl.textContent = `${state.step + 1} / ${steps.length}`;
     backButton.hidden = state.step === 0;
     nextButton.hidden = false;
-    nextButton.disabled = state.step === 1 && state.turns < 2;
+    nextButton.disabled = state.step === 1 && !trainingComplete();
     if (state.step === 0) {
       nextButton.textContent = 'START TOUR';
-    } else if (state.step === 1 && state.turns < 2) {
+    } else if (state.step === 1 && !trainingComplete()) {
       nextButton.textContent = 'COMPLETE DRILL';
     } else if (state.step === steps.length - 1) {
       nextButton.textContent = 'LAUNCH GAME';
@@ -71,7 +139,6 @@ export function createOnboardingDialog({
   function selectControl(button) {
     const mode = button.dataset.onboardingControl;
     state.control = mode;
-    state.turns = 0;
     panel.querySelectorAll('[data-onboarding-control]').forEach(card => {
       const active = card === button;
       card.classList.toggle('selected', active);
@@ -79,40 +146,68 @@ export function createOnboardingDialog({
     });
     trainingPad.dataset.mode = mode;
     trainingPad.hidden = false;
-    trainingMessage.textContent = mode === 'tap'
-      ? 'Tap LEFT, then RIGHT on the training board.'
-      : mode === 'turn'
-        ? 'Use LEFT TURN, then RIGHT TURN.'
-        : 'Use the D-PAD turns: LEFT, then RIGHT.';
+    trainingControlLabel.textContent = controlLabels[mode];
+    renderTrainingProgress(mode);
     onControlSelect(mode);
     render();
   }
 
-  function train(side) {
-    if (!state.control || state.turns >= 2) return;
-    const expected = state.turns === 0 ? 'left' : 'right';
-    if (side !== expected) {
+  function train(input, target) {
+    if (!state.control || trainingComplete()) return;
+    const sequence = drillSequences[state.control];
+    const expected = sequence[state.turns];
+    if (input !== expected) {
       trainingMessage.textContent = `TRY ${expected.toUpperCase()} FIRST`;
       return;
     }
     state.turns++;
+    trainingProgress[state.control] = state.turns;
     trainingPad.dataset.turns = String(state.turns);
-    trainingMessage.textContent = state.turns === 1
-      ? 'NICE TURN! NOW GO RIGHT.'
-      : 'CONTROL LOCKED IN. YOU ARE READY.';
+    target?.classList.add('completed');
+    trainingMessage.textContent = trainingComplete()
+      ? `${controlLabels[state.control]} certified // Ready for the arcade.`
+      : drillPrompts[state.control][sequence[state.turns]];
     render();
   }
 
+  function selectMode(button) {
+    const mode = button.dataset.onboardingMode;
+    state.mode = mode;
+    panel.querySelectorAll('[data-onboarding-mode]').forEach(card => {
+      const active = card === button;
+      card.classList.toggle('selected', active);
+      card.setAttribute('aria-pressed', String(active));
+    });
+    modeStatus.textContent = modeLabels[mode];
+    onGameModeSelect(mode);
+  }
+
+  function resetTour() {
+    state.step = 0;
+    state.control = null;
+    state.mode = null;
+    state.turns = 0;
+    Object.keys(trainingProgress).forEach(control => { trainingProgress[control] = 0; });
+    trainingPad.hidden = true;
+    trainingPad.dataset.mode = '';
+    trainingPad.dataset.turns = '0';
+    trainingControlLabel.textContent = 'Select Input';
+    trainingMessage.textContent = 'Select your control system.';
+    modeStatus.textContent = 'Choose a mission or continue with Classic.';
+    panel.querySelectorAll('[data-onboarding-control], [data-onboarding-mode]').forEach(button => {
+      button.classList.remove('selected');
+      button.setAttribute('aria-pressed', 'false');
+    });
+  }
+
   function open({ restart = false } = {}) {
-    if (restart) {
-      state.step = 0;
-      state.turns = 0;
-    }
+    if (restart) resetTour();
     onBeforeOpen();
     panel.classList.add('visible');
     panel.setAttribute('aria-hidden', 'false');
+    screen.scrollTop = 0;
     render();
-    setTimeout(() => panel.querySelector('[data-onboarding-control]')?.focus(), 0);
+    setTimeout(() => nextButton.focus({ preventScroll: true }), 0);
     return true;
   }
 
@@ -126,7 +221,7 @@ export function createOnboardingDialog({
   }
 
   function advance() {
-    if (state.step === 1 && state.turns < 2) return;
+    if (state.step === 1 && !trainingComplete()) return;
     if (state.step >= steps.length - 1) {
       close({ completed: true, restoreFocus: false });
       onPlay();
@@ -134,6 +229,7 @@ export function createOnboardingDialog({
     }
     state.step++;
     save();
+    screen.scrollTop = 0;
     render();
   }
 
@@ -144,6 +240,7 @@ export function createOnboardingDialog({
       if (state.step === 0) return;
       state.step--;
       save();
+      screen.scrollTop = 0;
       render();
     });
     skipButton?.addEventListener('click', () => close({ completed: true }));
@@ -155,18 +252,16 @@ export function createOnboardingDialog({
       button.addEventListener('click', () => selectControl(button));
     });
     panel.querySelectorAll('[data-onboarding-mode]').forEach(button => {
-      button.addEventListener('click', () => {
-        panel.querySelectorAll('[data-onboarding-mode]').forEach(card => card.classList.toggle('selected', card === button));
-        onGameModeSelect(button.dataset.onboardingMode);
-      });
+      button.addEventListener('click', () => selectMode(button));
     });
     panel.querySelector('[data-onboarding-save-player]')?.addEventListener('click', () => {
       close({ completed: true, restoreFocus: false });
       onOpenPlayer();
     });
     trainingPad?.addEventListener('click', event => {
-      const side = event.target.closest('[data-training-turn]')?.dataset.trainingTurn;
-      if (side) train(side);
+      const target = event.target.closest('[data-training-turn], [data-training-dir]');
+      const input = target?.dataset.trainingTurn || target?.dataset.trainingDir;
+      if (input) train(input, target);
     });
     panel.addEventListener('click', event => {
       if (event.target === panel) close({ completed: true });
