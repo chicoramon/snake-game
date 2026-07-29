@@ -28,6 +28,7 @@ export function createOnboardingDialog({
   onPlay = () => {},
   onBeforeOpen = () => {},
   onAfterClose = () => {},
+  menuAudio = null,
   force = false,
   storage = window.localStorage
 } = {}) {
@@ -200,11 +201,12 @@ export function createOnboardingDialog({
     });
   }
 
-  function open({ restart = false } = {}) {
+  function open({ restart = false, userInitiated = false } = {}) {
     if (restart) resetTour();
     onBeforeOpen();
     panel.classList.add('visible');
     panel.setAttribute('aria-hidden', 'false');
+    menuAudio?.open({ startNow: userInitiated });
     screen.scrollTop = 0;
     render();
     setTimeout(() => nextButton.focus({ preventScroll: true }), 0);
@@ -234,7 +236,7 @@ export function createOnboardingDialog({
   }
 
   function bind() {
-    helpButton?.addEventListener('click', () => open({ restart: true }));
+    helpButton?.addEventListener('click', () => open({ restart: true, userInitiated: true }));
     nextButton?.addEventListener('click', advance);
     backButton?.addEventListener('click', () => {
       if (state.step === 0) return;
@@ -266,7 +268,12 @@ export function createOnboardingDialog({
     panel.addEventListener('click', event => {
       if (event.target === panel) close({ completed: true });
     });
+    panel.addEventListener('pointerdown', event => {
+      if (event.target.closest('#onboarding-skip, #onboarding-play-now')) return;
+      menuAudio?.unlock();
+    }, true);
     panel.addEventListener('keydown', event => {
+      if (event.key !== 'Escape') menuAudio?.unlock();
       if (event.key === 'Escape') close({ completed: true });
     });
   }

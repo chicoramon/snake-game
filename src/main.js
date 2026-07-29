@@ -1,4 +1,5 @@
 import { createAudioEngine } from './audio/audio-engine.js';
+import { createMenuAudio } from './audio/menu-audio.js';
 import { createControlManager } from './controls/control-manager.js';
 import { createDailyRunService } from './daily/daily-run-service.js';
 import { createLeaderboardService } from './leaderboard/leaderboard-service.js';
@@ -1032,6 +1033,7 @@ function gameTick() {
 }
 
 function showRunResult(reason) {
+  MenuAudio.open();
   const isSprint = runGameMode === 'sprint';
   const isDaily = runGameMode === 'daily';
   if (isDaily && reason === 'interrupted') {
@@ -1215,6 +1217,7 @@ async function startGame(options = {}) {
   }
   runLifecycle.begin({
     prepare: () => {
+      MenuAudio.close();
       stopRecordCelebration();
       recordResultVisible = false;
       challenge ||= gameMode === 'daily' ? ensureDailyChallenge() : null;
@@ -1362,6 +1365,17 @@ const AudioEngine = createAudioEngine({
   getSnakeLength: () => snake?.length || 3,
 });
 
+const MenuAudio = createMenuAudio();
+MenuAudio.open();
+
+document.addEventListener('pointerdown', event => {
+  if (event.target.closest('#mute-btn')) return;
+  MenuAudio.unlock();
+}, { passive: true, capture: true });
+document.addEventListener('keydown', event => {
+  if (event.key !== 'Escape') MenuAudio.unlock();
+}, { capture: true });
+
 const controls = createControlManager({
   canvas,
   dpad: document.getElementById('dpad'),
@@ -1388,7 +1402,8 @@ const controls = createControlManager({
 // --- Mute button ---
 const muteBtn = document.getElementById('mute-btn');
 muteBtn.addEventListener('click', () => {
-  const m = AudioEngine.toggleMute();
+  const m = AudioEngine.toggleMute();
+  MenuAudio.setMuted(m);
   muteBtn.innerHTML = m
     ? '<svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="1" y="3" width="2" height="4"/><rect x="3" y="2" width="2" height="6"/><rect x="5" y="1" width="1" height="8"/><line x1="7" y1="3" x2="9" y2="7" stroke="currentColor" stroke-width="1.2"/><line x1="9" y1="3" x2="7" y2="7" stroke="currentColor" stroke-width="1.2"/></svg> Muted'
     : '<svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="1" y="3" width="2" height="4"/><rect x="3" y="2" width="2" height="6"/><rect x="5" y="1" width="1" height="8"/><rect x="7" y="3" width="1" height="4"/><rect x="9" y="2" width="1" height="6"/></svg> Music';
@@ -1680,6 +1695,7 @@ function launchRecordCelebration({ confirmed = false, previousTop = recordTarget
     return;
   }
   recordCelebrationShown = true;
+  MenuAudio.close();
   recordBannerCopy.textContent = confirmed
     ? 'World record confirmed and saved'
     : `Previous best: ${Number.isFinite(previousTop) ? previousTop : '—'} • ${runGameMode === 'sprint' ? 'Sprint' : 'Classic'} world record`;
@@ -1693,7 +1709,10 @@ function launchRecordCelebration({ confirmed = false, previousTop = recordTarget
     recordNextLaunch = 0;
     recordFireworksFrame = requestAnimationFrame(animateRecordFireworks);
   }
-  recordCelebrationTimeout = setTimeout(stopRecordCelebration, 5600);
+  recordCelebrationTimeout = setTimeout(() => {
+    stopRecordCelebration();
+    if (!alive) MenuAudio.open();
+  }, 5600);
 }
 
 function maybeCelebrateRecordAtGameOver() {
@@ -2408,6 +2427,7 @@ onboardingView = createOnboardingDialog({
   onGameModeSelect: mode => applyGameMode(mode),
   onOpenPlayer: () => openPlayerPanel(),
   onPlay: () => startGame(),
+  menuAudio: MenuAudio,
   force: new URLSearchParams(location.search).has('onboarding'),
   onBeforeOpen: () => {
     displayNameInviteSuppressedThisSession = true;
