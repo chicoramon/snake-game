@@ -15,6 +15,7 @@ const OFFLINE_PAGE = './';
 const PRECACHE_ASSETS = [
   "./assets/apple-touch-icon-5fm-98x8.png",
   "./assets/audio/ken-stage-96.mp3",
+  "./assets/audio/snake-arcade-intro-96.mp3",
   "./assets/favicon-16x16-CrE4Gukf.png",
   "./assets/favicon-32x32-9LEdGOyX.png",
   "./assets/favicon-9kQTcohj.ico",
@@ -26,7 +27,7 @@ const PRECACHE_ASSETS = [
   "./assets/icons/icon-512-maskable.png",
   "./assets/icons/icon-512.png",
   "./assets/index-DAnZrk2q.css",
-  "./assets/index-Xdv4DHCb.js",
+  "./assets/index-DnTg3bWx.js",
   "./assets/manifest-BkglArjv.webmanifest",
   "./assets/social/og-image.jpg",
   "./audio themes/street_fighter_ii_-_ken.mid",
