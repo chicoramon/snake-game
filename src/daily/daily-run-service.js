@@ -2,6 +2,17 @@ function firstRow(data) {
   return Array.isArray(data) ? data[0] : data;
 }
 
+export function outranksDailyLeader(candidate, leader) {
+  const candidateScore = Number(candidate?.score);
+  const leaderScore = Number(leader?.score);
+  if (!Number.isFinite(candidateScore) || !Number.isFinite(leaderScore)) return false;
+  if (candidateScore !== leaderScore) return candidateScore > leaderScore;
+
+  const candidateTime = candidate?.finalFoodMs == null ? Infinity : Number(candidate.finalFoodMs);
+  const leaderTime = leader?.finalFoodMs == null ? Infinity : Number(leader.finalFoodMs);
+  return Number.isFinite(candidateTime) && candidateTime < leaderTime;
+}
+
 export function createDailyRunService({
   getClient,
   getUser,

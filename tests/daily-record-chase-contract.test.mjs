@@ -8,16 +8,17 @@ const gameCss = await readFile(new URL('../src/styles/game.css', import.meta.url
 test('Daily Run freezes the undisputed daily leader before the countdown', () => {
   assert.match(mainSource, /dailyRunService\.fetchTopScore\(challenge\.date\)/);
   assert.match(mainSource, /dailyAttempt\.recordTargetScore = dailyLeader\?\.score \?\? 0/);
+  assert.match(mainSource, /dailyAttempt\.recordTargetFinalFoodMs = dailyLeader\?\.finalFoodMs \?\? null/);
   assert.match(mainSource, /if \(runGameMode === 'daily'\) beginDailyRecordChase\(\)/);
   assert.doesNotMatch(mainSource, /if \(runGameMode === 'daily'\) disableRecordChase\(\)/);
 });
 
 test('Daily Run only celebrates an authoritative new number one at game over', () => {
   assert.match(mainSource, /Number\(data\.leaderboardRank\) === 1/);
-  assert.match(mainSource, /Number\(data\.score\) > frozenDailyTop/);
+  assert.match(mainSource, /outranksDailyLeader\(\s*\{ score: data\.score, finalFoodMs: data\.finalFoodMs \}/);
   assert.match(
     mainSource,
-    /launchRecordCelebration\(\{ confirmed: true, previousTop: frozenDailyTop \}\)/
+    /launchRecordCelebration\(\{\s*confirmed: true,\s*previousTop: frozenDailyTop,\s*previousFinalFoodMs: frozenDailyTopTime/
   );
   assert.match(
     mainSource,
@@ -26,6 +27,10 @@ test('Daily Run only celebrates an authoritative new number one at game over', (
 });
 
 test('the Daily warning uses the fixed HUD and canvas border presentation', () => {
+  assert.match(
+    mainSource,
+    /\{ score, finalFoodMs: dailyLastFoodElapsedMs \},\s*\{ score: recordTargetScore, finalFoodMs: recordTargetFinalFoodMs \}/
+  );
   assert.match(mainSource, /runGameMode === 'daily' \? '#1 PACE' : 'NEW #1'/);
   assert.match(mainSource, /`Daily #1 target • \$\{warningText\}`/);
   assert.match(gameCss, /#record-chase\s*\{[\s\S]*?width:\s*1px;[\s\S]*?height:\s*1px;/);

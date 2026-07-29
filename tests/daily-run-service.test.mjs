@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createDailyRunService } from '../src/daily/daily-run-service.js';
+import {
+  createDailyRunService,
+  outranksDailyLeader
+} from '../src/daily/daily-run-service.js';
 
 function createService(client) {
   return createDailyRunService({
@@ -84,6 +87,15 @@ test('Daily Run service reads the undisputed current leader across controls', as
     ['challenge_date', '2026-07-28'],
     ['leaderboard_rank', 1]
   ]);
+});
+
+test('Daily ranking compares score first and final-food time second', () => {
+  const leader = { score: 21, finalFoodMs: 56_740 };
+  assert.equal(outranksDailyLeader({ score: 22, finalFoodMs: 59_000 }, leader), true);
+  assert.equal(outranksDailyLeader({ score: 21, finalFoodMs: 55_900 }, leader), true);
+  assert.equal(outranksDailyLeader({ score: 21, finalFoodMs: 56_740 }, leader), false);
+  assert.equal(outranksDailyLeader({ score: 21, finalFoodMs: 57_000 }, leader), false);
+  assert.equal(outranksDailyLeader({ score: 20, finalFoodMs: 40_000 }, leader), false);
 });
 
 test('Daily Run service preserves function error status for safe retry decisions', async () => {

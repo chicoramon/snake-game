@@ -1,7 +1,7 @@
 import { createAudioEngine } from './audio/audio-engine.js';
 import { createMenuAudio } from './audio/menu-audio.js';
 import { createControlManager } from './controls/control-manager.js';
-import { createDailyRunService } from './daily/daily-run-service.js';
+import { createDailyRunService, outranksDailyLeader } from './daily/daily-run-service.js';
 import { createLeaderboardService } from './leaderboard/leaderboard-service.js';
 import { createSupabaseClient } from './services/supabase-client.js';
 import { createPlayerAuthService } from './player/player-auth-service.js';
@@ -327,6 +327,7 @@ let runTick = 0;
 let runReplay = null;
 let recordTargets = Object.create(null);
 let recordTargetScore = null;
+let recordTargetFinalFoodMs = null;
 let recordTargetMethod = null;
 let recordTargetRequest = 0;
 let recordTargetPromise = Promise.resolve();
@@ -1208,6 +1209,7 @@ async function startGame(options = {}) {
           const dailyLeader = await dailyRunService.fetchTopScore(challenge.date);
           dailyAttempt.recordTargetLoaded = true;
           dailyAttempt.recordTargetScore = dailyLeader?.score ?? 0;
+          dailyAttempt.recordTargetFinalFoodMs = dailyLeader?.finalFoodMs ?? null;
           dailyAttempt.recordTargetHasLeader = dailyLeader !== null;
         } catch (error) {
           dailyAttempt.recordTargetLoaded = false;
@@ -1565,6 +1567,7 @@ function showRecordChase(message, hudMessage, state, progress = 0) {
 
 function disableRecordChase() {
   recordTargetScore = null;
+  recordTargetFinalFoodMs = null;
   recordTargetMethod = null;
   recordBrokenThisRun = false;
   hideRecordChase();
@@ -1582,11 +1585,20 @@ function activateRecordTarget(method) {
 
 function updateRecordChase() {
   if ((runUsesMixedControls && runGameMode !== 'daily') || !Number.isFinite(recordTargetScore)) return;
-  if (score > recordTargetScore) {
+  const aheadOfTarget = runGameMode === 'daily'
+    ? outranksDailyLeader(
+      { score, finalFoodMs: dailyLastFoodElapsedMs },
+      { score: recordTargetScore, finalFoodMs: recordTargetFinalFoodMs }
+    )
+    : score > recordTargetScore;
+  if (aheadOfTarget) {
     recordBrokenThisRun = true;
     AudioEngine.stopRecordHeartbeat();
+    const dailyTieBreakLead = runGameMode === 'daily' && score === recordTargetScore;
     showRecordChase(
-      runGameMode === 'daily' ? 'Daily #1 pace — keep going!' : 'Record pace — keep going!',
+      runGameMode === 'daily'
+        ? (dailyTieBreakLead ? 'Daily #1 pace — faster tie-break!' : 'Daily #1 pace — keep going!')
+        : 'Record pace — keep going!',
       runGameMode === 'daily' ? '#1 PACE' : 'NEW #1',
       'pace'
     );
@@ -1616,6 +1628,7 @@ function beginDailyRecordChase() {
   ++recordTargetRequest;
   recordTargets = Object.create(null);
   recordTargetScore = null;
+  recordTargetFinalFoodMs = null;
   recordTargetMethod = null;
   recordBrokenThisRun = false;
   recordCelebrationShown = false;
@@ -1624,11 +1637,17 @@ function beginDailyRecordChase() {
   AudioEngine.stopRecordHeartbeat();
 
   const params = new URLSearchParams(location.search);
-  const debugTarget = document.body.classList.contains('debug')
+  const debugTarget = document.body.classList.contains('debug') && params.has('recordTarget')
     ? Number(params.get('recordTarget'))
     : NaN;
   if (Number.isFinite(debugTarget) && debugTarget >= 0) {
     RECORD_METHODS.forEach(method => { recordTargets[method] = debugTarget; });
+    const debugTargetTime = params.has('recordTargetTime')
+      ? Number(params.get('recordTargetTime'))
+      : NaN;
+    recordTargetFinalFoodMs = Number.isFinite(debugTargetTime) && debugTargetTime >= 0
+      ? debugTargetTime
+      : null;
     recordTargetPromise = Promise.resolve(recordTargets);
     if (runControlMethod) activateRecordTarget(runControlMethod);
     return;
@@ -1645,6 +1664,9 @@ function beginDailyRecordChase() {
     recordTargetPromise = Promise.resolve(recordTargets);
     return;
   }
+  recordTargetFinalFoodMs = dailyAttempt.recordTargetFinalFoodMs == null
+    ? null
+    : Number(dailyAttempt.recordTargetFinalFoodMs);
   RECORD_METHODS.forEach(method => { recordTargets[method] = target; });
   recordTargetPromise = Promise.resolve(recordTargets);
 }
@@ -1654,6 +1676,7 @@ function beginRecordChase() {
   const runId = currentRunId;
   recordTargets = Object.create(null);
   recordTargetScore = null;
+  recordTargetFinalFoodMs = null;
   recordTargetMethod = null;
   recordBrokenThisRun = false;
   recordCelebrationShown = false;
@@ -1662,7 +1685,9 @@ function beginRecordChase() {
   AudioEngine.stopRecordHeartbeat();
 
   const params = new URLSearchParams(location.search);
-  const debugTarget = document.body.classList.contains('debug') ? Number(params.get('recordTarget')) : NaN;
+  const debugTarget = document.body.classList.contains('debug') && params.has('recordTarget')
+    ? Number(params.get('recordTarget'))
+    : NaN;
   if (Number.isFinite(debugTarget) && debugTarget >= 0) {
     RECORD_METHODS.forEach(method => { recordTargets[method] = debugTarget; });
     recordTargetPromise = Promise.resolve(recordTargets);
@@ -1772,7 +1797,11 @@ function stopRecordCelebration() {
   ctx.clearRect(0, 0, recordFireworksCanvas.width, recordFireworksCanvas.height);
 }
 
-function launchRecordCelebration({ confirmed = false, previousTop = recordTargetScore } = {}) {
+function launchRecordCelebration({
+  confirmed = false,
+  previousTop = recordTargetScore,
+  previousFinalFoodMs = recordTargetFinalFoodMs
+} = {}) {
   const isDailyRecord = runGameMode === 'daily';
   if (recordCelebrationShown) {
     if (confirmed) {
@@ -1784,8 +1813,11 @@ function launchRecordCelebration({ confirmed = false, previousTop = recordTarget
   }
   recordCelebrationShown = true;
   MenuAudio.close();
+  const dailyPreviousTime = Number.isFinite(previousFinalFoodMs)
+    ? ` @ ${formatDailyFoodTime(previousFinalFoodMs)}`
+    : '';
   recordBannerCopy.textContent = isDailyRecord
-    ? `Daily #${dailyChallenge?.number || ''} crown confirmed • Previous #1: ${Number.isFinite(previousTop) ? previousTop : '—'}`
+    ? `Daily #${dailyChallenge?.number || ''} crown confirmed • Previous #1: ${Number.isFinite(previousTop) ? previousTop : '—'}${dailyPreviousTime}`
     : (confirmed
       ? 'World record confirmed and saved'
       : `Previous best: ${Number.isFinite(previousTop) ? previousTop : '—'} • ${runGameMode === 'sprint' ? 'Sprint' : 'Classic'} world record`);
@@ -1816,7 +1848,9 @@ function maybeCelebrateRecordAtGameOver() {
   recordTargetMethod = method;
   const frozenTarget = Number.isFinite(recordTargets[method]) ? recordTargets[method] : null;
   const params = new URLSearchParams(location.search);
-  const hasDebugTarget = document.body.classList.contains('debug') && Number.isFinite(Number(params.get('recordTarget')));
+  const hasDebugTarget = document.body.classList.contains('debug') &&
+    params.has('recordTarget') &&
+    Number.isFinite(Number(params.get('recordTarget')));
   const latestTarget = hasDebugTarget
     ? Promise.resolve(frozenTarget)
     : fetchRecordTopScore(runGameMode).catch(() => frozenTarget);
@@ -2147,14 +2181,25 @@ async function submitDailyAttempt() {
     const frozenDailyTop = dailyAttempt.recordTargetLoaded === true
       ? Number(dailyAttempt.recordTargetScore)
       : null;
+    const frozenDailyTopTime = dailyAttempt.recordTargetFinalFoodMs == null
+      ? null
+      : Number(dailyAttempt.recordTargetFinalFoodMs);
     const confirmedNewDailyTop = Number(data.leaderboardRank) === 1 &&
       Number(data.score) > 0 &&
       Number.isFinite(frozenDailyTop) &&
-      Number(data.score) > frozenDailyTop;
+      outranksDailyLeader(
+        { score: data.score, finalFoodMs: data.finalFoodMs },
+        { score: frozenDailyTop, finalFoodMs: frozenDailyTopTime }
+      );
     if (confirmedNewDailyTop) {
       recordTargetScore = frozenDailyTop;
+      recordTargetFinalFoodMs = frozenDailyTopTime;
       recordBrokenThisRun = true;
-      launchRecordCelebration({ confirmed: true, previousTop: frozenDailyTop });
+      launchRecordCelebration({
+        confirmed: true,
+        previousTop: frozenDailyTop,
+        previousFinalFoodMs: frozenDailyTopTime
+      });
     }
     if (leaderboardOverlay.classList.contains('visible')) {
       leaderboardUi?.loadDailyArchiveData({ force: true });
