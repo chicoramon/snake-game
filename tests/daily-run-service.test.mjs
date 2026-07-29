@@ -61,6 +61,31 @@ test('Daily Run service owns reservation and verified submission requests', asyn
   assert.deepEqual(calls.map(call => call.name), ['start_daily_attempt', 'submit-daily-attempt']);
 });
 
+test('Daily Run service reads the undisputed current leader across controls', async () => {
+  const filters = [];
+  const query = {
+    select: () => query,
+    eq: (column, value) => {
+      filters.push([column, value]);
+      return query;
+    },
+    limit: async () => ({ data: [{ score: 28, final_food_ms: 54_200 }], error: null })
+  };
+  const service = createService({
+    from: table => {
+      assert.equal(table, 'daily_leaderboard');
+      return query;
+    }
+  });
+
+  const leader = await service.fetchTopScore('2026-07-28');
+  assert.deepEqual(leader, { score: 28, finalFoodMs: 54_200 });
+  assert.deepEqual(filters, [
+    ['challenge_date', '2026-07-28'],
+    ['leaderboard_rank', 1]
+  ]);
+});
+
 test('Daily Run service preserves function error status for safe retry decisions', async () => {
   const service = createService({
     functions: {

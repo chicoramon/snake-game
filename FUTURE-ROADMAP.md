@@ -263,7 +263,7 @@ Competitive presentation:
 - Show the closest rivals immediately above and below the player instead of only the global top ten.
 - Track daily participation streaks, best daily finish, podium finishes, and daily wins.
 - Browse read-only past-day standings without changing or replaying the current UTC challenge. — **Implemented locally 2026-07-22**
-- Adapt the existing heartbeat and border-warning experience to the daily #1 score without covering or resizing the board.
+- Adapt the existing heartbeat and border-warning experience to the daily #1 score without covering or resizing the board. — **Implemented locally 2026-07-29**
 - At game over, show score, rank movement, personal daily best, and the score needed to pass the next rival.
 - Provide a compact share result containing challenge number, score, rank, streak, and a challenge link without revealing a replay that could be trivially copied.
 

@@ -13,6 +13,7 @@ export function createDailyRunService({
   defaultDurationMs
 }) {
   const submissionTimeoutMs = 15_000;
+  const recordTargetTimeoutMs = 5_000;
 
   function withTimeout(promise, timeoutMs, message) {
     let timeoutId;
@@ -93,6 +94,24 @@ export function createDailyRunService({
     };
   }
 
+  async function fetchTopScore(challengeDate) {
+    if (!challengeDate) return null;
+    const { data, error } = await withTimeout(
+      requireClient().from('daily_leaderboard')
+        .select('score, final_food_ms')
+        .eq('challenge_date', challengeDate)
+        .eq('leaderboard_rank', 1)
+        .limit(1),
+      recordTargetTimeoutMs,
+      'Daily #1 target timed out'
+    );
+    if (error) throw error;
+    const row = firstRow(data);
+    return row
+      ? { score: Number(row.score) || 0, finalFoodMs: row.final_food_ms == null ? null : Number(row.final_food_ms) }
+      : null;
+  }
+
   async function submitAttempt(payload) {
     const { data, error } = await withTimeout(
       requireClient().functions.invoke('submit-daily-attempt', { body: payload }),
@@ -110,5 +129,5 @@ export function createDailyRunService({
     return data;
   }
 
-  return { mapChallenge, loadChallenge, reserveAttempt, submitAttempt };
+  return { mapChallenge, loadChallenge, reserveAttempt, fetchTopScore, submitAttempt };
 }

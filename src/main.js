@@ -661,7 +661,7 @@ function registerControlMethod(method) {
   }
   else if (runControlMethod !== method) {
     runUsesMixedControls = true;
-    disableRecordChase();
+    if (runGameMode !== 'daily') disableRecordChase();
   }
 }
 
@@ -1203,6 +1203,17 @@ async function startGame(options = {}) {
       await playerIdentityPromise;
       challenge = await reserveDailyAttempt();
       if (!challenge) return;
+      if (dailyAttempt?.ranked) {
+        try {
+          const dailyLeader = await dailyRunService.fetchTopScore(challenge.date);
+          dailyAttempt.recordTargetLoaded = true;
+          dailyAttempt.recordTargetScore = dailyLeader?.score ?? 0;
+          dailyAttempt.recordTargetHasLeader = dailyLeader !== null;
+        } catch (error) {
+          dailyAttempt.recordTargetLoaded = false;
+          console.warn('Daily #1 chase target unavailable; continuing without the warning.', error);
+        }
+      }
     } catch (error) {
       console.warn('Daily attempt could not start:', error);
       overlayMsg.textContent = isSchemaError(error)
@@ -1253,7 +1264,7 @@ async function startGame(options = {}) {
     reset: () => reset(true),
     afterReset: () => {
       runActivatedAt = performance.now();
-      if (runGameMode === 'daily') disableRecordChase();
+      if (runGameMode === 'daily') beginDailyRecordChase();
       else beginRecordChase();
       AudioEngine.start();
     },
@@ -1561,7 +1572,7 @@ function disableRecordChase() {
 }
 
 function activateRecordTarget(method) {
-  if (runUsesMixedControls || !RECORD_METHODS.includes(method)) return disableRecordChase();
+  if ((runUsesMixedControls && runGameMode !== 'daily') || !RECORD_METHODS.includes(method)) return disableRecordChase();
   recordTargetMethod = method;
   const target = recordTargets[method];
   if (!Number.isFinite(target)) return;
@@ -1570,11 +1581,15 @@ function activateRecordTarget(method) {
 }
 
 function updateRecordChase() {
-  if (runUsesMixedControls || !Number.isFinite(recordTargetScore)) return;
+  if ((runUsesMixedControls && runGameMode !== 'daily') || !Number.isFinite(recordTargetScore)) return;
   if (score > recordTargetScore) {
     recordBrokenThisRun = true;
     AudioEngine.stopRecordHeartbeat();
-    showRecordChase('Record pace — keep going!', 'NEW #1', 'pace');
+    showRecordChase(
+      runGameMode === 'daily' ? 'Daily #1 pace — keep going!' : 'Record pace — keep going!',
+      runGameMode === 'daily' ? '#1 PACE' : 'NEW #1',
+      'pace'
+    );
     return;
   }
   const pointsToBreak = recordTargetScore - score + 1;
@@ -1584,12 +1599,54 @@ function updateRecordChase() {
     const warningText = recordTargetScore === 0
       ? '1 point to set the record'
       : `${pointsToBreak} ${pointsToBreak === 1 ? 'point' : 'points'} to new #1`;
-    showRecordChase(warningText, `${pointsToBreak} TO #1`, 'warning', progress);
+    showRecordChase(
+      runGameMode === 'daily' ? `Daily #1 target • ${warningText}` : warningText,
+      `${pointsToBreak} TO #1`,
+      'warning',
+      progress
+    );
     AudioEngine.setRecordHeartbeat(progress);
   } else {
     hideRecordChase();
     AudioEngine.stopRecordHeartbeat();
   }
+}
+
+function beginDailyRecordChase() {
+  ++recordTargetRequest;
+  recordTargets = Object.create(null);
+  recordTargetScore = null;
+  recordTargetMethod = null;
+  recordBrokenThisRun = false;
+  recordCelebrationShown = false;
+  recordCelebrationCheckStarted = false;
+  hideRecordChase();
+  AudioEngine.stopRecordHeartbeat();
+
+  const params = new URLSearchParams(location.search);
+  const debugTarget = document.body.classList.contains('debug')
+    ? Number(params.get('recordTarget'))
+    : NaN;
+  if (Number.isFinite(debugTarget) && debugTarget >= 0) {
+    RECORD_METHODS.forEach(method => { recordTargets[method] = debugTarget; });
+    recordTargetPromise = Promise.resolve(recordTargets);
+    if (runControlMethod) activateRecordTarget(runControlMethod);
+    return;
+  }
+
+  if (!dailyAttempt?.ranked || dailyAttempt.recordTargetLoaded !== true ||
+      dailyAttempt.recordTargetHasLeader !== true) {
+    recordTargetPromise = Promise.resolve(recordTargets);
+    return;
+  }
+
+  const target = Number(dailyAttempt.recordTargetScore);
+  if (!Number.isFinite(target) || target < 0) {
+    recordTargetPromise = Promise.resolve(recordTargets);
+    return;
+  }
+  RECORD_METHODS.forEach(method => { recordTargets[method] = target; });
+  recordTargetPromise = Promise.resolve(recordTargets);
 }
 
 function beginRecordChase() {
@@ -1716,15 +1773,22 @@ function stopRecordCelebration() {
 }
 
 function launchRecordCelebration({ confirmed = false, previousTop = recordTargetScore } = {}) {
+  const isDailyRecord = runGameMode === 'daily';
   if (recordCelebrationShown) {
-    if (confirmed) recordBannerCopy.textContent = 'World record confirmed and saved';
+    if (confirmed) {
+      recordBannerCopy.textContent = isDailyRecord
+        ? `Daily #${dailyChallenge?.number || ''} crown confirmed and saved`
+        : 'World record confirmed and saved';
+    }
     return;
   }
   recordCelebrationShown = true;
   MenuAudio.close();
-  recordBannerCopy.textContent = confirmed
-    ? 'World record confirmed and saved'
-    : `Previous best: ${Number.isFinite(previousTop) ? previousTop : '—'} • ${runGameMode === 'sprint' ? 'Sprint' : 'Classic'} world record`;
+  recordBannerCopy.textContent = isDailyRecord
+    ? `Daily #${dailyChallenge?.number || ''} crown confirmed • Previous #1: ${Number.isFinite(previousTop) ? previousTop : '—'}`
+    : (confirmed
+      ? 'World record confirmed and saved'
+      : `Previous best: ${Number.isFinite(previousTop) ? previousTop : '—'} • ${runGameMode === 'sprint' ? 'Sprint' : 'Classic'} world record`);
   recordCelebrationEl.classList.add('active');
   recordCelebrationEl.setAttribute('aria-hidden', 'false');
   AudioEngine.playRecordFanfare();
@@ -1742,6 +1806,9 @@ function launchRecordCelebration({ confirmed = false, previousTop = recordTarget
 }
 
 function maybeCelebrateRecordAtGameOver() {
+  // Daily Run has its own authoritative submission response. Never consult
+  // the permanent Classic/Sprint leaderboard or celebrate before verification.
+  if (runGameMode === 'daily') return;
   if (!recordResultVisible || recordCelebrationCheckStarted || runUsesMixedControls || score < 1) return;
   recordCelebrationCheckStarted = true;
   const runId = currentRunId;
@@ -2077,6 +2144,18 @@ async function submitDailyAttempt() {
     scoreMethodLabel.textContent = `Verified • ${rankText} • ${dailyAttemptsRemainingLabel(dailyChallenge)}`;
     scoreMethodLabel.classList.remove('unranked');
     submitScoreBtn.textContent = 'Verified';
+    const frozenDailyTop = dailyAttempt.recordTargetLoaded === true
+      ? Number(dailyAttempt.recordTargetScore)
+      : null;
+    const confirmedNewDailyTop = Number(data.leaderboardRank) === 1 &&
+      Number(data.score) > 0 &&
+      Number.isFinite(frozenDailyTop) &&
+      Number(data.score) > frozenDailyTop;
+    if (confirmedNewDailyTop) {
+      recordTargetScore = frozenDailyTop;
+      recordBrokenThisRun = true;
+      launchRecordCelebration({ confirmed: true, previousTop: frozenDailyTop });
+    }
     if (leaderboardOverlay.classList.contains('visible')) {
       leaderboardUi?.loadDailyArchiveData({ force: true });
       leaderboardUi?.loadLeaderboard();
