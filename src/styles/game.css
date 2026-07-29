@@ -1515,6 +1515,53 @@
     background: var(--accent-glow-soft);
   }
   #overlay #mute-btn { margin-top: 16px; }
+  #overlay #music-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: min(100%, 228px);
+    height: 42px;
+    min-height: 42px;
+    margin-top: 16px;
+    overflow: hidden;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent-dim);
+    border-radius: 2px;
+  }
+  #overlay #music-controls .music-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    width: 100%;
+    min-width: 0;
+    height: 40px;
+    min-height: 40px;
+    margin: 0;
+    padding: 6px 4px;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    color: var(--text);
+    font-size: 0.62rem;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+  #overlay #music-controls .music-toggle:first-child {
+    border-right: 1px solid var(--line);
+  }
+  #overlay #music-controls .music-toggle:hover,
+  #overlay #music-controls .music-toggle:focus-visible {
+    background: var(--accent-glow-soft);
+    color: #fff;
+  }
+  #overlay #music-controls .music-toggle.muted { color: #666; }
+  #overlay #music-controls .music-toggle b {
+    color: var(--accent);
+    font-size: 0.53rem;
+  }
+  #overlay #music-controls .music-toggle.muted b { color: #666; }
   #overlay #shareBtn { display: none; }
   #overlay #lbBtn { display: block; }
   #overlay #options-btn, #overlay #controls-btn, #overlay #player-btn, #overlay #whats-new-btn { margin-top: 7px; }
@@ -1830,6 +1877,7 @@
   @media (max-height: 700px) {
     #overlay .ov-content { margin: 18px 0; padding-top: 20px; padding-bottom: 20px; }
     #overlay #mute-btn { margin-top: 11px; }
+    #overlay #music-controls { margin-top: 11px; }
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { scroll-behavior: auto !important; }

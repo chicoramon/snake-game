@@ -1365,11 +1365,18 @@ const AudioEngine = createAudioEngine({
   getSnakeLength: () => snake?.length || 3,
 });
 
+const BG_MUSIC_MUTED_KEY = 'snake_bg_music_muted';
+const GAME_MUSIC_MUTED_KEY = 'snake_game_music_muted';
+let backgroundMusicMuted = localStorage.getItem(BG_MUSIC_MUTED_KEY) === 'true';
+let gameMusicMuted = localStorage.getItem(GAME_MUSIC_MUTED_KEY) === 'true';
+
 const MenuAudio = createMenuAudio();
+MenuAudio.setMuted(backgroundMusicMuted);
 MenuAudio.open();
+AudioEngine.setMuted(gameMusicMuted);
 
 document.addEventListener('pointerdown', event => {
-  if (event.target.closest('#mute-btn')) return;
+  if (event.target.closest('#bg-music-btn')) return;
   MenuAudio.unlock();
 }, { passive: true, capture: true });
 document.addEventListener('keydown', event => {
@@ -1399,17 +1406,36 @@ const controls = createControlManager({
   isOverlayHidden: () => overlay.classList.contains('hidden'),
 });
 
-// --- Mute button ---
-const muteBtn = document.getElementById('mute-btn');
+// --- Independent menu and gameplay music controls ---
+const backgroundMusicBtn = document.getElementById('bg-music-btn');
+const muteBtn = document.getElementById('mute-btn');
+const MUSIC_ON_ICON = '<svg width="14" height="14" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true"><rect x="1" y="3" width="2" height="4"/><rect x="3" y="2" width="2" height="6"/><rect x="5" y="1" width="1" height="8"/><rect x="7" y="3" width="1" height="4"/><rect x="9" y="2" width="1" height="6"/></svg>';
+const MUSIC_OFF_ICON = '<svg width="14" height="14" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true"><rect x="1" y="3" width="2" height="4"/><rect x="3" y="2" width="2" height="6"/><rect x="5" y="1" width="1" height="8"/><line x1="7" y1="3" x2="9" y2="7" stroke="currentColor" stroke-width="1.2"/><line x1="9" y1="3" x2="7" y2="7" stroke="currentColor" stroke-width="1.2"/></svg>';
+
+function renderMusicButton(button, label, isMuted) {
+  button.innerHTML = `${isMuted ? MUSIC_OFF_ICON : MUSIC_ON_ICON}<span>${label}</span><b>${isMuted ? 'OFF' : 'ON'}</b>`;
+  button.classList.toggle('muted', isMuted);
+  button.setAttribute('aria-pressed', String(!isMuted));
+  const accessibleLabel = label === 'BG' ? 'Background' : 'In-game';
+  button.setAttribute('aria-label', `${accessibleLabel} music ${isMuted ? 'off' : 'on'}`);
+}
+
+backgroundMusicBtn.addEventListener('click', () => {
+  backgroundMusicMuted = !backgroundMusicMuted;
+  localStorage.setItem(BG_MUSIC_MUTED_KEY, String(backgroundMusicMuted));
+  MenuAudio.setMuted(backgroundMusicMuted);
+  if (!backgroundMusicMuted) MenuAudio.unlock();
+  renderMusicButton(backgroundMusicBtn, 'BG', backgroundMusicMuted);
+});
 muteBtn.addEventListener('click', () => {
-  const m = AudioEngine.toggleMute();
-  MenuAudio.setMuted(m);
-  muteBtn.innerHTML = m
-    ? '<svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="1" y="3" width="2" height="4"/><rect x="3" y="2" width="2" height="6"/><rect x="5" y="1" width="1" height="8"/><line x1="7" y1="3" x2="9" y2="7" stroke="currentColor" stroke-width="1.2"/><line x1="9" y1="3" x2="7" y2="7" stroke="currentColor" stroke-width="1.2"/></svg> Muted'
-    : '<svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="1" y="3" width="2" height="4"/><rect x="3" y="2" width="2" height="6"/><rect x="5" y="1" width="1" height="8"/><rect x="7" y="3" width="1" height="4"/><rect x="9" y="2" width="1" height="6"/></svg> Music';
-  muteBtn.classList.toggle('muted', m);
+  gameMusicMuted = AudioEngine.toggleMute();
+  localStorage.setItem(GAME_MUSIC_MUTED_KEY, String(gameMusicMuted));
+  renderMusicButton(muteBtn, 'GAME', gameMusicMuted);
 });
 
+renderMusicButton(backgroundMusicBtn, 'BG', backgroundMusicMuted);
+renderMusicButton(muteBtn, 'GAME', gameMusicMuted);
+
 // --- Main menu theme/options view ---
 themePicker = createThemePicker({
   themes: THEMES,

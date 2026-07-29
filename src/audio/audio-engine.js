@@ -227,9 +227,9 @@ export function createAudioEngine({ getCurrentTheme, isRunActive, isPaused, getS
     actx = null; master = null; musicGain = null; sfxGain = null;
     actx = new (window.AudioContext || window.webkitAudioContext)();
     master = actx.createGain();
-    master.gain.value = muted ? 0 : 0.35;
+    master.gain.value = 0.35;
     master.connect(actx.destination);
-    musicGain = actx.createGain(); musicGain.gain.value = 1; musicGain.connect(master);
+    musicGain = actx.createGain(); musicGain.gain.value = muted ? 0 : 1; musicGain.connect(master);
     sfxGain  = actx.createGain(); sfxGain.gain.value  = 1; sfxGain.connect(master);
     const context = actx;
     context.addEventListener('statechange', () => {
@@ -651,7 +651,7 @@ export function createAudioEngine({ getCurrentTheme, isRunActive, isPaused, getS
     if (!musicGain || !actx) return;
     const now = actx.currentTime;
     musicGain.gain.cancelScheduledValues(now);
-    musicGain.gain.setTargetAtTime(value, now, 0.08);
+    musicGain.gain.setTargetAtTime(muted ? 0 : value, now, 0.08);
   }
 
   function clearHeartbeatTimer() {
@@ -789,12 +789,20 @@ export function createAudioEngine({ getCurrentTheme, isRunActive, isPaused, getS
   document.addEventListener('touchend', wakeFromGesture, { passive: true, capture: true });
   document.addEventListener('keydown', wakeFromGesture, { capture: true });
 
-  function toggleMute() {
-    muted = !muted;
-    if (master) master.gain.value = muted ? 0 : 0.35;
+  function setMuted(value) {
+    muted = Boolean(value);
+    if (musicGain && actx) {
+      const now = actx.currentTime;
+      musicGain.gain.cancelScheduledValues(now);
+      musicGain.gain.setTargetAtTime(muted ? 0 : nativeMusicDuck, now, 0.03);
+    }
     if (nativeThemeAudio) nativeThemeAudio.muted = muted;
-    return muted;
-  }
+    return muted;
+  }
+
+  function toggleMute() {
+    return setMuted(!muted);
+  }
 
   // --- SFX ---
   function sfxEat() {
@@ -847,7 +855,7 @@ export function createAudioEngine({ getCurrentTheme, isRunActive, isPaused, getS
   }
 
   return {
-    start, stop, pause, resume, updateTempo, sfxEat, sfxDie, toggleMute,
+    start, stop, pause, resume, updateTempo, sfxEat, sfxDie, setMuted, toggleMute,
     setRecordHeartbeat, stopRecordHeartbeat, playRecordFanfare,
     get muted() { return muted; }
   };

@@ -53,6 +53,22 @@ test('player identity bootstraps without page errors when Supabase is available'
 test('menu choices expose themes, random, controls, and leaderboard', async ({ page }) => {
   await openGame(page);
 
+  const backgroundMusicButton = page.locator('#bg-music-btn');
+  const gameMusicButton = page.locator('#mute-btn');
+  await expect(backgroundMusicButton).toContainText('BG');
+  await expect(gameMusicButton).toContainText('GAME');
+  const backgroundMusicBox = await backgroundMusicButton.boundingBox();
+  const gameMusicBox = await gameMusicButton.boundingBox();
+  const musicControlsBox = await page.locator('#music-controls').boundingBox();
+  expect(backgroundMusicBox).not.toBeNull();
+  expect(gameMusicBox).not.toBeNull();
+  expect(musicControlsBox).not.toBeNull();
+  expect(Math.abs(backgroundMusicBox.y - gameMusicBox.y)).toBeLessThan(1);
+  expect(musicControlsBox.height).toBeLessThanOrEqual(42);
+  await backgroundMusicButton.click();
+  await expect(backgroundMusicButton).toContainText('OFF');
+  await expect(gameMusicButton).toContainText('ON');
+
   await page.locator('#options-btn').click();
   await expect(page.locator('#options-panel')).toHaveClass(/visible/);
   await page.locator('#random-theme-btn').click();
