@@ -117,10 +117,13 @@ export function createPlayerIdentityController({
           console.warn('Player identity listener unavailable:', error);
         }
       }
+      return promise;
     } catch (error) {
       console.warn('Player identity unavailable:', error);
       playerIdentityStatus.textContent = 'Guest mode ready • player saving will reconnect automatically';
-      setState({ playerIdentityPromise: Promise.resolve() });
+      const fallbackPromise = Promise.resolve();
+      setState({ playerIdentityPromise: fallbackPromise });
+      return fallbackPromise;
     }
   }
 

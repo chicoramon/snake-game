@@ -20,6 +20,9 @@ test('Live Vs lobby and controller are present in the modular app', () => {
     'live-vs-session-score',
     'live-vs-last-round',
     'live-vs-history-list',
+    'live-vs-waiting',
+    'live-vs-waiting-score',
+    'live-vs-waiting-status',
   ]) {
     assert.match(html, new RegExp(`id=["']${id}["']`));
   }
@@ -28,13 +31,30 @@ test('Live Vs lobby and controller are present in the modular app', () => {
   assert.match(main, /submitVersusResult/);
   assert.match(main, /liveVsUi\.returnToLobby/);
   assert.match(main, /URLSearchParams\(window\.location\.search\)\.get\('vs'\)/);
+  assert.match(main, /Promise\.resolve\(startPlayerIdentity\(\)\)[\s\S]*?\.then\(waitForPlayerIdentity\)[\s\S]*?liveVsUi\.openInvite\(invitedLiveVsCode\)/);
+  assert.doesNotMatch(main, /playerIdentityPromise\s*[\r\n]+\s*\.catch\(\(\) => \{\}\)\s*[\r\n]+\s*\.then\(\(\) => liveVsUi\.openInvite/);
   assert.match(controller, /searchParams\.set\('vs', code\)/);
   assert.match(controller, /navigator\.share\(\{\s*title:\s*'Snake Live Vs',\s*text,\s*url\s*\}\)/);
   assert.match(controller, /returnToLobby/);
+  assert.match(controller, /waitForRival/);
   assert.match(main, /invalidateVersusRun/);
   assert.match(main, /latencyDiagnostics:\s*LIVE_VS_LATENCY_DEBUG/);
   assert.match(debugConfig, /DEFAULT_LIVE_VS_LATENCY_DEBUG\s*=\s*true/);
   assert.match(debugConfig, /vsdebug/);
+});
+
+test('Live Vs uses explicit waiting and departure lifecycle states', () => {
+  const main = read('src/main.js');
+  const controller = read('src/ui/live-vs-controller.js');
+
+  assert.match(main, /liveVsUi\.waitForRival\(\{\s*score,\s*interrupted:/);
+  assert.match(main, /onLeave:\s*\(\)\s*=>\s*returnFromVersusToMainMenu/);
+  assert.match(main, /runGameMode = gameMode;[\s\S]*?reset\(false\);[\s\S]*?overlay\.classList\.remove\('hidden'\)/);
+  assert.match(controller, /connectionState === 'forfeit'/);
+  assert.match(controller, /LEFT ARENA/);
+  assert.match(controller, /left the battle room\. This session is closed\./);
+  assert.match(controller, /await service\.leaveRoom\(room\.id\);[\s\S]*?await service\.announceRoomRefresh\(room\.id\);[\s\S]*?onLeave\?\.\(departedRoom\)/);
+  assert.doesNotMatch(controller, /if \(leave && room\?\.id && !startNotified\)/);
 });
 
 test('Rival Ghost is rendered behind the local snake and remains cosmetic', () => {

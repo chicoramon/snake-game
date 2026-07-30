@@ -52,13 +52,15 @@ export function createLiveVsController({
   onMatchStart,
   onGhost,
   onConnectionChange,
-  onLatencyChange
+  onLatencyChange,
+  onLeave
 } = {}) {
   let room = null;
   let pollTimer = null;
   let latencyTimer = null;
   let refreshPending = false;
   let startNotified = false;
+  let waitingForResult = false;
   const latencyByPlayer = new Map();
   const roundNumber = panel.querySelector('#live-vs-round-number');
   const sessionScore = panel.querySelector('#live-vs-session-score');
@@ -74,6 +76,9 @@ export function createLiveVsController({
   const historyWrap = panel.querySelector('#live-vs-history-wrap');
   const historyList = panel.querySelector('#live-vs-history-list');
   const themeName = panel.querySelector('#live-vs-theme-name');
+  const waitingPanel = panel.querySelector('#live-vs-waiting');
+  const waitingScore = panel.querySelector('#live-vs-waiting-score');
+  const waitingStatus = panel.querySelector('#live-vs-waiting-status');
 
   function setMessage(text = '', error = false) {
     message.textContent = text;
@@ -95,9 +100,13 @@ export function createLiveVsController({
   function renderPlayer(element, player, fallback) {
     const latency = player ? latencyByPlayer.get(player.playerId) : null;
     const wins = player ? winsForSeat(player.seat) : 0;
-    const readyText = player?.ready ? 'READY' : (player ? 'STANDING BY' : 'SEARCHING');
+    const departed = player?.connectionState === 'forfeit';
+    const readyText = departed
+      ? 'LEFT ARENA'
+      : (player?.ready ? 'READY' : (player ? 'STANDING BY' : 'SEARCHING'));
     element.classList.toggle('empty', !player);
     element.classList.toggle('ready', !!player?.ready);
+    element.classList.toggle('departed', departed);
     element.classList.toggle('winner', !!player && !!room?.lastRound?.winnerPlayerId
       && room.lastRound.winnerPlayerId === player.playerId);
     element.innerHTML = player
@@ -156,6 +165,8 @@ export function createLiveVsController({
   function maybeStart() {
     if (startNotified || room?.status !== 'countdown' || !room.startsAt) return;
     startNotified = true;
+    waitingForResult = false;
+    if (waitingPanel) waitingPanel.hidden = true;
     clearInterval(pollTimer);
     pollTimer = null;
     panel.classList.remove('visible');
@@ -163,7 +174,18 @@ export function createLiveVsController({
     onMatchStart?.(room);
   }
 
+  function departedRival() {
+    const mineId = getPlayerId?.();
+    return room?.players?.find(player => player.playerId !== mineId && player.connectionState === 'forfeit') || null;
+  }
+
   function statusText(connected) {
+    const departed = departedRival();
+    if (departed) return `${compactPlayerLabel(departed)} left the battle room. This session is closed.`;
+    if (room.status === 'cancelled') return 'Battle room closed.';
+    if (room.status === 'expired') return 'Battle room expired.';
+    if (waitingForResult) return 'Your run is locked. The rival battle is still live.';
+    if (room.status === 'verifying') return 'Your result is verified — waiting for the rival result.';
     if (room.status === 'countdown') return 'Both fighters locked in — battle commencing!';
     if (room.status === 'complete') return 'Round verified. Ready up for the rematch!';
     if (connected < 2) return 'Arena open — send your rival the invite link.';
@@ -181,7 +203,7 @@ export function createLiveVsController({
       ? `${room.draws} ${Number(room.draws) === 1 ? 'DRAW' : 'DRAWS'}`
       : 'NO DRAWS';
     themeName.textContent = `${String(room.theme || 'default').replace(/[-_]/g, ' ').toUpperCase()} ARENA`;
-    const connected = room.players?.length || 0;
+    const connected = room.players?.filter(player => player.connectionState !== 'forfeit').length || 0;
     roomStatus.textContent = statusText(connected);
     renderPlayer(playerOne, playerAtSeat(1), 'PLAYER 1');
     renderPlayer(playerTwo, playerAtSeat(2), 'PLAYER 2');
@@ -189,11 +211,17 @@ export function createLiveVsController({
 
     const mine = myPlayer();
     const nextRound = Number(room.roundNumber || 1) + (room.status === 'complete' ? 1 : 0);
-    readyButton.disabled = connected < 2 || !['waiting', 'complete'].includes(room.status);
+    const roomClosed = ['cancelled', 'expired'].includes(room.status) || !!departedRival();
+    readyButton.disabled = waitingForResult || roomClosed || connected < 2
+      || !['waiting', 'complete'].includes(room.status);
     readyButton.textContent = mine?.ready
       ? 'Cancel Ready'
       : `${room.status === 'complete' ? 'Rematch' : 'Ready'} — Round ${nextRound}`;
     readyButton.classList.toggle('armed', !!mine?.ready);
+    closeButton.textContent = roomClosed ? 'Return to Main Menu' : 'Leave Battle Room';
+    if (departedRival()) {
+      setMessage('Rival disconnected from this battle room.', true);
+    }
     maybeStart();
   }
 
@@ -238,6 +266,8 @@ export function createLiveVsController({
   async function enterRoom(nextRoom) {
     room = nextRoom;
     startNotified = false;
+    waitingForResult = false;
+    if (waitingPanel) waitingPanel.hidden = true;
     latencyByPlayer.clear();
     setMessage();
     renderRoom();
@@ -374,10 +404,40 @@ export function createLiveVsController({
     if (nextRoom) room = nextRoom;
     if (!room) return;
     startNotified = false;
+    waitingForResult = false;
+    panel.classList.remove('waiting-for-rival');
+    if (waitingPanel) waitingPanel.hidden = true;
     panel.classList.add('visible');
     panel.setAttribute('aria-hidden', 'false');
     closeButton.textContent = 'Leave Battle Room';
     setMessage('Round archived • room remains open');
+    renderRoom();
+    beginPolling();
+  }
+
+  function updateWaitingStatus(text, error = false) {
+    if (waitingStatus && text) waitingStatus.textContent = text;
+    setMessage(text, error);
+  }
+
+  function waitForRival({ score = 0, interrupted = false } = {}) {
+    if (!room) return;
+    waitingForResult = true;
+    panel.classList.add('visible', 'waiting-for-rival');
+    panel.setAttribute('aria-hidden', 'false');
+    setup.hidden = true;
+    lobby.hidden = false;
+    closeButton.textContent = 'Leave Battle Room';
+    if (waitingPanel) waitingPanel.hidden = false;
+    if (waitingScore) waitingScore.textContent = String(Math.max(0, Number(score) || 0));
+    if (waitingStatus) {
+      waitingStatus.textContent = interrupted
+        ? 'Forfeit sent • waiting for the verified battle result'
+        : 'Score secured • rival still fighting';
+    }
+    setMessage(interrupted
+      ? 'Match forfeited. Resolving the final result…'
+      : 'Your battle is over. Stay in the arena while your rival finishes.');
     renderRoom();
     beginPolling();
   }
@@ -388,11 +448,19 @@ export function createLiveVsController({
     clearInterval(latencyTimer);
     latencyTimer = null;
     panel.classList.remove('visible');
+    panel.classList.remove('waiting-for-rival');
     panel.setAttribute('aria-hidden', 'true');
-    if (leave && room?.id && !startNotified) {
-      try { await service.leaveRoom(room.id); } catch (_) {}
+    if (leave && room?.id) {
+      const departedRoom = room;
+      try {
+        await service.leaveRoom(room.id);
+        await service.announceRoomRefresh(room.id);
+      } catch (_) {}
       await service.disconnect();
       room = null;
+      startNotified = false;
+      waitingForResult = false;
+      onLeave?.(departedRoom);
     }
   }
 
@@ -415,6 +483,8 @@ export function createLiveVsController({
     close,
     refreshRoom,
     returnToLobby,
+    waitForRival,
+    updateWaitingStatus,
     getRoom: () => room,
     isMatchActive: () => startNotified && !!room,
     disconnect: async () => {

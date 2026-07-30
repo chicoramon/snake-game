@@ -1079,6 +1079,8 @@ function renderVerifiedVersusResult(room) {
 
 async function submitVersusResult() {
   if (versusSubmissionPending || !activeVsRoom?.id || !runReplay) return;
+  const submittedMatchId = activeVsRoom.id;
+  const submittedRoundNumber = activeVsRoom.roundNumber;
   versusSubmissionPending = true;
   submitScoreBtn.textContent = 'Verifying…';
   submitScoreBtn.disabled = true;
@@ -1087,21 +1089,24 @@ async function submitVersusResult() {
       throw new Error('Local replay verification failed');
     }
     const result = await liveVsService.submitResult({
-      matchId: activeVsRoom.id,
-      roundNumber: activeVsRoom.roundNumber,
+      matchId: submittedMatchId,
+      roundNumber: submittedRoundNumber,
       controlMethod: runUsesMixedControls ? 'mixed' : (runControlMethod || controlMode),
       replay: runReplay,
       finalFoodMs: versusLastFoodElapsedMs
     });
-    await liveVsService.announceRoomRefresh(activeVsRoom.id);
+    if (activeVsRoom?.id !== submittedMatchId) return;
+    await liveVsService.announceRoomRefresh(submittedMatchId);
     if (result?.status === 'complete') {
-      renderVerifiedVersusResult(await liveVsService.getRoom(activeVsRoom.id));
+      renderVerifiedVersusResult(await liveVsService.getRoom(submittedMatchId));
       return;
     }
     submitScoreBtn.textContent = 'Rival Finishing…';
-    for (let attempt = 0; attempt < 40 && activeVsRoom; attempt++) {
+    liveVsUi.updateWaitingStatus('Your score is verified • rival still fighting');
+    for (let attempt = 0; attempt < 40 && activeVsRoom?.id === submittedMatchId; attempt++) {
       await new Promise(resolve => setTimeout(resolve, 1500));
-      const room = await liveVsService.getRoom(activeVsRoom.id);
+      if (activeVsRoom?.id !== submittedMatchId) return;
+      const room = await liveVsService.getRoom(submittedMatchId);
       if (renderVerifiedVersusResult(room)) return;
       if (room.status === 'cancelled' || room.status === 'expired') {
         throw new Error('The match ended before both results were verified');
@@ -1109,11 +1114,14 @@ async function submitVersusResult() {
     }
     submitScoreBtn.textContent = 'Result Pending';
     scoreMethodLabel.textContent = 'Your replay is verified • rival result still pending';
+    liveVsUi.updateWaitingStatus('Result still pending • keep this battle room open');
   } catch (error) {
+    if (activeVsRoom?.id !== submittedMatchId) return;
     submitScoreBtn.textContent = 'Retry Verification';
     submitScoreBtn.disabled = false;
     scoreMethodLabel.textContent = error.message || 'Could not verify the Live Vs result';
     scoreMethodLabel.classList.add('unranked');
+    liveVsUi.updateWaitingStatus(error.message || 'Could not verify your result', true);
   } finally {
     versusSubmissionPending = false;
   }
@@ -1125,25 +1133,14 @@ function showRunResult(reason) {
   const isDaily = runGameMode === 'daily';
   const isVersus = runGameMode === 'versus';
   if (isVersus) {
-    overlayTitle.textContent = reason === 'interrupted' ? 'MATCH FORFEITED' : 'BATTLE COMPLETE';
-    overlayMsg.textContent = reason === 'interrupted'
-      ? 'The live match ended because focus or the Realtime connection was lost.'
-      : `Your Score: ${score} • Rival: ${rivalScore}`;
-    startBtn.textContent = 'Return to Menu';
+    overlay.classList.add('hidden');
+    overlay.setAttribute('aria-hidden', 'true');
     shareBtn.style.display = 'none';
-    lbBtn.style.display = 'block';
-    namePrompt.style.display = 'flex';
+    namePrompt.style.display = 'none';
     nameInput.style.display = 'none';
-    submitScoreBtn.textContent = reason === 'interrupted' ? 'Forfeited' : 'Verifying…';
-    submitScoreBtn.disabled = true;
-    scoreMethodLabel.textContent = reason === 'interrupted'
-      ? 'Live Vs forfeited'
-      : 'Replay captured • server verification in progress';
-    scoreMethodLabel.classList.toggle('unranked', reason === 'interrupted');
-    overlay.classList.remove('hidden');
-    overlay.setAttribute('aria-hidden', 'false');
     recordResultVisible = false;
     hideRecordChase();
+    liveVsUi.waitForRival({ score, interrupted: reason === 'interrupted' });
     liveVsService.broadcastGhost({
       matchId: activeVsRoom?.id,
       tick: runTick,
@@ -1161,7 +1158,10 @@ function showRunResult(reason) {
         .then(() => liveVsService.getRoom(forfeitedRoomId))
         .then(room => renderVerifiedVersusResult(room))
         .catch(error => {
-          scoreMethodLabel.textContent = error.message || 'Forfeit recorded • reconnect to view the room';
+          liveVsUi.updateWaitingStatus(
+            error.message || 'Forfeit recorded • reconnect to view the room',
+            true
+          );
         });
     }
     return;
@@ -2724,6 +2724,13 @@ function setPlayerMessage(message, isError = false) { return playerIdentityContr
 function isPermanentPlayer() { return playerIdentityController.isPermanentPlayer(); }
 function renderPlayerIdentity() { return playerIdentityController.render(); }
 function startPlayerIdentity() { return playerIdentityController.start(); }
+async function waitForPlayerIdentity() {
+  let pending;
+  do {
+    pending = playerIdentityPromise;
+    await pending;
+  } while (pending !== playerIdentityPromise);
+}
 function savePlayerInitials(value) { return playerIdentityController.saveInitials(value); }
 function savePlayerDisplayName(value) { return playerIdentityController.saveDisplayName(value); }
 function openPlayerPanel(options) { return playerIdentityController.openPanel(options); }
@@ -3298,7 +3305,7 @@ const liveVsUi = createLiveVsController({
   getCurrentTheme: () => currentTheme,
   getPlayerId: () => currentUser?.id || null,
   ensurePlayer: async () => {
-    await playerIdentityPromise;
+    await waitForPlayerIdentity();
     if (playerProfile) return true;
     openPlayerPanel();
     setPlayerMessage('Choose arcade initials first, then return to Live Vs.');
@@ -3338,32 +3345,49 @@ const liveVsUi = createLiveVsController({
     versusLocalLatencyMs = localMs;
     versusRivalLatencyMs = rivalMs;
     renderVersusLatencyHud();
-  }
+  },
+  onLeave: () => returnFromVersusToMainMenu({ disconnect: false })
 });
 
 const invitedLiveVsCode = new URLSearchParams(window.location.search).get('vs');
-if (invitedLiveVsCode) {
-  playerIdentityPromise
-    .catch(() => {})
-    .then(() => liveVsUi.openInvite(invitedLiveVsCode))
-    .catch(error => console.warn('Live Vs invite could not be opened:', error));
-}
 
-async function leaveVersusResult() {
-  await liveVsUi.disconnect();
+async function returnFromVersusToMainMenu({ disconnect = true } = {}) {
+  if (disconnect) await liveVsUi.disconnect();
+  clearTimeout(versusDisconnectTimer);
+  versusDisconnectTimer = null;
+  versusSubmissionPending = false;
   activeVsRoom = null;
   rivalGhost = null;
+  rivalGhostSequence = -1;
   rivalScore = 0;
   versusLocalLatencyMs = null;
   versusRivalLatencyMs = null;
   hudMode.classList.remove('vs-latency-debug');
   hudMode.removeAttribute('title');
   bestLabel.textContent = 'BEST';
+  runGameMode = gameMode;
   applyGameMode(gameMode);
   startBtn.textContent = 'Play';
+  shareBtn.style.display = 'none';
   namePrompt.style.display = 'none';
   reset(false);
   canvasRenderer.draw(1);
+  overlay.classList.remove('hidden');
+  overlay.setAttribute('aria-hidden', 'false');
+  MenuAudio.open();
+  const cleanUrl = new URL(window.location.href);
+  if (cleanUrl.searchParams.has('vs')) {
+    cleanUrl.searchParams.delete('vs');
+    window.history.replaceState({}, '', cleanUrl);
+  }
+}
+
+async function leaveVersusResult() {
+  if (liveVsUi.getRoom()) {
+    await liveVsUi.close();
+    return;
+  }
+  await returnFromVersusToMainMenu();
 }
 
 startBtn.addEventListener('click', () => {
@@ -3394,4 +3418,12 @@ canvasRenderer.draw(1);
 
 // Attach and render the core game first. Identity is an optional enhancement
 // and may fail in restrictive mobile browsers or embedded web views.
-setTimeout(startPlayerIdentity, 0);
+setTimeout(() => {
+  Promise.resolve(startPlayerIdentity())
+    .then(waitForPlayerIdentity)
+    .then(() => {
+      if (invitedLiveVsCode) return liveVsUi.openInvite(invitedLiveVsCode);
+      return undefined;
+    })
+    .catch(error => console.warn('Player identity or Live Vs invite startup failed:', error));
+}, 0);
