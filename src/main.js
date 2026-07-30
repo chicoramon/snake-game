@@ -1,6 +1,7 @@
 import { createAudioEngine } from './audio/audio-engine.js';
 import { createMenuAudio } from './audio/menu-audio.js';
 import { createControlManager } from './controls/control-manager.js';
+import { LIVE_VS_LATENCY_DEBUG } from './config/debug.js';
 import { createDailyRunService, outranksDailyLeader } from './daily/daily-run-service.js';
 import { createLeaderboardService } from './leaderboard/leaderboard-service.js';
 import { createLiveVsService } from './versus/live-vs-service.js';
@@ -360,11 +361,22 @@ let activeVsRoom = null;
 let rivalGhost = null;
 let rivalGhostSequence = -1;
 let rivalScore = 0;
+let versusLocalLatencyMs = null;
+let versusRivalLatencyMs = null;
 let versusLastFoodElapsedMs = null;
 let versusConnectionLost = false;
 let versusDisconnectTimer = null;
 let versusSubmissionPending = false;
 const DAILY_RULES_SEEN_KEY = 'snake_daily_rules_seen_v2';
+
+function renderVersusLatencyHud() {
+  if (!LIVE_VS_LATENCY_DEBUG || runGameMode !== 'versus') return;
+  const local = versusLocalLatencyMs == null ? '--' : versusLocalLatencyMs;
+  const rival = versusRivalLatencyMs == null ? '--' : versusRivalLatencyMs;
+  hudMode.textContent = `YOU ${local} · RIVAL ${rival} MS`;
+  hudMode.title = 'Round-trip latency to the Live Vs server';
+  hudMode.classList.add('vs-latency-debug');
+}
 
 const BEST_KEYS = { classic: 'snakeBest120', sprint: 'snakeBest120_sprint' };
 const bestScores = {
@@ -909,6 +921,8 @@ function applyGameMode(mode) {
   else if (themeSelection !== 'random') applyTheme(themeSelection, { updateSelection: false });
   best = bestScores[mode];
   bestEl.textContent = best;
+  hudMode.classList.remove('vs-latency-debug');
+  hudMode.removeAttribute('title');
   hudMode.textContent = modeHudLabel(mode);
   dailyChallengeInfo.hidden = mode !== 'daily';
   if (challenge) renderDailyChallengeInfo();
@@ -1054,16 +1068,12 @@ function renderVerifiedVersusResult(room) {
   if (!room || runGameMode !== 'versus' || !activeVsRoom) return false;
   activeVsRoom = room;
   if (room.status !== 'complete') return false;
-  const winnerId = room.winnerPlayerId;
-  const isDraw = room.outcome === 'draw' || !winnerId;
-  const won = winnerId === currentUser?.id;
-  overlayTitle.textContent = isDraw ? 'DRAW!' : (won ? 'YOU WIN!' : 'RIVAL WINS');
-  scoreMethodLabel.textContent = isDraw
-    ? 'Both verified replays finished level'
-    : `${won ? 'Victory' : 'Defeat'} confirmed by both verified replays`;
-  scoreMethodLabel.classList.remove('unranked');
-  submitScoreBtn.textContent = 'Result Verified';
-  submitScoreBtn.disabled = true;
+  overlay.classList.add('hidden');
+  overlay.setAttribute('aria-hidden', 'true');
+  namePrompt.style.display = 'none';
+  startBtn.textContent = 'Play';
+  MenuAudio.open();
+  liveVsUi.returnToLobby(room);
   return true;
 }
 
@@ -1078,6 +1088,7 @@ async function submitVersusResult() {
     }
     const result = await liveVsService.submitResult({
       matchId: activeVsRoom.id,
+      roundNumber: activeVsRoom.roundNumber,
       controlMethod: runUsesMixedControls ? 'mixed' : (runControlMethod || controlMode),
       replay: runReplay,
       finalFoodMs: versusLastFoodElapsedMs
@@ -1141,7 +1152,18 @@ function showRunResult(reason) {
       score,
       alive: false
     }).catch(() => {});
-    if (reason !== 'interrupted') submitVersusResult();
+    if (reason !== 'interrupted') {
+      submitVersusResult();
+    } else if (activeVsRoom?.id) {
+      const forfeitedRoomId = activeVsRoom.id;
+      liveVsService.leaveRoom(forfeitedRoomId)
+        .then(() => liveVsService.announceRoomRefresh(forfeitedRoomId))
+        .then(() => liveVsService.getRoom(forfeitedRoomId))
+        .then(room => renderVerifiedVersusResult(room))
+        .catch(error => {
+          scoreMethodLabel.textContent = error.message || 'Forfeit recorded • reconnect to view the room';
+        });
+    }
     return;
   }
   if (isDaily && reason === 'interrupted') {
@@ -1386,6 +1408,7 @@ async function startGame(options = {}) {
           : 'Practice Run';
       }
       hudMode.textContent = modeHudLabel(runGameMode);
+      if (runGameMode === 'versus') renderVersusLatencyHud();
       best = runGameMode === 'versus' ? 0 : bestScores[runGameMode];
       bestLabel.textContent = runGameMode === 'versus' ? 'RIVAL' : 'BEST';
       bestEl.textContent = best;
@@ -1501,7 +1524,6 @@ function invalidateVersusRun() {
   if (!alive || runGameMode !== 'versus') return;
   versusConnectionLost = true;
   finishRun('interrupted');
-  if (activeVsRoom?.id) liveVsService.leaveRoom(activeVsRoom.id).catch(() => {});
 }
 
 document.addEventListener('visibilitychange', () => {
@@ -3272,6 +3294,7 @@ const liveVsUi = createLiveVsController({
   readyButton: document.getElementById('live-vs-ready'),
   shareButton: document.getElementById('live-vs-share'),
   message: document.getElementById('live-vs-message'),
+  latencyDiagnostics: LIVE_VS_LATENCY_DEBUG,
   getCurrentTheme: () => currentTheme,
   getPlayerId: () => currentUser?.id || null,
   ensurePlayer: async () => {
@@ -3310,14 +3333,31 @@ const liveVsUi = createLiveVsController({
         if (alive && runGameMode === 'versus') invalidateVersusRun();
       }, 3000);
     }
+  },
+  onLatencyChange: ({ localMs, rivalMs }) => {
+    versusLocalLatencyMs = localMs;
+    versusRivalLatencyMs = rivalMs;
+    renderVersusLatencyHud();
   }
 });
+
+const invitedLiveVsCode = new URLSearchParams(window.location.search).get('vs');
+if (invitedLiveVsCode) {
+  playerIdentityPromise
+    .catch(() => {})
+    .then(() => liveVsUi.openInvite(invitedLiveVsCode))
+    .catch(error => console.warn('Live Vs invite could not be opened:', error));
+}
 
 async function leaveVersusResult() {
   await liveVsUi.disconnect();
   activeVsRoom = null;
   rivalGhost = null;
   rivalScore = 0;
+  versusLocalLatencyMs = null;
+  versusRivalLatencyMs = null;
+  hudMode.classList.remove('vs-latency-debug');
+  hudMode.removeAttribute('title');
   bestLabel.textContent = 'BEST';
   applyGameMode(gameMode);
   startBtn.textContent = 'Play';

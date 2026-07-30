@@ -1,5 +1,6 @@
--- Live Vs rooms and Realtime authorization.
--- Run this file in the Supabase SQL editor before enabling the Live Vs menu.
+-- Live Vs persistent rooms, rounds, rematches, and Realtime authorization.
+-- Run this entire file in the Supabase SQL editor before deploying the matching
+-- submit-live-vs-result Edge Function.
 
 create extension if not exists pgcrypto;
 
@@ -16,6 +17,10 @@ create table if not exists public.live_vs_matches (
   board_cols integer not null default 20,
   board_rows integer not null default 32,
   starts_at timestamptz,
+  round_number integer not null default 1 check (round_number > 0),
+  host_wins integer not null default 0 check (host_wins >= 0),
+  guest_wins integer not null default 0 check (guest_wins >= 0),
+  draws integer not null default 0 check (draws >= 0),
   winner_player_id uuid references auth.users(id) on delete set null,
   outcome text check (outcome is null or outcome in ('host', 'guest', 'draw', 'forfeit')),
   created_at timestamptz not null default now(),
@@ -46,22 +51,44 @@ create table if not exists public.live_vs_players (
   unique (match_id, seat)
 );
 
--- Keep this script safe to rerun if a development version of the tables was
--- created before these lifecycle fields were introduced.
-alter table public.live_vs_matches
-  add column if not exists completed_at timestamptz;
-alter table public.live_vs_players
-  add column if not exists control_method text;
-alter table public.live_vs_players
-  add column if not exists last_seen_at timestamptz not null default now();
+create table if not exists public.live_vs_rounds (
+  id uuid primary key default gen_random_uuid(),
+  match_id uuid not null references public.live_vs_matches(id) on delete cascade,
+  round_number integer not null check (round_number > 0),
+  seed bigint not null check (seed between 0 and 4294967295),
+  theme text not null,
+  starts_at timestamptz,
+  completed_at timestamptz not null default now(),
+  winner_player_id uuid references auth.users(id) on delete set null,
+  outcome text not null check (outcome in ('host', 'guest', 'draw', 'forfeit')),
+  host_score integer not null default 0 check (host_score >= 0),
+  guest_score integer not null default 0 check (guest_score >= 0),
+  host_final_food_ms integer,
+  guest_final_food_ms integer,
+  host_finish_reason text,
+  guest_finish_reason text,
+  unique (match_id, round_number)
+);
+
+-- Safe reruns for projects upgraded from the first Live Vs release.
+alter table public.live_vs_matches add column if not exists completed_at timestamptz;
+alter table public.live_vs_matches add column if not exists round_number integer not null default 1;
+alter table public.live_vs_matches add column if not exists host_wins integer not null default 0;
+alter table public.live_vs_matches add column if not exists guest_wins integer not null default 0;
+alter table public.live_vs_matches add column if not exists draws integer not null default 0;
+alter table public.live_vs_players add column if not exists control_method text;
+alter table public.live_vs_players add column if not exists last_seen_at timestamptz not null default now();
 
 create index if not exists live_vs_matches_status_expires_idx
   on public.live_vs_matches (status, expires_at);
 create index if not exists live_vs_players_player_idx
   on public.live_vs_players (player_id, joined_at desc);
+create index if not exists live_vs_rounds_match_number_idx
+  on public.live_vs_rounds (match_id, round_number desc);
 
 alter table public.live_vs_matches enable row level security;
 alter table public.live_vs_players enable row level security;
+alter table public.live_vs_rounds enable row level security;
 
 create or replace function public.is_live_vs_participant(p_match_id uuid)
 returns boolean
@@ -80,18 +107,23 @@ drop policy if exists "Live Vs participants read matches" on public.live_vs_matc
 create policy "Live Vs participants read matches"
   on public.live_vs_matches for select to authenticated
   using (public.is_live_vs_participant(id));
-
 drop policy if exists "Live Vs participants read players" on public.live_vs_players;
 create policy "Live Vs participants read players"
   on public.live_vs_players for select to authenticated
   using (public.is_live_vs_participant(match_id));
+drop policy if exists "Live Vs participants read rounds" on public.live_vs_rounds;
+create policy "Live Vs participants read rounds"
+  on public.live_vs_rounds for select to authenticated
+  using (public.is_live_vs_participant(match_id));
 
 revoke all on public.live_vs_matches from anon, authenticated;
 revoke all on public.live_vs_players from anon, authenticated;
+revoke all on public.live_vs_rounds from anon, authenticated;
 revoke all on function public.is_live_vs_participant(uuid) from public;
 grant execute on function public.is_live_vs_participant(uuid) to authenticated;
 grant select on public.live_vs_matches to authenticated;
 grant select on public.live_vs_players to authenticated;
+grant select on public.live_vs_rounds to authenticated;
 
 create or replace function public.live_vs_room_snapshot(p_match_id uuid)
 returns jsonb
@@ -112,6 +144,10 @@ as $$
     'boardRows', m.board_rows,
     'startsAt', m.starts_at,
     'serverNow', now(),
+    'roundNumber', m.round_number,
+    'hostWins', m.host_wins,
+    'guestWins', m.guest_wins,
+    'draws', m.draws,
     'winnerPlayerId', m.winner_player_id,
     'outcome', m.outcome,
     'expiresAt', m.expires_at,
@@ -123,6 +159,8 @@ as $$
         'connectionState', p.connection_state,
         'score', p.score,
         'finalFoodMs', p.final_food_ms,
+        'finishReason', p.finish_reason,
+        'controlMethod', p.control_method,
         'verificationState', p.verification_state,
         'initials', profile.initials,
         'playerCode', profile.player_code,
@@ -131,6 +169,41 @@ as $$
       from public.live_vs_players p
       left join public.player_profiles profile on profile.id = p.player_id
       where p.match_id = m.id
+    ), '[]'::jsonb),
+    'lastRound', (
+      select jsonb_build_object(
+        'roundNumber', r.round_number,
+        'winnerPlayerId', r.winner_player_id,
+        'outcome', r.outcome,
+        'hostScore', r.host_score,
+        'guestScore', r.guest_score,
+        'hostFinalFoodMs', r.host_final_food_ms,
+        'guestFinalFoodMs', r.guest_final_food_ms,
+        'completedAt', r.completed_at
+      )
+      from public.live_vs_rounds r
+      where r.match_id = m.id
+      order by r.round_number desc
+      limit 1
+    ),
+    'recentRounds', coalesce((
+      select jsonb_agg(history.payload order by history.round_number desc)
+      from (
+        select r.round_number, jsonb_build_object(
+          'roundNumber', r.round_number,
+          'winnerPlayerId', r.winner_player_id,
+          'outcome', r.outcome,
+          'hostScore', r.host_score,
+          'guestScore', r.guest_score,
+          'hostFinalFoodMs', r.host_final_food_ms,
+          'guestFinalFoodMs', r.guest_final_food_ms,
+          'completedAt', r.completed_at
+        ) as payload
+        from public.live_vs_rounds r
+        where r.match_id = m.id
+        order by r.round_number desc
+        limit 5
+      ) history
     ), '[]'::jsonb)
   )
   from public.live_vs_matches m
@@ -163,24 +236,14 @@ begin
 
   loop
     v_attempt := v_attempt + 1;
-    -- Use PostgreSQL built-ins only. Some hosted Supabase projects expose
-    -- pgcrypto outside a SECURITY DEFINER function's search path, which makes
-    -- gen_random_bytes/get_random_bytes unavailable at runtime.
     v_code := upper(substr(md5(
-      random()::text
-      || clock_timestamp()::text
-      || v_uid::text
-      || v_attempt::text
+      random()::text || clock_timestamp()::text || v_uid::text || v_attempt::text
     ), 1, 6));
     begin
       insert into public.live_vs_matches (
         room_code, host_player_id, seed, theme, ruleset_version
       ) values (
-        v_code,
-        v_uid,
-        floor(random() * 4294967296)::bigint,
-        p_theme,
-        'snake-rules-v1'
+        v_code, v_uid, floor(random() * 4294967296)::bigint, p_theme, 'snake-rules-v1'
       )
       returning id into v_match_id;
       exit;
@@ -191,7 +254,6 @@ begin
 
   insert into public.live_vs_players (match_id, player_id, seat)
   values (v_match_id, v_uid, 1);
-
   return public.live_vs_room_snapshot(v_match_id);
 end;
 $$;
@@ -205,6 +267,7 @@ as $$
 declare
   v_uid uuid := auth.uid();
   v_match public.live_vs_matches%rowtype;
+  v_is_member boolean;
 begin
   if v_uid is null then raise exception 'Authentication required'; end if;
   if not exists (select 1 from public.player_profiles where id = v_uid) then
@@ -221,31 +284,51 @@ begin
     update public.live_vs_matches set status = 'expired', updated_at = now() where id = v_match.id;
     raise exception 'This room has expired';
   end if;
-  if v_match.status <> 'waiting' then raise exception 'This match has already started'; end if;
+  if v_match.status in ('cancelled', 'expired') then raise exception 'This room is closed'; end if;
 
-  if not exists (
+  select exists (
     select 1 from public.live_vs_players
     where match_id = v_match.id and player_id = v_uid
-  ) then
+  ) into v_is_member;
+
+  if not v_is_member then
+    if v_match.status <> 'waiting' then raise exception 'This battle session has already started'; end if;
     if exists (select 1 from public.live_vs_players where match_id = v_match.id and seat = 2) then
       raise exception 'This room is full';
     end if;
     insert into public.live_vs_players (match_id, player_id, seat)
     values (v_match.id, v_uid, 2);
+  else
+    update public.live_vs_players
+    set connection_state = 'online', last_seen_at = now()
+    where match_id = v_match.id and player_id = v_uid;
   end if;
 
+  update public.live_vs_matches
+  set expires_at = now() + interval '30 minutes', updated_at = now()
+  where id = v_match.id;
   return public.live_vs_room_snapshot(v_match.id);
 end;
 $$;
 
 create or replace function public.get_live_vs_room(p_match_id uuid)
 returns jsonb
-language sql
-stable
+language plpgsql
 security definer
 set search_path = public
 as $$
-  select public.live_vs_room_snapshot(p_match_id);
+begin
+  update public.live_vs_players
+  set last_seen_at = now(),
+      connection_state = case when connection_state = 'forfeit' then connection_state else 'online' end
+  where match_id = p_match_id and player_id = auth.uid();
+  if not found then raise exception 'You are not a participant in this room'; end if;
+
+  update public.live_vs_matches
+  set expires_at = now() + interval '30 minutes'
+  where id = p_match_id and status not in ('cancelled', 'expired');
+  return public.live_vs_room_snapshot(p_match_id);
+end;
 $$;
 
 create or replace function public.set_live_vs_ready(p_match_id uuid, p_ready boolean)
@@ -256,18 +339,20 @@ set search_path = public
 as $$
 declare
   v_uid uuid := auth.uid();
+  v_match public.live_vs_matches%rowtype;
   v_player_count integer;
   v_ready_count integer;
 begin
   if v_uid is null then raise exception 'Authentication required'; end if;
 
-  perform 1 from public.live_vs_matches
-  where id = p_match_id and status in ('waiting', 'countdown')
+  select * into v_match
+  from public.live_vs_matches
+  where id = p_match_id and status in ('waiting', 'countdown', 'complete')
   for update;
-  if not found then raise exception 'Room is no longer accepting ready changes'; end if;
+  if v_match.id is null then raise exception 'Room is no longer accepting ready changes'; end if;
 
   update public.live_vs_players
-  set ready = p_ready
+  set ready = p_ready, connection_state = 'online', last_seen_at = now()
   where match_id = p_match_id and player_id = v_uid;
   if not found then raise exception 'You are not a participant in this room'; end if;
 
@@ -277,18 +362,132 @@ begin
   where match_id = p_match_id;
 
   if v_player_count = 2 and v_ready_count = 2 then
+    if v_match.status = 'complete' then
+      update public.live_vs_matches
+      set round_number = round_number + 1,
+          seed = floor(random() * 4294967296)::bigint,
+          winner_player_id = null,
+          outcome = null,
+          completed_at = null
+      where id = p_match_id;
+    end if;
+
+    update public.live_vs_players
+    set score = null,
+        final_food_ms = null,
+        finish_reason = null,
+        control_method = null,
+        replay = null,
+        verification_state = 'pending',
+        rejection_reason = null,
+        submitted_at = null,
+        connection_state = 'online'
+    where match_id = p_match_id;
+
     update public.live_vs_matches
     set status = 'countdown',
-        starts_at = coalesce(starts_at, now() + interval '5 seconds'),
+        starts_at = now() + interval '5 seconds',
+        expires_at = now() + interval '30 minutes',
         updated_at = now()
     where id = p_match_id;
-  elsif (v_player_count < 2 or v_ready_count < 2) then
+  elsif v_match.status = 'countdown' then
     update public.live_vs_matches
-    set status = 'waiting', starts_at = null, updated_at = now()
-    where id = p_match_id and status = 'countdown';
+    set status = case when exists (
+          select 1 from public.live_vs_rounds where match_id = p_match_id
+        ) then 'complete' else 'waiting' end,
+        starts_at = null,
+        updated_at = now()
+    where id = p_match_id;
   end if;
 
   return public.live_vs_room_snapshot(p_match_id);
+end;
+$$;
+
+-- Called only by the Edge Function with the service-role key. The row lock and
+-- unique round key make finalization atomic and idempotent if both devices poll
+-- or retry at the same time.
+create or replace function public.finalize_live_vs_round(p_match_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_match public.live_vs_matches%rowtype;
+  v_host public.live_vs_players%rowtype;
+  v_guest public.live_vs_players%rowtype;
+  v_outcome text;
+  v_winner uuid;
+  v_inserted uuid;
+begin
+  select * into v_match from public.live_vs_matches where id = p_match_id for update;
+  if v_match.id is null then raise exception 'Match not found'; end if;
+
+  select * into v_host from public.live_vs_players
+  where match_id = p_match_id and seat = 1;
+  select * into v_guest from public.live_vs_players
+  where match_id = p_match_id and seat = 2;
+
+  if v_host.player_id is null or v_guest.player_id is null then
+    raise exception 'Both fighters are required';
+  end if;
+  if v_host.verification_state <> 'verified' or v_guest.verification_state <> 'verified' then
+    update public.live_vs_matches
+    set status = 'verifying', updated_at = now()
+    where id = p_match_id and status not in ('complete', 'cancelled', 'expired');
+    return jsonb_build_object('complete', false, 'status', 'verifying');
+  end if;
+
+  if v_host.score > v_guest.score then
+    v_outcome := 'host'; v_winner := v_host.player_id;
+  elsif v_guest.score > v_host.score then
+    v_outcome := 'guest'; v_winner := v_guest.player_id;
+  elsif coalesce(v_host.final_food_ms, 2147483647) < coalesce(v_guest.final_food_ms, 2147483647) then
+    v_outcome := 'host'; v_winner := v_host.player_id;
+  elsif coalesce(v_guest.final_food_ms, 2147483647) < coalesce(v_host.final_food_ms, 2147483647) then
+    v_outcome := 'guest'; v_winner := v_guest.player_id;
+  else
+    v_outcome := 'draw'; v_winner := null;
+  end if;
+
+  insert into public.live_vs_rounds (
+    match_id, round_number, seed, theme, starts_at, winner_player_id, outcome,
+    host_score, guest_score, host_final_food_ms, guest_final_food_ms,
+    host_finish_reason, guest_finish_reason
+  ) values (
+    p_match_id, v_match.round_number, v_match.seed, v_match.theme, v_match.starts_at,
+    v_winner, v_outcome, v_host.score, v_guest.score,
+    v_host.final_food_ms, v_guest.final_food_ms,
+    v_host.finish_reason, v_guest.finish_reason
+  )
+  on conflict (match_id, round_number) do nothing
+  returning id into v_inserted;
+
+  if v_inserted is not null then
+    update public.live_vs_matches
+    set host_wins = host_wins + case when v_outcome = 'host' then 1 else 0 end,
+        guest_wins = guest_wins + case when v_outcome = 'guest' then 1 else 0 end,
+        draws = draws + case when v_outcome = 'draw' then 1 else 0 end
+    where id = p_match_id;
+  end if;
+
+  update public.live_vs_matches
+  set status = 'complete',
+      winner_player_id = v_winner,
+      outcome = v_outcome,
+      completed_at = coalesce(completed_at, now()),
+      expires_at = now() + interval '30 minutes',
+      updated_at = now()
+  where id = p_match_id;
+  update public.live_vs_players set ready = false where match_id = p_match_id;
+
+  return jsonb_build_object(
+    'complete', true,
+    'outcome', v_outcome,
+    'winnerPlayerId', v_winner,
+    'roundNumber', v_match.round_number
+  );
 end;
 $$;
 
@@ -300,49 +499,55 @@ set search_path = public
 as $$
 declare
   v_uid uuid := auth.uid();
-  v_status text;
-  v_starts_at timestamptz;
-  v_rival_id uuid;
+  v_match public.live_vs_matches%rowtype;
+  v_rival public.live_vs_players%rowtype;
+  v_mine public.live_vs_players%rowtype;
+  v_round_id uuid;
 begin
-  select status, starts_at
-    into v_status, v_starts_at
-  from public.live_vs_matches
-  where id = p_match_id
-  for update;
-
-  if not exists (
-    select 1 from public.live_vs_players where match_id = p_match_id and player_id = v_uid
-  ) then return; end if;
+  select * into v_match from public.live_vs_matches where id = p_match_id for update;
+  select * into v_mine from public.live_vs_players
+  where match_id = p_match_id and player_id = v_uid;
+  if v_mine.player_id is null then return; end if;
 
   update public.live_vs_players
-  set connection_state = 'forfeit',
-      last_seen_at = now()
+  set connection_state = 'forfeit', ready = false, last_seen_at = now()
   where match_id = p_match_id and player_id = v_uid;
 
-  -- A departure before the synchronized start cancels the unopened room.
-  -- Once starts_at has arrived, departure is a competitive forfeit even if
-  -- the stored status still says countdown.
-  if v_status = 'waiting'
-     or (
-       v_status = 'countdown'
-       and (v_starts_at is null or now() < v_starts_at)
-     ) then
-    update public.live_vs_matches set status = 'cancelled', updated_at = now() where id = p_match_id;
-  elsif v_status in ('countdown', 'running', 'verifying') then
-    select player_id
-      into v_rival_id
-    from public.live_vs_players
-    where match_id = p_match_id
-      and player_id <> v_uid
-    limit 1;
+  if v_match.status in ('waiting', 'complete')
+     or (v_match.status = 'countdown' and (v_match.starts_at is null or now() < v_match.starts_at)) then
+    update public.live_vs_matches
+    set status = 'cancelled', updated_at = now()
+    where id = p_match_id;
+  elsif v_match.status in ('countdown', 'running', 'verifying') then
+    select * into v_rival from public.live_vs_players
+    where match_id = p_match_id and player_id <> v_uid limit 1;
+
+    insert into public.live_vs_rounds (
+      match_id, round_number, seed, theme, starts_at, winner_player_id, outcome,
+      host_score, guest_score, host_final_food_ms, guest_final_food_ms,
+      host_finish_reason, guest_finish_reason
+    ) values (
+      p_match_id, v_match.round_number, v_match.seed, v_match.theme, v_match.starts_at,
+      v_rival.player_id, 'forfeit',
+      case when v_mine.seat = 1 then coalesce(v_mine.score, 0) else coalesce(v_rival.score, 0) end,
+      case when v_mine.seat = 2 then coalesce(v_mine.score, 0) else coalesce(v_rival.score, 0) end,
+      case when v_mine.seat = 1 then v_mine.final_food_ms else v_rival.final_food_ms end,
+      case when v_mine.seat = 2 then v_mine.final_food_ms else v_rival.final_food_ms end,
+      case when v_mine.seat = 1 then 'forfeit' else v_rival.finish_reason end,
+      case when v_mine.seat = 2 then 'forfeit' else v_rival.finish_reason end
+    ) on conflict (match_id, round_number) do nothing
+    returning id into v_round_id;
 
     update public.live_vs_matches
     set status = 'complete',
-        winner_player_id = v_rival_id,
+        winner_player_id = v_rival.player_id,
         outcome = 'forfeit',
+        host_wins = host_wins + case when v_round_id is not null and v_rival.seat = 1 then 1 else 0 end,
+        guest_wins = guest_wins + case when v_round_id is not null and v_rival.seat = 2 then 1 else 0 end,
         completed_at = now(),
         updated_at = now()
     where id = p_match_id;
+    update public.live_vs_players set ready = false where match_id = p_match_id;
   end if;
 end;
 $$;
@@ -352,14 +557,16 @@ revoke all on function public.create_live_vs_room(text) from public;
 revoke all on function public.join_live_vs_room(text) from public;
 revoke all on function public.get_live_vs_room(uuid) from public;
 revoke all on function public.set_live_vs_ready(uuid, boolean) from public;
+revoke all on function public.finalize_live_vs_round(uuid) from public;
 revoke all on function public.leave_live_vs_room(uuid) from public;
 grant execute on function public.create_live_vs_room(text) to authenticated;
 grant execute on function public.join_live_vs_room(text) to authenticated;
 grant execute on function public.get_live_vs_room(uuid) to authenticated;
 grant execute on function public.set_live_vs_ready(uuid, boolean) to authenticated;
 grant execute on function public.leave_live_vs_room(uuid) to authenticated;
+grant execute on function public.finalize_live_vs_round(uuid) to service_role;
 
--- Private Realtime channel authorization. Channel topics use "vs:<match uuid>".
+-- Private Realtime topics use "vs:<match uuid>".
 create or replace function public.is_live_vs_topic_participant(p_topic text)
 returns boolean
 language sql
@@ -370,8 +577,7 @@ as $$
   select case
     when p_topic ~ '^vs:[0-9a-f-]{36}$' then exists (
       select 1 from public.live_vs_players
-      where match_id = substring(p_topic from 4)::uuid
-        and player_id = auth.uid()
+      where match_id = substring(p_topic from 4)::uuid and player_id = auth.uid()
     )
     else false
   end;
@@ -379,12 +585,10 @@ $$;
 
 revoke all on function public.is_live_vs_topic_participant(text) from public;
 grant execute on function public.is_live_vs_topic_participant(text) to authenticated;
-
 drop policy if exists "Live Vs participants receive Realtime" on realtime.messages;
 create policy "Live Vs participants receive Realtime"
   on realtime.messages for select to authenticated
   using (public.is_live_vs_topic_participant(realtime.topic()));
-
 drop policy if exists "Live Vs participants send Realtime" on realtime.messages;
 create policy "Live Vs participants send Realtime"
   on realtime.messages for insert to authenticated

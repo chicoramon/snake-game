@@ -25,14 +25,6 @@ function projectKey(legacyName: string, keySetName: string) {
   }
 }
 
-function comparePlayers(a: any, b: any) {
-  const scoreDifference = Number(b.score) - Number(a.score);
-  if (scoreDifference) return scoreDifference;
-  const aTime = a.final_food_ms == null ? Number.POSITIVE_INFINITY : Number(a.final_food_ms);
-  const bTime = b.final_food_ms == null ? Number.POSITIVE_INFINITY : Number(b.final_food_ms);
-  return aTime - bTime;
-}
-
 Deno.serve(async request => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
@@ -58,10 +50,12 @@ Deno.serve(async request => {
   catch { return json({ error: 'Invalid JSON body' }, 400); }
 
   const matchId = typeof body?.matchId === 'string' ? body.matchId : '';
+  const roundNumber = Number(body?.roundNumber);
   const controlMethod = typeof body?.controlMethod === 'string' ? body.controlMethod : '';
   const replay = body?.replay;
   const finalFoodMs = body?.finalFoodMs == null ? null : Number(body.finalFoodMs);
-  if (!matchId || !['dpad', 'turn', 'tap', 'keyboard', 'mixed'].includes(controlMethod)) {
+  if (!matchId || !Number.isInteger(roundNumber) || roundNumber < 1
+      || !['dpad', 'turn', 'tap', 'keyboard', 'mixed'].includes(controlMethod)) {
     return json({ error: 'Incomplete Live Vs submission' }, 400);
   }
 
@@ -72,6 +66,9 @@ Deno.serve(async request => {
   ]);
   if (matchError || !match) return json({ error: 'Live Vs match was not found' }, 404);
   if (playerError || !participant) return json({ error: 'You are not a participant in this match' }, 403);
+  if (Number(match.round_number) !== roundNumber) {
+    return json({ error: 'This result belongs to an earlier Vs round' }, 409);
+  }
   if (!['countdown', 'running', 'verifying', 'complete'].includes(match.status)) {
     return json({ error: 'Live Vs match is not accepting results' }, 409);
   }
@@ -124,38 +121,23 @@ Deno.serve(async request => {
   }).eq('match_id', matchId).eq('player_id', user.id);
   if (updateError) return json({ error: 'Could not save the verified result' }, 500);
 
-  const { data: players, error: playersError } = await admin
-    .from('live_vs_players')
-    .select('player_id, seat, score, final_food_ms, verification_state')
-    .eq('match_id', matchId)
-    .order('seat');
-  if (playersError) return json({ error: 'Could not compare match results' }, 500);
-
-  const verified = (players || []).filter(player => player.verification_state === 'verified');
-  let winnerPlayerId = null;
-  let outcome = null;
-  let status = 'verifying';
-  if (players?.length === 2 && verified.length === 2) {
-    const comparison = comparePlayers(players[0], players[1]);
-    winnerPlayerId = comparison === 0 ? null : (comparison < 0 ? players[0].player_id : players[1].player_id);
-    outcome = comparison === 0 ? 'draw' : (winnerPlayerId === match.host_player_id ? 'host' : 'guest');
-    status = 'complete';
+  const { data: finalization, error: finalizationError } = await admin.rpc(
+    'finalize_live_vs_round',
+    { p_match_id: matchId }
+  );
+  if (finalizationError) {
+    console.error('Live Vs round finalization failed', finalizationError);
+    return json({ error: 'Could not finalize the verified round' }, 500);
   }
-
-  await admin.from('live_vs_matches').update({
-    status,
-    winner_player_id: winnerPlayerId,
-    outcome,
-    completed_at: status === 'complete' ? new Date().toISOString() : null,
-    updated_at: new Date().toISOString()
-  }).eq('id', matchId);
+  const status = finalization?.complete ? 'complete' : 'verifying';
 
   return json({
     verified: true,
     status,
     score: validation.score,
     finalFoodMs: validation.finalFoodMs,
-    winnerPlayerId,
-    outcome
+    winnerPlayerId: finalization?.winnerPlayerId || null,
+    outcome: finalization?.outcome || null,
+    roundNumber
   });
 });

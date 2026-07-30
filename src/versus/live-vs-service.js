@@ -49,6 +49,15 @@ export function createLiveVsService({ supabase, getPlayerId, now = () => Date.no
     );
   }
 
+  async function measureLatency(matchId) {
+    const startedAt = now();
+    const room = await getRoom(matchId);
+    return {
+      room,
+      latencyMs: Math.max(0, Math.round(now() - startedAt))
+    };
+  }
+
   async function setReady(matchId, ready) {
     requireClient();
     return throwIfError(
@@ -76,6 +85,7 @@ export function createLiveVsService({ supabase, getPlayerId, now = () => Date.no
   async function connect(matchId, {
     onRoomRefresh,
     onGhost,
+    onLatency,
     onPresence,
     onStatus
   } = {}) {
@@ -104,6 +114,11 @@ export function createLiveVsService({ supabase, getPlayerId, now = () => Date.no
         const state = payload.payload;
         if (!state || state.playerId === playerId) return;
         onGhost?.({ ...state, receivedAt: now() });
+      })
+      .on('broadcast', { event: 'latency-state' }, payload => {
+        const state = payload.payload;
+        if (!state || state.playerId === playerId || state.matchId !== matchId) return;
+        onLatency?.(state);
       })
       .on('presence', { event: 'sync' }, () => onPresence?.(channel.presenceState()))
       .subscribe(async status => {
@@ -148,10 +163,26 @@ export function createLiveVsService({ supabase, getPlayerId, now = () => Date.no
     return true;
   }
 
-  async function submitResult({ matchId, controlMethod, replay, finalFoodMs }) {
+  async function broadcastLatency({ matchId, latencyMs }) {
+    if (!channel) return false;
+    const measured = Math.max(0, Math.min(9999, Math.round(Number(latencyMs) || 0)));
+    await channel.send({
+      type: 'broadcast',
+      event: 'latency-state',
+      payload: {
+        matchId,
+        playerId: getPlayerId?.(),
+        latencyMs: measured,
+        measuredAt: now()
+      }
+    });
+    return true;
+  }
+
+  async function submitResult({ matchId, roundNumber, controlMethod, replay, finalFoodMs }) {
     if (!supabase?.functions?.invoke) throw new Error('Live Vs verification is unavailable');
     const { data, error } = await supabase.functions.invoke('submit-live-vs-result', {
-      body: { matchId, controlMethod, replay, finalFoodMs }
+      body: { matchId, roundNumber, controlMethod, replay, finalFoodMs }
     });
     if (error) {
       const functionStatus = Number(error?.context?.status);
@@ -171,12 +202,14 @@ export function createLiveVsService({ supabase, getPlayerId, now = () => Date.no
     createRoom,
     joinRoom,
     getRoom,
+    measureLatency,
     setReady,
     leaveRoom,
     connect,
     disconnect,
     announceRoomRefresh,
     broadcastGhost,
+    broadcastLatency,
     submitResult
   };
 }

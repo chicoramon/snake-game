@@ -44,14 +44,30 @@ test('Live Vs submits the full replay to server verification', async () => {
   const replay = { mode: 'versus', inputs: [] };
   await service.submitResult({
     matchId: 'match-1',
+    roundNumber: 3,
     controlMethod: 'tap',
     replay,
     finalFoodMs: 3210
   });
   assert.deepEqual(invocation, [
     'submit-live-vs-result',
-    { body: { matchId: 'match-1', controlMethod: 'tap', replay, finalFoodMs: 3210 } }
+    { body: { matchId: 'match-1', roundNumber: 3, controlMethod: 'tap', replay, finalFoodMs: 3210 } }
   ]);
+});
+
+test('Live Vs measures server round-trip latency without trusting browser connection hints', async () => {
+  const times = [1000, 1047];
+  const supabase = {
+    rpc: async () => ({ data: { id: 'match-1' }, error: null })
+  };
+  const service = createLiveVsService({
+    supabase,
+    getPlayerId: () => 'player-1',
+    now: () => times.shift()
+  });
+  const sample = await service.measureLatency('match-1');
+  assert.equal(sample.latencyMs, 47);
+  assert.equal(sample.room.id, 'match-1');
 });
 
 test('Rival Ghost transport is capped at ten broadcasts per second', async () => {
@@ -88,5 +104,7 @@ test('Rival Ghost transport is capped at ten broadcasts per second', async () =>
   assert.equal(await service.broadcastGhost(state), false);
   time += 50;
   assert.equal(await service.broadcastGhost(state), true);
+  assert.equal(await service.broadcastLatency({ matchId: 'match-1', latencyMs: 63.7 }), true);
   assert.equal(sent.filter(message => message.event === 'ghost-state').length, 2);
+  assert.equal(sent.find(message => message.event === 'latency-state').payload.latencyMs, 64);
 });
