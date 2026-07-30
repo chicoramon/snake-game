@@ -334,10 +334,14 @@ Use Supabase Realtime Presence and Broadcast for room coordination and low-laten
 
 **Persistent-session implementation completed locally 2026-07-30; upgraded Supabase SQL and Edge Function deployment plus two-device preview testing remain pending.** Live Vs rooms now survive completed rounds and act as an ongoing battle lobby. The server atomically archives each verified round, preserves both final scores and final-food times, tracks host/guest victories and draws, exposes recent battle history, and issues a fresh seed for synchronized rematches. The redesigned 8-bit lobby presents the head-to-head series, last result, battle log, readiness, latency diagnostics, and rematch flow. Invitations now share a directly joinable `?vs=ROOMCODE` URL instead of code-only text.
 
+**Vs Casual stage-select pass implemented locally 2026-07-30; Supabase deployment and two-device validation pending.** Before every match, both players now privately choose and lock a theme, including Random. The server expands Random choices deterministically, resolves matching choices immediately, or authoritatively chooses between different selections. Both clients use server timestamps to show the same fighting-game-style arena roulette before the synchronized countdown. A code-native pixel tombstone now appears and fades at a fallen rival's final grid cell, while remaining purely cosmetic.
+
 - Create private room codes, invitations, ready states, and a synchronized countdown. — **Implemented locally 2026-07-30**
 - Start with a same-seed Sprint 60 race on independent boards. — **Implemented locally 2026-07-30**
 - Show opponent score and connection state in the HUD. — **Opponent score and connection-loss handling implemented locally 2026-07-30; compact progress meter deferred**
 - Render a restrained live Rival Ghost behind food and the local snake at low opacity; it has no collision or gameplay effect and fades when updates become stale. — **Implemented locally 2026-07-30**
+- Let both players select a theme before each Vs Casual round, conceal choices until both lock, resolve disagreements with a synchronized arena roulette, and permit Random as a real selection. — **Implemented locally 2026-07-30; Supabase deployment and two-device validation pending**
+- Mark a fallen rival's last position with a brief, non-interactive pixel-art tombstone. — **Implemented locally 2026-07-30**
 - Broadcast progress and status, but never accept a broadcast score as the final result. — **Implemented locally 2026-07-30**
 - Submit both input replays after the race and let the server confirm the winner. — **Verifier and score/time tiebreak implemented locally 2026-07-30; deployment pending**
 - Return both players to the same persistent lobby after verification, show both authoritative final scores, retain head-to-head records, and support repeated ready-up rematches. — **Implemented locally 2026-07-30; deployment and two-device validation pending**

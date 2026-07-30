@@ -30,6 +30,7 @@ function inviteUrl(code) {
 
 export function createLiveVsController({
   service,
+  themes,
   panel,
   openButton,
   closeButton,
@@ -61,6 +62,10 @@ export function createLiveVsController({
   let refreshPending = false;
   let startNotified = false;
   let waitingForResult = false;
+  let localStageChoice = null;
+  let startTimer = null;
+  let rouletteRaf = null;
+  let scheduledStartKey = '';
   const latencyByPlayer = new Map();
   const roundNumber = panel.querySelector('#live-vs-round-number');
   const sessionScore = panel.querySelector('#live-vs-session-score');
@@ -79,6 +84,80 @@ export function createLiveVsController({
   const waitingPanel = panel.querySelector('#live-vs-waiting');
   const waitingScore = panel.querySelector('#live-vs-waiting-score');
   const waitingStatus = panel.querySelector('#live-vs-waiting-status');
+  const stageSelect = panel.querySelector('#live-vs-stage-select');
+  const stageGrid = panel.querySelector('#live-vs-stage-grid');
+  const stageLockStatus = panel.querySelector('#live-vs-stage-lock-status');
+  const stageReveal = panel.querySelector('#live-vs-stage-reveal');
+  const hostStage = panel.querySelector('#live-vs-host-stage');
+  const guestStage = panel.querySelector('#live-vs-guest-stage');
+  const rouletteStage = panel.querySelector('#live-vs-roulette-stage');
+  const rouletteStatus = panel.querySelector('#live-vs-roulette-status');
+  const themeEntries = Object.entries(themes || {});
+
+  function themeLabel(id) {
+    if (id === 'random') return 'Random';
+    return themes?.[id]?.name || id || 'Mystery';
+  }
+
+  function themeAccent(id) {
+    return themes?.[id]?.accent || '#4ecca3';
+  }
+
+  function clearStartSequence() {
+    if (startTimer) clearTimeout(startTimer);
+    if (rouletteRaf) cancelAnimationFrame(rouletteRaf);
+    startTimer = null;
+    rouletteRaf = null;
+    scheduledStartKey = '';
+  }
+
+  function cloneThemeArtwork(id) {
+    const host = id === 'random'
+      ? document.querySelector('.theme-random-btn .theme-icon')
+      : document.getElementById(`ti-${id}`);
+    const source = host?.firstElementChild;
+    if (!source) return null;
+    if (source.tagName === 'CANVAS') {
+      const canvas = document.createElement('canvas');
+      canvas.width = source.width;
+      canvas.height = source.height;
+      canvas.getContext('2d')?.drawImage(source, 0, 0);
+      return canvas;
+    }
+    return source.cloneNode(true);
+  }
+
+  function createThemeArtwork(id, className = 'live-vs-stage-art') {
+    const frame = document.createElement('span');
+    frame.className = className;
+    frame.setAttribute('aria-hidden', 'true');
+    const artwork = cloneThemeArtwork(id);
+    if (artwork) frame.appendChild(artwork);
+    return frame;
+  }
+
+  function buildStageGrid() {
+    if (!stageGrid || stageGrid.childElementCount) return;
+    const entries = [['random', { name: 'Random', accent: '#f5c542' }], ...themeEntries];
+    for (const [id, theme] of entries) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `live-vs-stage-option${id === 'random' ? ' random' : ''}`;
+      button.dataset.stage = id;
+      button.style.setProperty('--stage-color', theme.accent || '#4ecca3');
+      const label = document.createElement('span');
+      label.className = 'live-vs-stage-option-name';
+      label.textContent = theme.name;
+      button.append(createThemeArtwork(id), label);
+      button.addEventListener('click', () => {
+        const mine = myPlayer();
+        if (mine?.ready || !['waiting', 'complete'].includes(room?.status)) return;
+        localStageChoice = id;
+        renderRoom();
+      });
+      stageGrid.appendChild(button);
+    }
+  }
 
   function setMessage(text = '', error = false) {
     message.textContent = text;
@@ -103,7 +182,7 @@ export function createLiveVsController({
     const departed = player?.connectionState === 'forfeit';
     const readyText = departed
       ? 'LEFT ARENA'
-      : (player?.ready ? 'READY' : (player ? 'STANDING BY' : 'SEARCHING'));
+      : (player?.ready ? 'READY' : (player ? 'SELECTING STAGE' : 'SEARCHING'));
     element.classList.toggle('empty', !player);
     element.classList.toggle('ready', !!player?.ready);
     element.classList.toggle('departed', departed);
@@ -162,16 +241,121 @@ export function createLiveVsController({
     });
   }
 
-  function maybeStart() {
-    if (startNotified || room?.status !== 'countdown' || !room.startsAt) return;
+  function renderStageSelection() {
+    buildStageGrid();
+    const mine = myPlayer();
+    const selected = mine?.themeChoice || localStageChoice;
+    const selectable = !!room && ['waiting', 'complete'].includes(room.status) && !mine?.ready;
+    if (stageSelect) stageSelect.hidden = !['waiting', 'complete'].includes(room?.status);
+    if (stageReveal) stageReveal.hidden = room?.status !== 'countdown';
+    stageGrid?.querySelectorAll('.live-vs-stage-option').forEach(button => {
+      const isSelected = button.dataset.stage === selected;
+      button.classList.toggle('selected', isSelected);
+      button.setAttribute('aria-pressed', String(isSelected));
+      button.disabled = !selectable;
+    });
+    if (stageLockStatus) {
+      stageLockStatus.textContent = mine?.ready
+        ? `${themeLabel(selected)} locked • waiting for rival`
+        : (selected ? `${themeLabel(selected)} selected • lock when ready` : 'Choose an arena');
+    }
+  }
+
+  function setStageCard(element, player, fallback) {
+    if (!element) return;
+    const choice = player?.themeResolved || player?.themeChoice;
+    element.style.setProperty('--stage-color', themeAccent(choice));
+    const playerName = document.createElement('span');
+    playerName.textContent = player ? playerLabel(player) : fallback;
+    const stageName = document.createElement('strong');
+    stageName.textContent = themeLabel(choice);
+    element.replaceChildren(playerName, createThemeArtwork(choice, 'live-vs-stage-card-art'), stageName);
+  }
+
+  function setRouletteStage(themeId, final = false) {
+    if (!rouletteStage) return;
+    rouletteStage.style.setProperty('--stage-color', themeAccent(themeId));
+    rouletteStage.classList.toggle('settled', final);
+    const stageName = document.createElement('strong');
+    stageName.textContent = themeLabel(themeId).toUpperCase();
+    rouletteStage.replaceChildren(createThemeArtwork(themeId, 'live-vs-roulette-art'), stageName);
+  }
+
+  function startMatchFromLobby(serverOffset) {
+    if (startNotified || !room) return;
     startNotified = true;
     waitingForResult = false;
+    if (rouletteRaf) cancelAnimationFrame(rouletteRaf);
+    rouletteRaf = null;
+    setRouletteStage(room.theme, true);
     if (waitingPanel) waitingPanel.hidden = true;
     clearInterval(pollTimer);
     pollTimer = null;
     panel.classList.remove('visible');
     panel.setAttribute('aria-hidden', 'true');
-    onMatchStart?.(room);
+    onMatchStart?.({
+      ...room,
+      serverNow: new Date(Date.now() + serverOffset).toISOString()
+    });
+  }
+
+  function runStageReveal() {
+    if (!room?.startsAt) return;
+    const host = playerAtSeat(1);
+    const guest = playerAtSeat(2);
+    const hostChoice = host?.themeResolved || room.theme;
+    const guestChoice = guest?.themeResolved || room.theme;
+    const revealMs = Date.parse(room.stageRevealAt || room.serverNow || new Date().toISOString());
+    const startMs = Date.parse(room.startsAt);
+    const serverOffset = Date.parse(room.serverNow || new Date().toISOString()) - Date.now();
+    const sequenceKey = `${room.id}:${room.roundNumber}:${room.startsAt}`;
+
+    setStageCard(hostStage, host, '1P');
+    setStageCard(guestStage, guest, '2P');
+    if (stageReveal) stageReveal.hidden = false;
+    if (stageSelect) stageSelect.hidden = true;
+
+    if (scheduledStartKey !== sequenceKey) {
+      clearStartSequence();
+      scheduledStartKey = sequenceKey;
+      const delay = Math.max(0, startMs - (Date.now() + serverOffset));
+      startTimer = setTimeout(() => startMatchFromLobby(serverOffset), delay);
+    }
+
+    if (hostChoice === guestChoice) {
+      setRouletteStage(room.theme, true);
+      if (rouletteStatus) rouletteStatus.textContent = 'UNANIMOUS STAGE • MATCH LOADING';
+      return;
+    }
+
+    const settleAt = Math.max(revealMs, startMs - 650);
+    const boundaries = [0, .12, .24, .36, .48, .60, .70, .79, .87, .93, .97, 1];
+    const animate = () => {
+      rouletteRaf = null;
+      const authoritativeNow = Date.now() + serverOffset;
+      const progress = Math.max(0, Math.min(1, (authoritativeNow - revealMs) / Math.max(1, settleAt - revealMs)));
+      let frame = boundaries.findIndex(value => progress < value) - 1;
+      if (frame < 0) frame = boundaries.length - 2;
+      const settled = progress >= 1;
+      setRouletteStage(settled ? room.theme : (frame % 2 === 0 ? hostChoice : guestChoice), settled);
+      if (rouletteStatus) {
+        rouletteStatus.textContent = settled
+          ? `${themeLabel(room.theme).toUpperCase()} SELECTED • GET READY`
+          : 'ARENA ROULETTE';
+      }
+      if (!settled) rouletteRaf = requestAnimationFrame(animate);
+    };
+    if (!rouletteRaf) rouletteRaf = requestAnimationFrame(animate);
+  }
+
+  function maybeStart() {
+    if (startNotified || room?.status !== 'countdown' || !room.startsAt) return;
+    if (room.stageRevealAt) {
+      runStageReveal();
+      return;
+    }
+    const serverOffset = Date.parse(room.serverNow || new Date().toISOString()) - Date.now();
+    startMatchFromLobby(serverOffset);
   }
 
   function departedRival() {
@@ -186,10 +370,10 @@ export function createLiveVsController({
     if (room.status === 'expired') return 'Battle room expired.';
     if (waitingForResult) return 'Your run is locked. The rival battle is still live.';
     if (room.status === 'verifying') return 'Your result is verified — waiting for the rival result.';
-    if (room.status === 'countdown') return 'Both fighters locked in — battle commencing!';
-    if (room.status === 'complete') return 'Round verified. Ready up for the rematch!';
+    if (room.status === 'countdown') return 'Stage decision locked — battle commencing!';
+    if (room.status === 'complete') return 'Round verified. Pick the next arena!';
     if (connected < 2) return 'Arena open — send your rival the invite link.';
-    return 'Both fighters connected. Choose when the battle begins.';
+    return 'Both fighters connected. Choose and lock your arena.';
   }
 
   function renderRoom() {
@@ -202,7 +386,9 @@ export function createLiveVsController({
     drawCount.textContent = Number(room.draws || 0)
       ? `${room.draws} ${Number(room.draws) === 1 ? 'DRAW' : 'DRAWS'}`
       : 'NO DRAWS';
-    themeName.textContent = `${String(room.theme || 'default').replace(/[-_]/g, ' ').toUpperCase()} ARENA`;
+    themeName.textContent = ['countdown', 'running', 'verifying'].includes(room.status)
+      ? `${themeLabel(room.theme).toUpperCase()} ARENA`
+      : 'STAGE SELECT';
     const connected = room.players?.filter(player => player.connectionState !== 'forfeit').length || 0;
     roomStatus.textContent = statusText(connected);
     renderPlayer(playerOne, playerAtSeat(1), 'PLAYER 1');
@@ -210,13 +396,16 @@ export function createLiveVsController({
     renderLastRound();
 
     const mine = myPlayer();
+    if (!localStageChoice && mine?.themeChoice) localStageChoice = mine.themeChoice;
+    renderStageSelection();
     const nextRound = Number(room.roundNumber || 1) + (room.status === 'complete' ? 1 : 0);
     const roomClosed = ['cancelled', 'expired'].includes(room.status) || !!departedRival();
     readyButton.disabled = waitingForResult || roomClosed || connected < 2
-      || !['waiting', 'complete'].includes(room.status);
+      || !['waiting', 'complete'].includes(room.status)
+      || (!mine?.ready && !localStageChoice && !mine?.themeChoice);
     readyButton.textContent = mine?.ready
       ? 'Cancel Ready'
-      : `${room.status === 'complete' ? 'Rematch' : 'Ready'} — Round ${nextRound}`;
+      : `Ready — Round ${nextRound}`;
     readyButton.classList.toggle('armed', !!mine?.ready);
     closeButton.textContent = roomClosed ? 'Return to Main Menu' : 'Leave Battle Room';
     if (departedRival()) {
@@ -264,9 +453,11 @@ export function createLiveVsController({
   }
 
   async function enterRoom(nextRoom) {
+    clearStartSequence();
     room = nextRoom;
     startNotified = false;
     waitingForResult = false;
+    localStageChoice = myPlayer()?.themeChoice || null;
     if (waitingPanel) waitingPanel.hidden = true;
     latencyByPlayer.clear();
     setMessage();
@@ -358,16 +549,22 @@ export function createLiveVsController({
     return !!room;
   }
 
-  async function toggleReady() {
+  async function toggleStageLock() {
     const mine = myPlayer();
     if (!room || !mine) return;
+    const choice = mine.themeChoice || localStageChoice;
+    if (!mine.ready && !choice) {
+      setMessage('Choose an arena before locking in', true);
+      return;
+    }
     readyButton.disabled = true;
     try {
-      room = await service.setReady(room.id, !mine.ready);
+      room = await service.selectStage(room.id, choice, !mine.ready);
+      localStageChoice = myPlayer()?.themeChoice || choice;
       renderRoom();
       await service.announceRoomRefresh(room.id);
     } catch (error) {
-      setMessage(error.message || 'Could not update ready state', true);
+      setMessage(error.message || 'Could not lock stage choice', true);
     } finally {
       if (room?.status !== 'countdown') {
         readyButton.disabled = (room?.players?.length || 0) < 2
@@ -379,10 +576,10 @@ export function createLiveVsController({
   async function shareRoom() {
     if (!room?.code) return;
     const url = inviteUrl(room.code);
-    const text = `Join my Snake Live Vs battle room ${room.code}.`;
+    const text = `Join my Snake Vs Casual battle room ${room.code}.`;
     try {
       if (navigator.share) {
-        await navigator.share({ title: 'Snake Live Vs', text, url });
+        await navigator.share({ title: 'Snake Vs Casual', text, url });
         setMessage('Invite ready to send');
       } else {
         await navigator.clipboard.writeText(url);
@@ -403,8 +600,10 @@ export function createLiveVsController({
   function returnToLobby(nextRoom) {
     if (nextRoom) room = nextRoom;
     if (!room) return;
+    clearStartSequence();
     startNotified = false;
     waitingForResult = false;
+    localStageChoice = null;
     panel.classList.remove('waiting-for-rival');
     if (waitingPanel) waitingPanel.hidden = true;
     panel.classList.add('visible');
@@ -443,6 +642,7 @@ export function createLiveVsController({
   }
 
   async function close({ leave = true } = {}) {
+    clearStartSequence();
     clearInterval(pollTimer);
     pollTimer = null;
     clearInterval(latencyTimer);
@@ -460,6 +660,7 @@ export function createLiveVsController({
       room = null;
       startNotified = false;
       waitingForResult = false;
+      localStageChoice = null;
       onLeave?.(departedRoom);
     }
   }
@@ -474,7 +675,7 @@ export function createLiveVsController({
   closeButton.addEventListener('click', () => close());
   createButton.addEventListener('click', create);
   joinButton.addEventListener('click', join);
-  readyButton.addEventListener('click', toggleReady);
+  readyButton.addEventListener('click', toggleStageLock);
   shareButton.addEventListener('click', shareRoom);
 
   return {
@@ -488,6 +689,7 @@ export function createLiveVsController({
     getRoom: () => room,
     isMatchActive: () => startNotified && !!room,
     disconnect: async () => {
+      clearStartSequence();
       clearInterval(pollTimer);
       clearInterval(latencyTimer);
       pollTimer = null;

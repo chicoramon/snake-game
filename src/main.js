@@ -121,6 +121,16 @@ let playerIdentityController = null;
 // Do not include bugs, fixes, caching, builds, deployments, or backend details.
 const WHATS_NEW_RELEASES = Object.freeze([
   {
+    id: '2026-07-30-vs-casual-arenas',
+    version: 'Update 2026.07.30',
+    title: 'Choose Your Vs Arena',
+    items: [
+      'Vs Casual now lets both fighters privately choose and lock a theme before every round.',
+      'Matching picks win instantly; different picks enter a synchronized arcade-style arena roulette.',
+      'Random is available as a stage choice, and fallen rivals now leave a brief pixel tombstone on the board.'
+    ]
+  },
+  {
     id: '2026-07-28-arcade-orientation',
     version: 'Update 2026.07.28',
     title: 'Find Your Game Faster',
@@ -163,6 +173,7 @@ const WHATS_NEW_RELEASES = Object.freeze([
   }
 ]);
 const FORCE_WHATS_NEW = new URLSearchParams(location.search).has('whatsnew');
+const invitedLiveVsCode = new URLSearchParams(window.location.search).get('vs');
 const DISPLAY_NAME_INVITE_KEY = 'snake_display_name_invite_v1';
 const DISPLAY_NAME_INVITE_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
 const DISPLAY_NAME_INVITE_MAX_DISMISSALS = 2;
@@ -245,9 +256,11 @@ whatsNewView = createWhatsNewDialog({
   },
   onAfterClose: renderDisplayNameInvitation
 });
-displayNameInviteSuppressedThisSession = FORCE_WHATS_NEW || !whatsNewView.hasSeenCurrentRelease();
+displayNameInviteSuppressedThisSession = FORCE_WHATS_NEW
+  || !!invitedLiveVsCode
+  || !whatsNewView.hasSeenCurrentRelease();
 whatsNewView.bind();
-whatsNewView.scheduleInitialOpen();
+if (!invitedLiveVsCode) whatsNewView.scheduleInitialOpen();
 
 // --- Responsive canvas ---
 const CELL = 20;
@@ -761,7 +774,7 @@ applyTheme(currentTheme, { updateSelection: false });
 
 function modeHudLabel(mode) {
   if (mode === 'daily') return 'DAILY';
-  if (mode === 'versus') return 'VS LIVE';
+  if (mode === 'versus') return 'VS CASUAL';
   return mode === 'sprint' ? 'SPRINT' : 'CLASSIC';
 }
 
@@ -1147,7 +1160,8 @@ function showRunResult(reason) {
       snake,
       direction: dir,
       score,
-      alive: false
+      alive: false,
+      force: true
     }).catch(() => {});
     if (reason !== 'interrupted') {
       submitVersusResult();
@@ -1233,7 +1247,11 @@ function finishRun(reason) {
       if (reason === 'collision') {
         // Screen shake and the collision burst are owned by canvasRenderer.
         AudioEngine.sfxDie();
-        canvasRenderer.triggerCollision({ snake, theme: THEMES[currentTheme] });
+        canvasRenderer.triggerCollision({
+          snake,
+          theme: THEMES[currentTheme],
+          showTombstone: runGameMode === 'versus'
+        });
         return 600;
       }
       sprintRemainingMs = 0;
@@ -2775,7 +2793,7 @@ onboardingView = createOnboardingDialog({
   onAfterClose: renderDisplayNameInvitation
 });
 onboardingView.bind();
-onboardingView.scheduleInitialOpen();
+if (!invitedLiveVsCode) onboardingView.scheduleInitialOpen();
 
 /* Legacy leaderboard controller retained temporarily as source context during extraction.
 const publicPlayerCardCache = new Map();
@@ -3286,6 +3304,7 @@ const leaderboardUi = createLeaderboardController({
 
 const liveVsUi = createLiveVsController({
   service: liveVsService,
+  themes: THEMES,
   panel: liveVsPanel,
   openButton: liveVsButton,
   closeButton: document.getElementById('live-vs-close'),
@@ -3308,7 +3327,7 @@ const liveVsUi = createLiveVsController({
     await waitForPlayerIdentity();
     if (playerProfile) return true;
     openPlayerPanel();
-    setPlayerMessage('Choose arcade initials first, then return to Live Vs.');
+      setPlayerMessage('Choose arcade initials first, then return to Vs Casual.');
     return false;
   },
   onMatchStart: room => startGame({ versusRoom: room }),
@@ -3318,12 +3337,18 @@ const liveVsUi = createLiveVsController({
     const nextSnake = Array.isArray(payload.snake)
       ? payload.snake.map(([x, y]) => ({ x: Number(x), y: Number(y) }))
       : [];
-    rivalGhost = {
+      rivalGhost = {
       ...payload,
       snake: nextSnake,
       previousSnake: rivalGhost?.snake || nextSnake,
-      intervalMs: 100
-    };
+        intervalMs: 100
+      };
+      if (payload.alive === false) {
+        canvasRenderer.triggerRivalTombstone({
+          snake: nextSnake,
+          sequence: payload.sequence
+        });
+      }
     rivalScore = Math.max(0, Number(payload.score) || 0);
     if (runGameMode === 'versus') bestEl.textContent = rivalScore;
   },
@@ -3348,8 +3373,6 @@ const liveVsUi = createLiveVsController({
   },
   onLeave: () => returnFromVersusToMainMenu({ disconnect: false })
 });
-
-const invitedLiveVsCode = new URLSearchParams(window.location.search).get('vs');
 
 async function returnFromVersusToMainMenu({ disconnect = true } = {}) {
   if (disconnect) await liveVsUi.disconnect();

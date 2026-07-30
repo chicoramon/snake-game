@@ -20,7 +20,7 @@ test('main drives canvas effects through renderer events and state snapshots', (
   assert.match(mainSource, /getGameState: \(\) => \(\{[\s\S]*?theme: THEMES\[currentTheme\]/);
   assert.match(mainSource, /canvasRenderer\.recordMove\(snake\)/);
   assert.match(mainSource, /canvasRenderer\.triggerFoodEat\(\{ food: eatenFood, theme: T \}\)/);
-  assert.match(mainSource, /canvasRenderer\.triggerCollision\(\{ snake, theme: THEMES\[currentTheme\] \}\)/);
+  assert.match(mainSource, /canvasRenderer\.triggerCollision\(\{[\s\S]*?snake,[\s\S]*?theme: THEMES\[currentTheme\],[\s\S]*?showTombstone: runGameMode === 'versus'/);
   assert.match(mainSource, /const liveGameSession = createLiveGameSession/);
   assert.match(sessionSource, /renderer\.draw\(state\.alive && !state\.paused \? clock\.tickAccum \/ state\.speed : 1\)/);
 });

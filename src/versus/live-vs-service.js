@@ -66,6 +66,18 @@ export function createLiveVsService({ supabase, getPlayerId, now = () => Date.no
     );
   }
 
+  async function selectStage(matchId, themeChoice, locked = true) {
+    requireClient();
+    return throwIfError(
+      await supabase.rpc('select_live_vs_stage', {
+        p_match_id: matchId,
+        p_theme_choice: themeChoice,
+        p_locked: !!locked
+      }),
+      'Could not lock the Vs Casual stage'
+    );
+  }
+
   async function leaveRoom(matchId) {
     if (!supabase?.rpc || !matchId) return;
     const { error } = await supabase.rpc('leave_live_vs_room', { p_match_id: matchId });
@@ -139,10 +151,10 @@ export function createLiveVsService({ supabase, getPlayerId, now = () => Date.no
     });
   }
 
-  async function broadcastGhost({ matchId, tick, snake, direction, score, alive }) {
+  async function broadcastGhost({ matchId, tick, snake, direction, score, alive, force = false }) {
     if (!channel) return false;
     const timestamp = now();
-    if (timestamp - lastBroadcastAt < 100) return false;
+    if (!force && timestamp - lastBroadcastAt < 100) return false;
     lastBroadcastAt = timestamp;
     sequence++;
     await channel.send({
@@ -204,6 +216,7 @@ export function createLiveVsService({ supabase, getPlayerId, now = () => Date.no
     getRoom,
     measureLatency,
     setReady,
+    selectStage,
     leaveRoom,
     connect,
     disconnect,

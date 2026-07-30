@@ -1828,6 +1828,156 @@
     opacity: 0.58;
   }
   .live-vs-fighter.departed .live-vs-ready-state { color: #ff8aaa; }
+  .live-vs-stage-select, .live-vs-stage-reveal {
+    margin: 14px 0 12px;
+    padding: 12px;
+    border: 1px solid rgba(37,220,255,0.42);
+    background:
+      linear-gradient(135deg, rgba(37,220,255,0.055), transparent 48%),
+      rgba(1,8,14,0.86);
+    box-shadow: inset 0 0 22px rgba(37,220,255,0.045);
+  }
+  .live-vs-stage-heading strong {
+    display: block;
+    margin: 4px 0 10px;
+    color: #fff;
+    font-size: 0.72rem;
+    letter-spacing: 0.13em;
+  }
+  .live-vs-stage-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+  }
+  .live-vs-stage-option {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+    min-height: 64px;
+    padding: 6px 3px 5px !important;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.15) !important;
+    background: rgba(255,255,255,0.035) !important;
+    color: #b8c7d2 !important;
+    font-size: 0.48rem !important;
+    line-height: 1.25;
+    letter-spacing: 0.03em !important;
+    text-transform: uppercase;
+  }
+  .live-vs-stage-art,
+  .live-vs-stage-card-art,
+  .live-vs-roulette-art {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+  }
+  .live-vs-stage-art {
+    width: 30px;
+    height: 30px;
+  }
+  .live-vs-stage-art > img,
+  .live-vs-stage-art > canvas,
+  .live-vs-stage-art > svg,
+  .live-vs-stage-card-art > img,
+  .live-vs-stage-card-art > canvas,
+  .live-vs-stage-card-art > svg,
+  .live-vs-roulette-art > img,
+  .live-vs-roulette-art > canvas,
+  .live-vs-roulette-art > svg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+  }
+  .live-vs-stage-option-name {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .live-vs-stage-option.selected {
+    border-color: var(--stage-color, #25dcff) !important;
+    color: #fff !important;
+    background: color-mix(in srgb, var(--stage-color, #25dcff) 16%, #02070d) !important;
+    box-shadow: inset 0 -3px var(--stage-color, #25dcff), 0 0 10px color-mix(in srgb, var(--stage-color, #25dcff) 30%, transparent);
+  }
+  .live-vs-stage-option:disabled { opacity: 0.42; cursor: default; }
+  #live-vs-stage-lock-status {
+    margin: 9px 0 0;
+    min-height: 1.3em;
+    color: #9eb3c1;
+    font-size: 0.52rem;
+    line-height: 1.4;
+  }
+  .live-vs-stage-reveal {
+    border-color: #ffe45b;
+    background:
+      repeating-linear-gradient(90deg, rgba(255,228,91,0.04) 0 4px, transparent 4px 8px),
+      #04080d;
+    box-shadow: inset 0 0 28px rgba(255,228,91,0.07), 0 0 18px rgba(255,228,91,0.08);
+  }
+  .live-vs-stage-duel {
+    display: grid;
+    grid-template-columns: 1fr 28px 1fr;
+    gap: 6px;
+    align-items: center;
+    margin: 8px 0 10px;
+  }
+  .live-vs-stage-duel > b { color: #fff; font-size: 0.7rem; font-style: italic; }
+  .live-vs-stage-card {
+    min-width: 0;
+    padding: 8px 4px;
+    border: 1px solid var(--stage-color, #25dcff);
+    background: rgba(255,255,255,0.035);
+    box-shadow: inset 0 -3px var(--stage-color, #25dcff);
+  }
+  .live-vs-stage-card > span:first-child { display: block; color: #8ca7b8; font-size: 0.44rem; }
+  .live-vs-stage-card-art {
+    width: 30px;
+    height: 30px;
+    margin: 5px auto 2px;
+  }
+  .live-vs-stage-card strong {
+    display: block;
+    margin-top: 4px;
+    overflow: hidden;
+    color: #fff;
+    font-size: 0.56rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .live-vs-roulette-stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 11px 5px;
+    border: 2px solid var(--stage-color, #ffe45b);
+    background: color-mix(in srgb, var(--stage-color, #ffe45b) 12%, #020408);
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 900;
+    letter-spacing: 0.13em;
+    text-shadow: 2px 0 #25dcff, -2px 0 #ff4878;
+    box-shadow: 0 0 16px color-mix(in srgb, var(--stage-color, #ffe45b) 28%, transparent);
+  }
+  .live-vs-roulette-art {
+    width: 44px;
+    height: 44px;
+  }
+  .live-vs-roulette-stage strong { font: inherit; }
+  #live-vs-roulette-status {
+    margin: 8px 0 0;
+    color: #ffe45b;
+    font-size: 0.5rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
   .live-vs-fighters {
     display: grid;
     grid-template-columns: 1fr 46px 1fr;
@@ -1958,6 +2108,7 @@
     .live-vs-fighters { grid-template-columns: 1fr 38px 1fr; gap: 4px; }
     .live-vs-bolt { width: 37px; height: 39px; }
     .live-vs-fighter { min-height: 104px; }
+    .live-vs-stage-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
   @media (prefers-reduced-motion: reduce) {
     .live-vs-live-dot, #live-vs-lobby { animation: none; }

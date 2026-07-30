@@ -24,6 +24,8 @@ export function createCanvasRenderer({
   let shakeX = 0;
   let shakeY = 0;
   let deathSegments = [];
+  let tombstones = [];
+  let lastRivalTombstoneSequence = -1;
   let trailPoints = [];
   let fpsFrames = 0;
   let fpsLast = performance.now();
@@ -114,6 +116,64 @@ export function createCanvasRenderer({
       ctx.globalAlpha = Math.max(0, segment.life);
       ctx.fillStyle = segment.color;
       ctx.fillRect(-segment.size / 2, -segment.size / 2, segment.size, segment.size);
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function spawnTombstone(head, accent = '#ff5a8b') {
+    if (!head || !Number.isFinite(head.x) || !Number.isFinite(head.y)) return;
+    tombstones.push({
+      x: head.x * cellSize + cellSize / 2,
+      y: head.y * cellSize + cellSize,
+      life: 2.4,
+      maxLife: 2.4,
+      accent
+    });
+  }
+
+  function updateTombstones(dt) {
+    for (let index = tombstones.length - 1; index >= 0; index--) {
+      tombstones[index].life -= dt / 1000;
+      if (tombstones[index].life <= 0) tombstones.splice(index, 1);
+    }
+  }
+
+  function drawTombstones() {
+    for (const stone of tombstones) {
+      const age = stone.maxLife - stone.life;
+      const enter = Math.min(1, age / 0.18);
+      const fade = Math.min(1, stone.life / 0.65);
+      const rise = (1 - enter) * 9;
+      const x = Math.round(stone.x);
+      const y = Math.round(stone.y + rise);
+      ctx.save();
+      ctx.globalAlpha = fade;
+      ctx.shadowColor = stone.accent;
+      ctx.shadowBlur = age < 0.55 ? 9 * (1 - age / 0.55) : 0;
+
+      // Code-native pixel art keeps the marker perfectly grid-aligned at any DPR.
+      ctx.fillStyle = '#16191f';
+      ctx.fillRect(x - 9, y - 17, 18, 17);
+      ctx.fillRect(x - 7, y - 21, 14, 4);
+      ctx.fillRect(x - 4, y - 23, 8, 2);
+      ctx.fillStyle = '#8d96a3';
+      ctx.fillRect(x - 7, y - 16, 14, 15);
+      ctx.fillRect(x - 5, y - 20, 10, 4);
+      ctx.fillRect(x - 2, y - 22, 4, 2);
+      ctx.fillStyle = '#c9d0d8';
+      ctx.fillRect(x - 5, y - 15, 2, 10);
+      ctx.fillRect(x - 3, y - 18, 6, 2);
+      ctx.fillStyle = '#454b55';
+      ctx.fillRect(x - 2, y - 13, 4, 9);
+      ctx.fillRect(x - 5, y - 10, 10, 3);
+      ctx.fillRect(x - 9, y - 2, 18, 3);
+      ctx.fillStyle = stone.accent;
+      ctx.fillRect(x - 1, y - 12, 2, 2);
+      ctx.fillStyle = '#5a3c25';
+      ctx.fillRect(x - 11, y, 22, 3);
+      ctx.fillRect(x - 7, y + 3, 4, 2);
+      ctx.fillRect(x + 4, y + 3, 5, 2);
       ctx.restore();
     }
     ctx.globalAlpha = 1;
@@ -274,6 +334,7 @@ export function createCanvasRenderer({
     for (let y = 0; y <= rows; y++) { ctx.beginPath(); ctx.moveTo(0, y * cellSize); ctx.lineTo(canvasWidth, y * cellSize); ctx.stroke(); }
     drawBoardPattern(theme);
     drawRivalGhost(rivalGhost);
+    drawTombstones();
 
     const interpolateSnake = prevSnake && prevSnake.length === snake.length && interpolation < 1;
     const t = interpolateSnake ? Math.min(interpolation, 1) : 1;
@@ -338,7 +399,8 @@ export function createCanvasRenderer({
   }
 
   function resetEffects() {
-    prevSnake = null; particles.length = 0; deathSegments = []; trailPoints = [];
+    prevSnake = null; particles.length = 0; deathSegments = []; tombstones = []; trailPoints = [];
+    lastRivalTombstoneSequence = -1;
     deathFlash = 0; foodScale = 1; foodScaleTarget = 1; dragonFireBurst = 0; fighterImpactBurst = 0; screenShake = 0; shakeX = 0; shakeY = 0;
   }
 
@@ -357,7 +419,7 @@ export function createCanvasRenderer({
     spawnParticles(food.x * cellSize + cellSize / 2, food.y * cellSize + cellSize / 2, 6, theme.foodAccent, 1.5, 0.7);
     foodScale = 0.3; foodScaleTarget = 1.6;
   }
-  function triggerCollision({ snake, theme }) {
+  function triggerCollision({ snake, theme, showTombstone = false }) {
     deathFlash = 0.5; screenShake = 15; deathSegments = [];
     const tail = theme.snakeTail;
     for (let i = 0; i < snake.length; i++) {
@@ -366,15 +428,33 @@ export function createCanvasRenderer({
       spawnParticles(segment.x * cellSize + cellSize / 2, segment.y * cellSize + cellSize / 2, 3, theme.deathParticle, 1.5, 0.8);
     }
     const head = snake[0]; if (head) spawnParticles(head.x * cellSize + cellSize / 2, head.y * cellSize + cellSize / 2, 30, theme.deathParticle, 3, 1.5);
+    if (showTombstone && head) spawnTombstone(head, theme.deathParticle || theme.accent);
     trailPoints = [];
   }
+  function triggerRivalTombstone({ snake, sequence }) {
+    const normalizedSequence = Number(sequence);
+    if (!snake?.[0] || !Number.isFinite(normalizedSequence) || normalizedSequence <= lastRivalTombstoneSequence) return;
+    lastRivalTombstoneSequence = normalizedSequence;
+    spawnTombstone(snake[0], '#ff5a8b');
+  }
   function update(dt) {
-    updateParticles(dt); updateDeathSegments(dt);
+    updateParticles(dt); updateDeathSegments(dt); updateTombstones(dt);
     if (screenShake > 0) { shakeX = (Math.random() - 0.5) * screenShake * 1.2; shakeY = (Math.random() - 0.5) * screenShake * 1.2; screenShake *= 0.85; if (screenShake < 0.5) { screenShake = 0; shakeX = 0; shakeY = 0; } }
   }
   function drawFrame(interpolation) { if (screenShake > 0) { ctx.save(); ctx.translate(shakeX, shakeY); } draw(interpolation); if (screenShake > 0) ctx.restore(); }
-  function hasActiveEffects() { return deathFlash > 0 || deathSegments.length > 0 || particles.length > 0; }
+  function hasActiveEffects() { return deathFlash > 0 || deathSegments.length > 0 || particles.length > 0 || tombstones.length > 0; }
   function updateFps(element) { fpsFrames++; const now = performance.now(); if (now - fpsLast >= 500) { element.textContent = `${Math.round(fpsFrames / ((now - fpsLast) / 1000))} FPS`; fpsFrames = 0; fpsLast = now; } }
 
-  return { resetEffects, capturePreviousSnake, recordMove, triggerFoodEat, triggerCollision, update, draw: drawFrame, hasActiveEffects, updateFps };
+  return {
+    resetEffects,
+    capturePreviousSnake,
+    recordMove,
+    triggerFoodEat,
+    triggerCollision,
+    triggerRivalTombstone,
+    update,
+    draw: drawFrame,
+    hasActiveEffects,
+    updateFps
+  };
 }

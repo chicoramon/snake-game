@@ -16,6 +16,7 @@ create table if not exists public.live_vs_matches (
   ruleset_version text not null default 'snake-rules-v1',
   board_cols integer not null default 20,
   board_rows integer not null default 32,
+  stage_reveal_at timestamptz,
   starts_at timestamptz,
   round_number integer not null default 1 check (round_number > 0),
   host_wins integer not null default 0 check (host_wins >= 0),
@@ -34,6 +35,8 @@ create table if not exists public.live_vs_players (
   player_id uuid not null references auth.users(id) on delete cascade,
   seat smallint not null check (seat in (1, 2)),
   ready boolean not null default false,
+  theme_choice text,
+  theme_resolved text,
   connection_state text not null default 'online'
     check (connection_state in ('online', 'reconnecting', 'offline', 'forfeit')),
   score integer check (score is null or score >= 0),
@@ -76,8 +79,11 @@ alter table public.live_vs_matches add column if not exists round_number integer
 alter table public.live_vs_matches add column if not exists host_wins integer not null default 0;
 alter table public.live_vs_matches add column if not exists guest_wins integer not null default 0;
 alter table public.live_vs_matches add column if not exists draws integer not null default 0;
+alter table public.live_vs_matches add column if not exists stage_reveal_at timestamptz;
 alter table public.live_vs_players add column if not exists control_method text;
 alter table public.live_vs_players add column if not exists last_seen_at timestamptz not null default now();
+alter table public.live_vs_players add column if not exists theme_choice text;
+alter table public.live_vs_players add column if not exists theme_resolved text;
 
 create index if not exists live_vs_matches_status_expires_idx
   on public.live_vs_matches (status, expires_at);
@@ -142,6 +148,7 @@ as $$
     'rulesetVersion', m.ruleset_version,
     'boardCols', m.board_cols,
     'boardRows', m.board_rows,
+    'stageRevealAt', m.stage_reveal_at,
     'startsAt', m.starts_at,
     'serverNow', now(),
     'roundNumber', m.round_number,
@@ -156,6 +163,17 @@ as $$
         'playerId', p.player_id,
         'seat', p.seat,
         'ready', p.ready,
+        'themeChoice', case
+          when p.player_id = auth.uid()
+            or m.status in ('countdown', 'running', 'verifying', 'complete')
+          then p.theme_choice
+          else null
+        end,
+        'themeResolved', case
+          when m.status in ('countdown', 'running', 'verifying', 'complete')
+          then p.theme_resolved
+          else null
+        end,
         'connectionState', p.connection_state,
         'score', p.score,
         'finalFoodMs', p.final_food_ms,
@@ -298,6 +316,9 @@ begin
     end if;
     insert into public.live_vs_players (match_id, player_id, seat)
     values (v_match.id, v_uid, 2);
+    update public.live_vs_matches
+    set updated_at = now()
+    where id = v_match.id;
   else
     update public.live_vs_players
     set connection_state = 'online', last_seen_at = now()
@@ -331,7 +352,23 @@ begin
 end;
 $$;
 
-create or replace function public.set_live_vs_ready(p_match_id uuid, p_ready boolean)
+create or replace function public.live_vs_theme_pool()
+returns text[]
+language sql
+immutable
+set search_path = public
+as $$
+  select array[
+    'default', 'mario', 'zelda', 'streetfighter', 'dk', 'sonic',
+    'tetris', 'halo', 'contra', 'lego', 'simpsons', 'got'
+  ]::text[];
+$$;
+
+create or replace function public.select_live_vs_stage(
+  p_match_id uuid,
+  p_theme_choice text,
+  p_locked boolean default true
+)
 returns jsonb
 language plpgsql
 security definer
@@ -340,67 +377,126 @@ as $$
 declare
   v_uid uuid := auth.uid();
   v_match public.live_vs_matches%rowtype;
+  v_pool text[] := public.live_vs_theme_pool();
+  v_host_choice text;
+  v_guest_choice text;
+  v_host_theme text;
+  v_guest_theme text;
+  v_final_theme text;
   v_player_count integer;
   v_ready_count integer;
 begin
   if v_uid is null then raise exception 'Authentication required'; end if;
+  p_theme_choice := lower(trim(coalesce(p_theme_choice, '')));
+  if p_theme_choice <> 'random' and not (p_theme_choice = any(v_pool)) then
+    raise exception 'Invalid Vs Casual stage';
+  end if;
 
   select * into v_match
   from public.live_vs_matches
-  where id = p_match_id and status in ('waiting', 'countdown', 'complete')
+  where id = p_match_id and status in ('waiting', 'complete')
   for update;
-  if v_match.id is null then raise exception 'Room is no longer accepting ready changes'; end if;
+  if v_match.id is null then raise exception 'Room is no longer accepting stage selections'; end if;
 
-  update public.live_vs_players
-  set ready = p_ready, connection_state = 'online', last_seen_at = now()
-  where match_id = p_match_id and player_id = v_uid;
-  if not found then raise exception 'You are not a participant in this room'; end if;
-
-  select count(*), count(*) filter (where ready)
-  into v_player_count, v_ready_count
-  from public.live_vs_players
-  where match_id = p_match_id;
-
-  if v_player_count = 2 and v_ready_count = 2 then
-    if v_match.status = 'complete' then
-      update public.live_vs_matches
-      set round_number = round_number + 1,
-          seed = floor(random() * 4294967296)::bigint,
-          winner_player_id = null,
-          outcome = null,
-          completed_at = null
-      where id = p_match_id;
-    end if;
+  if v_match.status = 'complete' then
+    update public.live_vs_matches
+    set round_number = round_number + 1,
+        seed = floor(random() * 4294967296)::bigint,
+        winner_player_id = null,
+        outcome = null,
+        completed_at = null,
+        stage_reveal_at = null,
+        starts_at = null,
+        status = 'waiting',
+        updated_at = now()
+    where id = p_match_id
+    returning * into v_match;
 
     update public.live_vs_players
-    set score = null,
+    set ready = false,
+        theme_choice = null,
+        theme_resolved = null,
+        score = null,
         final_food_ms = null,
         finish_reason = null,
         control_method = null,
         replay = null,
         verification_state = 'pending',
         rejection_reason = null,
-        submitted_at = null,
-        connection_state = 'online'
+        submitted_at = null
+    where match_id = p_match_id;
+  end if;
+
+  update public.live_vs_players
+  set ready = p_locked,
+      theme_choice = p_theme_choice,
+      theme_resolved = null,
+      connection_state = 'online',
+      last_seen_at = now()
+  where match_id = p_match_id and player_id = v_uid;
+  if not found then raise exception 'You are not a participant in this room'; end if;
+
+  select count(*), count(*) filter (where ready)
+  into v_player_count, v_ready_count
+  from public.live_vs_players
+  where match_id = p_match_id and connection_state <> 'forfeit';
+
+  if v_player_count = 2 and v_ready_count = 2 then
+    select theme_choice into v_host_choice
+    from public.live_vs_players where match_id = p_match_id and seat = 1;
+    select theme_choice into v_guest_choice
+    from public.live_vs_players where match_id = p_match_id and seat = 2;
+
+    v_host_theme := case when v_host_choice = 'random'
+      then v_pool[1 + (v_match.seed % array_length(v_pool, 1))::integer]
+      else v_host_choice end;
+    v_guest_theme := case when v_guest_choice = 'random'
+      then v_pool[1 + ((v_match.seed / array_length(v_pool, 1)) % array_length(v_pool, 1))::integer]
+      else v_guest_choice end;
+    v_final_theme := case
+      when v_host_theme = v_guest_theme then v_host_theme
+      when (v_match.seed % 2) = 0 then v_host_theme
+      else v_guest_theme
+    end;
+
+    update public.live_vs_players
+    set theme_resolved = case
+      when seat = 1 then v_host_theme
+      else v_guest_theme
+    end
     where match_id = p_match_id;
 
     update public.live_vs_matches
     set status = 'countdown',
-        starts_at = now() + interval '5 seconds',
+        theme = v_final_theme,
+        stage_reveal_at = now(),
+        starts_at = now() + case
+          when v_host_theme = v_guest_theme then interval '2 seconds'
+          else interval '3.2 seconds'
+        end,
         expires_at = now() + interval '30 minutes',
-        updated_at = now()
-    where id = p_match_id;
-  elsif v_match.status = 'countdown' then
-    update public.live_vs_matches
-    set status = case when exists (
-          select 1 from public.live_vs_rounds where match_id = p_match_id
-        ) then 'complete' else 'waiting' end,
-        starts_at = null,
         updated_at = now()
     where id = p_match_id;
   end if;
 
   return public.live_vs_room_snapshot(p_match_id);
+end;
+$$;
+
+-- Backward-compatible wrapper for clients from the first Live Vs build.
+create or replace function public.set_live_vs_ready(p_match_id uuid, p_ready boolean)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_choice text;
+begin
+  select coalesce(theme_choice, 'random') into v_choice
+  from public.live_vs_players
+  where match_id = p_match_id and player_id = auth.uid();
+  return public.select_live_vs_stage(p_match_id, v_choice, p_ready);
 end;
 $$;
 
@@ -557,12 +653,15 @@ revoke all on function public.create_live_vs_room(text) from public;
 revoke all on function public.join_live_vs_room(text) from public;
 revoke all on function public.get_live_vs_room(uuid) from public;
 revoke all on function public.set_live_vs_ready(uuid, boolean) from public;
+revoke all on function public.live_vs_theme_pool() from public;
+revoke all on function public.select_live_vs_stage(uuid, text, boolean) from public;
 revoke all on function public.finalize_live_vs_round(uuid) from public;
 revoke all on function public.leave_live_vs_room(uuid) from public;
 grant execute on function public.create_live_vs_room(text) to authenticated;
 grant execute on function public.join_live_vs_room(text) to authenticated;
 grant execute on function public.get_live_vs_room(uuid) to authenticated;
 grant execute on function public.set_live_vs_ready(uuid, boolean) to authenticated;
+grant execute on function public.select_live_vs_stage(uuid, text, boolean) to authenticated;
 grant execute on function public.leave_live_vs_room(uuid) to authenticated;
 grant execute on function public.finalize_live_vs_round(uuid) to service_role;
 

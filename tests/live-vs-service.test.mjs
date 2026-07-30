@@ -23,9 +23,15 @@ test('Live Vs room actions use authenticated RPCs', async () => {
   const service = createLiveVsService({ supabase, getPlayerId: () => 'player-1' });
   await service.createRoom('sonic');
   await service.joinRoom('abc123');
+  await service.selectStage('match-1', 'random', true);
   assert.deepEqual(calls, [
     ['create_live_vs_room', { p_theme: 'sonic' }],
-    ['join_live_vs_room', { p_room_code: 'ABC123' }]
+    ['join_live_vs_room', { p_room_code: 'ABC123' }],
+    ['select_live_vs_stage', {
+      p_match_id: 'match-1',
+      p_theme_choice: 'random',
+      p_locked: true
+    }]
   ]);
 });
 
@@ -102,9 +108,10 @@ test('Rival Ghost transport is capped at ten broadcasts per second', async () =>
   assert.equal(await service.broadcastGhost(state), true);
   time += 50;
   assert.equal(await service.broadcastGhost(state), false);
-  time += 50;
+  assert.equal(await service.broadcastGhost({ ...state, alive: false, force: true }), true);
+  time += 100;
   assert.equal(await service.broadcastGhost(state), true);
   assert.equal(await service.broadcastLatency({ matchId: 'match-1', latencyMs: 63.7 }), true);
-  assert.equal(sent.filter(message => message.event === 'ghost-state').length, 2);
+  assert.equal(sent.filter(message => message.event === 'ghost-state').length, 3);
   assert.equal(sent.find(message => message.event === 'latency-state').payload.latencyMs, 64);
 });

@@ -16,6 +16,13 @@ async function openMenu(page, { blockSupabase = false, query = '' } = {}) {
   }
 }
 
+test('Vs invite links suppress automatic announcement and onboarding panels', async ({ page }) => {
+  await page.goto('./?vs=ABC123');
+  await page.waitForTimeout(700);
+  await expect(page.locator('#whats-new-panel')).not.toHaveClass(/visible/);
+  await expect(page.locator('#onboarding-panel')).not.toHaveClass(/visible/);
+});
+
 test('new players can replay the arcade tour and select a control', async ({ page }) => {
   await page.goto('./');
   await expect(page.locator('#onboarding-panel')).toHaveClass(/visible/);

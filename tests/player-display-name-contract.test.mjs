@@ -69,7 +69,7 @@ test('main menu gently invites named players to add a public display name', () =
 });
 
 test("display-name invitation never competes with gameplay or automatic What's New", () => {
-  assert.match(html, /displayNameInviteSuppressedThisSession = FORCE_WHATS_NEW \|\| !whatsNewView\.hasSeenCurrentRelease\(\)/);
+  assert.match(html, /displayNameInviteSuppressedThisSession = FORCE_WHATS_NEW\s+\|\| !!invitedLiveVsCode\s+\|\| !whatsNewView\.hasSeenCurrentRelease\(\)/);
   assert.match(html, /open\(\{ suppressDisplayNameInvite: true \}\)/);
   assert.match(html, /&& !alive\s+&& !overlay\.classList\.contains\('hidden'\)/);
   assert.match(html, /displayNameInviteSuppressedThisSession = true;\s+displayNameInvite\.hidden = true;\s+overlay\.classList\.add\('hidden'\)/);
