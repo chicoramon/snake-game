@@ -34,8 +34,8 @@
 <title>Snake Game</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="./snake-core.js"></script>
-  <script type="module" crossorigin src="./assets/index-C7V6Zlpo.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-CWy5f5y5.css">
+  <script type="module" crossorigin src="./assets/index-B0QXsozL.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-iC1hXGMk.css">
 </head>
 <body>
 
@@ -113,38 +113,76 @@
   </div>
 </div>
 
-<div id="live-vs-panel" role="dialog" aria-modal="true" aria-labelledby="live-vs-heading">
+<div id="live-vs-panel" role="dialog" aria-modal="true" aria-labelledby="live-vs-heading" aria-hidden="true">
   <div class="live-vs-card">
-    <span class="menu-kicker">Realtime Battle</span>
-    <h2 id="live-vs-heading">Live Vs</h2>
-    <p class="live-vs-tagline">Same arena seed. Same 60 seconds. Highest score wins.</p>
+    <header class="live-vs-marquee">
+      <span class="live-vs-live-dot" aria-hidden="true"></span>
+      <span class="menu-kicker">Realtime Battle Network</span>
+      <h2 id="live-vs-heading">Live Vs</h2>
+      <p class="live-vs-tagline">Same arena. Same 60 seconds. One champion.</p>
+    </header>
 
     <div id="live-vs-setup">
-      <button id="live-vs-create" class="primary" type="button">Create Private Room</button>
+      <div class="live-vs-setup-art" aria-hidden="true">
+        <span>1P</span><b>VS</b><span>2P</span>
+      </div>
+      <button id="live-vs-create" class="primary" type="button">Create Battle Room</button>
       <div class="live-vs-divider"><span>OR</span></div>
-      <label for="live-vs-code">Rival room code</label>
+      <label for="live-vs-code">Enter an invite code</label>
       <div class="live-vs-code-entry">
         <input id="live-vs-code" type="text" maxlength="6" inputmode="text" autocomplete="off" placeholder="ABC123">
-        <button id="live-vs-join" type="button">Join</button>
+        <button id="live-vs-join" type="button">Enter</button>
       </div>
     </div>
 
     <div id="live-vs-lobby" hidden>
-      <span class="live-vs-label">Room Code</span>
-      <strong id="live-vs-room-code">------</strong>
-      <button id="live-vs-share" type="button">Share Invite</button>
+      <div class="live-vs-room-bar">
+        <div>
+          <span class="live-vs-label">Battle Room</span>
+          <strong id="live-vs-room-code">------</strong>
+        </div>
+        <button id="live-vs-share" type="button" aria-label="Share a joinable room link">Share Link</button>
+      </div>
+
+      <div class="live-vs-session-strip">
+        <span id="live-vs-round-number">ROUND 1</span>
+        <strong id="live-vs-session-score">0 — 0</strong>
+        <span id="live-vs-draw-count">NO DRAWS</span>
+      </div>
+
       <p id="live-vs-room-status">Waiting for rival…</p>
       <div class="live-vs-fighters">
         <div id="live-vs-player-one" class="live-vs-fighter empty"></div>
-        <div class="live-vs-bolt">VS</div>
+        <div class="live-vs-bolt"><span>VS</span></div>
         <div id="live-vs-player-two" class="live-vs-fighter empty"></div>
       </div>
+
+      <section id="live-vs-last-round" class="live-vs-result-board" hidden aria-live="polite">
+        <span class="live-vs-label">Last Battle</span>
+        <strong id="live-vs-result-title">Result Verified</strong>
+        <div class="live-vs-result-scores">
+          <div><span id="live-vs-host-result-name">1P</span><b id="live-vs-host-result-score">0</b><small id="live-vs-host-result-time">--</small></div>
+          <em>FINAL</em>
+          <div><span id="live-vs-guest-result-name">2P</span><b id="live-vs-guest-result-score">0</b><small id="live-vs-guest-result-time">--</small></div>
+        </div>
+      </section>
+
+      <section id="live-vs-history-wrap" class="live-vs-history" hidden>
+        <span class="live-vs-label">Battle Log</span>
+        <div id="live-vs-history-list"></div>
+      </section>
+
+      <div class="live-vs-arena-spec">
+        <span id="live-vs-theme-name">DEFAULT ARENA</span>
+        <span>60 SEC</span>
+        <span>SYNCED SEED</span>
+      </div>
       <p class="live-vs-ghost-note">Your rival appears as a faint ghost on the board. Ghosts never collide or affect gameplay.</p>
-      <button id="live-vs-ready" class="primary" type="button" disabled>Ready!</button>
+      <button id="live-vs-ready" class="primary" type="button" disabled>Ready for Round 1</button>
     </div>
 
     <p id="live-vs-message" aria-live="polite"></p>
-    <button id="live-vs-close" type="button">Back</button>
+    <button id="live-vs-close" type="button">Leave Battle Room</button>
   </div>
 </div>
 
