@@ -84,6 +84,8 @@ test('menu choices expose themes, random, controls, and leaderboard', async ({ p
   }
   await page.locator('#controls-back-btn').click();
 
+  await expect(page.locator('#vs-live-btn')).toBeVisible();
+
   await page.locator('#lbBtn').click();
   await expect(page.locator('#leaderboardOverlay')).toHaveClass(/visible/);
   await page.locator('#lbBack').click();

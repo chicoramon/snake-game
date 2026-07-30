@@ -43,14 +43,14 @@ function acceptDirection(current, requested) {
   return next;
 }
 
-export function validateDailyReplay(replay, challenge, submitted = {}) {
+export function validateSeededTimedReplay(replay, challenge, submitted = {}, expectedMode = 'daily') {
   const fail = reason => ({ verified: false, reason });
   if (!replay || typeof replay !== 'object') return fail('Replay is missing');
   if (replay.formatVersion !== 1) return fail('Unsupported replay format');
   if (replay.rulesetVersion !== challenge.rulesetVersion || replay.rulesetVersion !== DAILY_RULESET_VERSION) {
     return fail('Ruleset mismatch');
   }
-  if (replay.mode !== 'daily') return fail('Mode mismatch');
+  if (replay.mode !== expectedMode) return fail('Mode mismatch');
   if ((Number(replay.seed) >>> 0) !== (Number(challenge.seed) >>> 0)) return fail('Seed mismatch');
   if (replay.theme !== challenge.theme) return fail('Theme mismatch');
   if (replay.board?.cols !== challenge.boardCols || replay.board?.rows !== challenge.boardRows) {
@@ -112,9 +112,9 @@ export function validateDailyReplay(replay, challenge, submitted = {}) {
   if (replay.finishReason === 'collision' && alive) return fail('Expected collision did not occur');
   if (replay.finishReason === 'time' && !alive) return fail('Unexpected collision');
   if (replay.finishReason === 'time' && (elapsedMs > challenge.durationMs || challenge.durationMs - elapsedMs >= speed)) {
-    return fail('Run did not end at the daily time limit');
+    return fail('Run did not end at the time limit');
   }
-  if (elapsedMs > challenge.durationMs + 110) return fail('Run exceeds the daily time limit');
+  if (elapsedMs > challenge.durationMs + 110) return fail('Run exceeds the time limit');
   if (score !== replay.finalScore || score !== submitted.score) return fail('Score mismatch');
   if ((submitted.finalFoodMs ?? null) !== finalFoodMs) return fail('Final-food time mismatch');
 
@@ -126,4 +126,8 @@ export function validateDailyReplay(replay, challenge, submitted = {}) {
     elapsedMs,
     finishReason: replay.finishReason
   };
+}
+
+export function validateDailyReplay(replay, challenge, submitted = {}) {
+  return validateSeededTimedReplay(replay, challenge, submitted, 'daily');
 }

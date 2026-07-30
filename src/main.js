@@ -3,6 +3,7 @@ import { createMenuAudio } from './audio/menu-audio.js';
 import { createControlManager } from './controls/control-manager.js';
 import { createDailyRunService, outranksDailyLeader } from './daily/daily-run-service.js';
 import { createLeaderboardService } from './leaderboard/leaderboard-service.js';
+import { createLiveVsService } from './versus/live-vs-service.js';
 import { createSupabaseClient } from './services/supabase-client.js';
 import { createPlayerAuthService } from './player/player-auth-service.js';
 import { createPlayerProfileService } from './player/player-profile-service.js';
@@ -13,6 +14,7 @@ import { createOnboardingDialog } from './ui/onboarding-dialog.js';
 import { createPlayerPanel } from './ui/player-panel.js';
 import { createPlayerIdentityController } from './player/player-identity-controller.js';
 import { createLeaderboardController } from './ui/leaderboard-controller.js';
+import { createLiveVsController } from './ui/live-vs-controller.js';
 import { createGameController } from './game/game-controller.js';
 import { createRunLifecycle } from './game/run-lifecycle.js';
 import { createLiveGameSession } from './game/live-game-session.js';
@@ -34,7 +36,8 @@ if (new URLSearchParams(location.search).has('debug')) document.body.classList.a
 const overlay = document.getElementById('overlay');
 const startBtn = document.getElementById('startBtn');
 const shareBtn = document.getElementById('shareBtn');
-const lbBtn = document.getElementById('lbBtn');
+const lbBtn = document.getElementById('lbBtn');
+const liveVsButton = document.getElementById('vs-live-btn');
 const namePrompt = document.getElementById('namePrompt');
 const nameInput = document.getElementById('nameInput');
 const submitScoreBtn = document.getElementById('submitScoreBtn');
@@ -94,6 +97,8 @@ const themeLabel = document.getElementById('themeLabel');
 const overlayMsg = document.getElementById('overlayMsg');
 const scoreEl = document.getElementById('score');
 const bestEl = document.getElementById('best');
+const bestLabel = document.querySelector('.hud-best .label');
+const liveVsPanel = document.getElementById('live-vs-panel');
 const hudMode = document.getElementById('hud-mode');
 const timerBlock = document.getElementById('timer-block');
 const timerEl = document.getElementById('timer');
@@ -351,6 +356,14 @@ let dailyStartPending = false;
 let dailyChallengeRequest = 0;
 let dailyChallengeLoading = false;
 let dailyReservationRequestId = null;
+let activeVsRoom = null;
+let rivalGhost = null;
+let rivalGhostSequence = -1;
+let rivalScore = 0;
+let versusLastFoodElapsedMs = null;
+let versusConnectionLost = false;
+let versusDisconnectTimer = null;
+let versusSubmissionPending = false;
 const DAILY_RULES_SEEN_KEY = 'snake_daily_rules_seen_v2';
 
 const BEST_KEYS = { classic: 'snakeBest120', sprint: 'snakeBest120_sprint' };
@@ -650,7 +663,8 @@ const canvasRenderer = createCanvasRenderer({
     theme: THEMES[currentTheme],
     themeId: currentTheme,
     alive,
-    paused
+    paused,
+    rivalGhost
   })
 });
 
@@ -735,11 +749,12 @@ applyTheme(currentTheme, { updateSelection: false });
 
 function modeHudLabel(mode) {
   if (mode === 'daily') return 'DAILY';
+  if (mode === 'versus') return 'VS LIVE';
   return mode === 'sprint' ? 'SPRINT' : 'CLASSIC';
 }
 
 function isTimedMode(mode) {
-  return mode === 'sprint' || mode === 'daily';
+  return mode === 'sprint' || mode === 'daily' || mode === 'versus';
 }
 
 function currentUtcDateKey() {
@@ -937,6 +952,7 @@ function reset(startingRun = false) {
   lastTimerSecond = 60;
   dailyTickElapsedMs = 0;
   dailyLastFoodElapsedMs = null;
+  versusLastFoodElapsedMs = null;
   countdownActive = startingRun && isTimedMode(runGameMode);
   countdownRemainingMs = countdownActive ? timedRun.countdownMs : 0;
   countdownDisplay.textContent = countdownActive ? '3' : '';
@@ -946,13 +962,13 @@ function reset(startingRun = false) {
   scoreEl.textContent = 0;
   // Reset pause button
   const pauseBtn = document.getElementById('pause-btn');
-  const dailyPauseDisabled = runGameMode === 'daily';
+  const competitivePauseDisabled = runGameMode === 'daily' || runGameMode === 'versus';
   pauseBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="2" y="1" width="2" height="8"/><rect x="6" y="1" width="2" height="8"/></svg>';
   pauseBtn.classList.remove('paused');
-  pauseBtn.hidden = dailyPauseDisabled;
-  pauseBtn.disabled = dailyPauseDisabled;
-  pauseBtn.setAttribute('aria-label', dailyPauseDisabled ? 'Daily Run cannot be paused' : 'Pause game');
-  pauseBtn.title = dailyPauseDisabled ? 'Daily Run cannot be paused' : 'Pause (P)';
+  pauseBtn.hidden = competitivePauseDisabled;
+  pauseBtn.disabled = competitivePauseDisabled;
+  pauseBtn.setAttribute('aria-label', competitivePauseDisabled ? `${modeHudLabel(runGameMode)} cannot be paused` : 'Pause game');
+  pauseBtn.title = competitivePauseDisabled ? `${modeHudLabel(runGameMode)} cannot be paused` : 'Pause (P)';
   // Keep the game identity primary; the selected theme has its own label.
   overlayTitle.textContent = currentTheme === 'got' ? 'DRAGON' : 'SNAKE';
   themeLabel.textContent = THEMES[currentTheme].name + ' Theme';
@@ -961,7 +977,7 @@ function reset(startingRun = false) {
 }
 
 function placeFood() {
-  const placement = runGameMode === 'daily'
+  const placement = runGameMode === 'daily' || runGameMode === 'versus'
     ? SnakeCore.placeFoodFromFreeCells
     : SnakeCore.placeFood;
   food = placement({
@@ -997,7 +1013,7 @@ function gameTick() {
     rows: ROWS,
     baseInterval: BASE_INTERVAL,
     minInterval: MIN_INTERVAL,
-    foodPlacement: runGameMode === 'daily' ? 'free-cells' : 'rejection'
+    foodPlacement: runGameMode === 'daily' || runGameMode === 'versus' ? 'free-cells' : 'rejection'
   }, gameplayRandom);
 
   if (nextState.event === 'collision') {
@@ -1014,6 +1030,7 @@ function gameTick() {
 
   if (nextState.event === 'eat') {
     if (runGameMode === 'daily') dailyLastFoodElapsedMs = dailyTickElapsedMs;
+    if (runGameMode === 'versus') versusLastFoodElapsedMs = dailyTickElapsedMs;
     scoreEl.textContent = score;
     updateRecordChase();
     haptic('eat');
@@ -1021,7 +1038,7 @@ function gameTick() {
     AudioEngine.updateTempo(snake.length);
     const T = THEMES[currentTheme];
     canvasRenderer.triggerFoodEat({ food: eatenFood, theme: T });
-    if (score > best) {
+    if (runGameMode !== 'versus' && score > best) {
       best = score;
       bestScores[runGameMode] = best;
       bestEl.textContent = best;
@@ -1033,10 +1050,100 @@ function gameTick() {
   }
 }
 
+function renderVerifiedVersusResult(room) {
+  if (!room || runGameMode !== 'versus' || !activeVsRoom) return false;
+  activeVsRoom = room;
+  if (room.status !== 'complete') return false;
+  const winnerId = room.winnerPlayerId;
+  const isDraw = room.outcome === 'draw' || !winnerId;
+  const won = winnerId === currentUser?.id;
+  overlayTitle.textContent = isDraw ? 'DRAW!' : (won ? 'YOU WIN!' : 'RIVAL WINS');
+  scoreMethodLabel.textContent = isDraw
+    ? 'Both verified replays finished level'
+    : `${won ? 'Victory' : 'Defeat'} confirmed by both verified replays`;
+  scoreMethodLabel.classList.remove('unranked');
+  submitScoreBtn.textContent = 'Result Verified';
+  submitScoreBtn.disabled = true;
+  return true;
+}
+
+async function submitVersusResult() {
+  if (versusSubmissionPending || !activeVsRoom?.id || !runReplay) return;
+  versusSubmissionPending = true;
+  submitScoreBtn.textContent = 'Verifying…';
+  submitScoreBtn.disabled = true;
+  try {
+    if (runReplay.localVerification !== 'verified') {
+      throw new Error('Local replay verification failed');
+    }
+    const result = await liveVsService.submitResult({
+      matchId: activeVsRoom.id,
+      controlMethod: runUsesMixedControls ? 'mixed' : (runControlMethod || controlMode),
+      replay: runReplay,
+      finalFoodMs: versusLastFoodElapsedMs
+    });
+    await liveVsService.announceRoomRefresh(activeVsRoom.id);
+    if (result?.status === 'complete') {
+      renderVerifiedVersusResult(await liveVsService.getRoom(activeVsRoom.id));
+      return;
+    }
+    submitScoreBtn.textContent = 'Rival Finishing…';
+    for (let attempt = 0; attempt < 40 && activeVsRoom; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      const room = await liveVsService.getRoom(activeVsRoom.id);
+      if (renderVerifiedVersusResult(room)) return;
+      if (room.status === 'cancelled' || room.status === 'expired') {
+        throw new Error('The match ended before both results were verified');
+      }
+    }
+    submitScoreBtn.textContent = 'Result Pending';
+    scoreMethodLabel.textContent = 'Your replay is verified • rival result still pending';
+  } catch (error) {
+    submitScoreBtn.textContent = 'Retry Verification';
+    submitScoreBtn.disabled = false;
+    scoreMethodLabel.textContent = error.message || 'Could not verify the Live Vs result';
+    scoreMethodLabel.classList.add('unranked');
+  } finally {
+    versusSubmissionPending = false;
+  }
+}
+
 function showRunResult(reason) {
   MenuAudio.open();
   const isSprint = runGameMode === 'sprint';
   const isDaily = runGameMode === 'daily';
+  const isVersus = runGameMode === 'versus';
+  if (isVersus) {
+    overlayTitle.textContent = reason === 'interrupted' ? 'MATCH FORFEITED' : 'BATTLE COMPLETE';
+    overlayMsg.textContent = reason === 'interrupted'
+      ? 'The live match ended because focus or the Realtime connection was lost.'
+      : `Your Score: ${score} • Rival: ${rivalScore}`;
+    startBtn.textContent = 'Return to Menu';
+    shareBtn.style.display = 'none';
+    lbBtn.style.display = 'block';
+    namePrompt.style.display = 'flex';
+    nameInput.style.display = 'none';
+    submitScoreBtn.textContent = reason === 'interrupted' ? 'Forfeited' : 'Verifying…';
+    submitScoreBtn.disabled = true;
+    scoreMethodLabel.textContent = reason === 'interrupted'
+      ? 'Live Vs forfeited'
+      : 'Replay captured • server verification in progress';
+    scoreMethodLabel.classList.toggle('unranked', reason === 'interrupted');
+    overlay.classList.remove('hidden');
+    overlay.setAttribute('aria-hidden', 'false');
+    recordResultVisible = false;
+    hideRecordChase();
+    liveVsService.broadcastGhost({
+      matchId: activeVsRoom?.id,
+      tick: runTick,
+      snake,
+      direction: dir,
+      score,
+      alive: false
+    }).catch(() => {});
+    if (reason !== 'interrupted') submitVersusResult();
+    return;
+  }
   if (isDaily && reason === 'interrupted') {
     overlayTitle.textContent = 'RUN INTERRUPTED';
     overlayMsg.textContent = 'Daily Run ended because the game lost focus. Daily Runs cannot be paused.';
@@ -1080,7 +1187,7 @@ function finishRun(reason) {
     markFinished: () => {
       alive = false;
       SnakeCore.finalizeReplay(runReplay, { tick: runTick, score, reason });
-      if (runGameMode !== 'daily' || !runReplay) return;
+      if ((runGameMode !== 'daily' && runGameMode !== 'versus') || !runReplay) return;
       try {
         const replayCheck = SnakeCore.simulateReplay(runReplay, {
           baseInterval: BASE_INTERVAL,
@@ -1091,7 +1198,7 @@ function finishRun(reason) {
         if (!replayCheck.verified) console.warn('Daily Run replay did not reproduce the local result.', replayCheck);
       } catch (error) {
         runReplay.localVerification = 'error';
-        console.warn('Daily Run replay verification failed.', error);
+        console.warn(`${modeHudLabel(runGameMode)} replay verification failed.`, error);
       }
     },
     finalize: () => {
@@ -1149,9 +1256,21 @@ const liveGameSession = createLiveGameSession({
   onTick: () => {
     canvasRenderer.capturePreviousSnake(snake);
     gameTick();
+    if (runGameMode === 'versus' && activeVsRoom?.id) {
+      liveVsService.broadcastGhost({
+        matchId: activeVsRoom.id,
+        tick: runTick,
+        snake,
+        direction: dir,
+        score,
+        alive
+      }).catch(() => {});
+    }
   },
   onFinish: finishRun,
-  getDailyDuration: () => dailyChallenge?.durationMs || MODE_SPRINT_DURATION_MS,
+  getDailyDuration: () => runGameMode === 'versus'
+    ? (activeVsRoom?.durationMs || MODE_SPRINT_DURATION_MS)
+    : (dailyChallenge?.durationMs || MODE_SPRINT_DURATION_MS),
   getFpsElement: () => document.getElementById('fps-counter')
 });
 
@@ -1190,13 +1309,14 @@ async function reserveDailyAttempt() {
 }
 
 async function startGame(options = {}) {
-  if (gameMode === 'daily' && !options.skipDailyRules && shouldShowDailyRules()) {
+  const versusRoom = options.versusRoom || null;
+  if (!versusRoom && gameMode === 'daily' && !options.skipDailyRules && shouldShowDailyRules()) {
     showDailyRules();
     return;
   }
   if (dailyStartPending) return;
   let challenge = null;
-  if (gameMode === 'daily') {
+  if (!versusRoom && gameMode === 'daily') {
     dailyStartPending = true;
     startBtn.disabled = true;
     startBtn.textContent = 'Preparing...';
@@ -1233,8 +1353,10 @@ async function startGame(options = {}) {
       MenuAudio.close();
       stopRecordCelebration();
       recordResultVisible = false;
-      challenge ||= gameMode === 'daily' ? ensureDailyChallenge() : null;
-      if (challenge) {
+      challenge ||= !versusRoom && gameMode === 'daily' ? ensureDailyChallenge() : null;
+      if (versusRoom) {
+        applyTheme(versusRoom.theme, { updateSelection: false });
+      } else if (challenge) {
         applyTheme(challenge.theme, { updateSelection: false });
       } else if (themeSelection === 'random') {
         const nextTheme = pickRandomThemeId(Object.keys(THEMES), currentTheme);
@@ -1252,21 +1374,38 @@ async function startGame(options = {}) {
       runUsesMixedControls = false;
       nameInput.disabled = false;
       scoreMethodLabel.classList.remove('unranked');
-      runGameMode = gameMode;
+      runGameMode = versusRoom ? 'versus' : gameMode;
+      activeVsRoom = versusRoom;
+      rivalGhost = null;
+      rivalGhostSequence = -1;
+      rivalScore = 0;
+      versusConnectionLost = false;
       if (runGameMode === 'daily') {
         startBtn.textContent = dailyAttempt?.ranked
           ? dailyAttemptLabel(dailyAttempt.number)
           : 'Practice Run';
       }
       hudMode.textContent = modeHudLabel(runGameMode);
-      best = bestScores[runGameMode];
+      best = runGameMode === 'versus' ? 0 : bestScores[runGameMode];
+      bestLabel.textContent = runGameMode === 'versus' ? 'RIVAL' : 'BEST';
       bestEl.textContent = best;
-      prepareGameplayRun(challenge?.seed ?? null);
+      prepareGameplayRun(versusRoom?.seed ?? challenge?.seed ?? null);
     },
     reset: () => reset(true),
     afterReset: () => {
       runActivatedAt = performance.now();
-      if (runGameMode === 'daily') beginDailyRecordChase();
+    if (runGameMode === 'versus') {
+      disableRecordChase();
+      const serverNow = versusRoom.serverNow
+        ? new Date(versusRoom.serverNow).getTime()
+        : Date.now();
+      const untilStart = new Date(versusRoom.startsAt).getTime() - serverNow;
+        countdownRemainingMs = Math.max(0, untilStart);
+        countdownActive = countdownRemainingMs > 0;
+        countdownDisplay.textContent = countdownActive ? String(Math.max(1, Math.ceil(countdownRemainingMs / 1000))) : 'GO!';
+        countdownDisplay.classList.add('visible');
+        if (!countdownActive) setTimeout(() => countdownDisplay.classList.remove('visible'), 350);
+      } else if (runGameMode === 'daily') beginDailyRecordChase();
       else beginRecordChase();
       AudioEngine.start();
     },
@@ -1299,7 +1438,7 @@ function turnCounterClockwise() {
 // Frame progression is coordinated by ./game/live-game-session.js.
 // --- Pause toggle ---
 function setPaused(value) {
-  if (!alive || runGameMode === 'daily') return;
+  if (!alive || runGameMode === 'daily' || runGameMode === 'versus') return;
   if (paused === value) return;
   paused = value;
   const btn = document.getElementById('pause-btn');
@@ -1336,6 +1475,10 @@ function pauseForInactivity(event) {
     invalidateDailyRun();
     return;
   }
+  if (runGameMode === 'versus') {
+    invalidateVersusRun();
+    return;
+  }
   setPaused(true);
   // Drop any time already accumulated for the next simulation step. A
   // browser may have queued a frame immediately before it announced that the
@@ -1352,6 +1495,13 @@ function invalidateDailyRun() {
   AudioEngine.stop();
   gameController.resetClock();
   showRunResult('interrupted');
+}
+
+function invalidateVersusRun() {
+  if (!alive || runGameMode !== 'versus') return;
+  versusConnectionLost = true;
+  finishRun('interrupted');
+  if (activeVsRoom?.id) liveVsService.leaveRoom(activeVsRoom.id).catch(() => {});
 }
 
 document.addEventListener('visibilitychange', () => {
@@ -1521,6 +1671,11 @@ const dailyRunService = createDailyRunService({
   defaultDurationMs: SPRINT_DURATION_MS
 });
 
+const liveVsService = createLiveVsService({
+  supabase: sb,
+  getPlayerId: () => currentUser?.id || null
+});
+
 
 // --- Leaderboard record chase ---
 const RECORD_METHODS = ['dpad', 'turn', 'tap', 'keyboard'];
@@ -1584,6 +1739,7 @@ function activateRecordTarget(method) {
 }
 
 function updateRecordChase() {
+  if (runGameMode === 'versus') return;
   if ((runUsesMixedControls && runGameMode !== 'daily') || !Number.isFinite(recordTargetScore)) return;
   const aheadOfTarget = runGameMode === 'daily'
     ? outranksDailyLeader(
@@ -2328,6 +2484,10 @@ nameInput.addEventListener('keydown', (e) => {
 });
 
 async function submitScore() {
+  if (runGameMode === 'versus') {
+    await submitVersusResult();
+    return;
+  }
   if (runGameMode === 'daily') {
     await submitDailyAttempt();
     return;
@@ -3095,7 +3255,84 @@ const leaderboardUi = createLeaderboardController({
   formatDailyFoodTime
 });
 
-startBtn.addEventListener('click', () => startGame());
+const liveVsUi = createLiveVsController({
+  service: liveVsService,
+  panel: liveVsPanel,
+  openButton: liveVsButton,
+  closeButton: document.getElementById('live-vs-close'),
+  createButton: document.getElementById('live-vs-create'),
+  joinButton: document.getElementById('live-vs-join'),
+  codeInput: document.getElementById('live-vs-code'),
+  lobby: document.getElementById('live-vs-lobby'),
+  setup: document.getElementById('live-vs-setup'),
+  roomCode: document.getElementById('live-vs-room-code'),
+  roomStatus: document.getElementById('live-vs-room-status'),
+  playerOne: document.getElementById('live-vs-player-one'),
+  playerTwo: document.getElementById('live-vs-player-two'),
+  readyButton: document.getElementById('live-vs-ready'),
+  shareButton: document.getElementById('live-vs-share'),
+  message: document.getElementById('live-vs-message'),
+  getCurrentTheme: () => currentTheme,
+  getPlayerId: () => currentUser?.id || null,
+  ensurePlayer: async () => {
+    await playerIdentityPromise;
+    if (playerProfile) return true;
+    openPlayerPanel();
+    setPlayerMessage('Choose arcade initials first, then return to Live Vs.');
+    return false;
+  },
+  onMatchStart: room => startGame({ versusRoom: room }),
+  onGhost: payload => {
+    if (!activeVsRoom || payload.matchId !== activeVsRoom.id || payload.sequence <= rivalGhostSequence) return;
+    rivalGhostSequence = payload.sequence;
+    const nextSnake = Array.isArray(payload.snake)
+      ? payload.snake.map(([x, y]) => ({ x: Number(x), y: Number(y) }))
+      : [];
+    rivalGhost = {
+      ...payload,
+      snake: nextSnake,
+      previousSnake: rivalGhost?.snake || nextSnake,
+      intervalMs: 100
+    };
+    rivalScore = Math.max(0, Number(payload.score) || 0);
+    if (runGameMode === 'versus') bestEl.textContent = rivalScore;
+  },
+  onConnectionChange: status => {
+    if (status === 'SUBSCRIBED') {
+      clearTimeout(versusDisconnectTimer);
+      versusDisconnectTimer = null;
+      return;
+    }
+    if (!alive || runGameMode !== 'versus' || typeof status !== 'string') return;
+    if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+      clearTimeout(versusDisconnectTimer);
+      versusDisconnectTimer = setTimeout(() => {
+        if (alive && runGameMode === 'versus') invalidateVersusRun();
+      }, 3000);
+    }
+  }
+});
+
+async function leaveVersusResult() {
+  await liveVsUi.disconnect();
+  activeVsRoom = null;
+  rivalGhost = null;
+  rivalScore = 0;
+  bestLabel.textContent = 'BEST';
+  applyGameMode(gameMode);
+  startBtn.textContent = 'Play';
+  namePrompt.style.display = 'none';
+  reset(false);
+  canvasRenderer.draw(1);
+}
+
+startBtn.addEventListener('click', () => {
+  if (!alive && runGameMode === 'versus' && activeVsRoom) {
+    leaveVersusResult();
+    return;
+  }
+  startGame();
+});
 
 shareBtn.addEventListener('click', async () => {
   const modeName = runGameMode === 'daily' ? `Daily #${ensureDailyChallenge().number}` : (runGameMode === 'sprint' ? 'Sprint 60' : 'Classic');

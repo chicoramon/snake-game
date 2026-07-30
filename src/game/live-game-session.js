@@ -35,7 +35,7 @@ export function createLiveGameSession({
           clock.tickAccum = 0;
           onCountdownComplete?.();
         }
-      } else if (state.runGameMode === 'daily') {
+      } else if (state.runGameMode === 'daily' || state.runGameMode === 'versus') {
         const durationMs = getDailyDuration?.() ?? 60000;
         const dailyFrame = accumulateDailyFrame({
           durationMs,
@@ -58,7 +58,7 @@ export function createLiveGameSession({
         onSprintTimeChange?.(dailyFrame.remainingMs);
         if (getState().alive && dailyFrame.remainingMs <= 0) onFinish?.('time');
       } else {
-        if (state.runGameMode === 'sprint') {
+        if (state.runGameMode === 'sprint' || state.runGameMode === 'versus') {
           const remainingMs = advanceSprintTimer(state.sprintRemainingMs, rawDt);
           onSprintTimeChange?.(remainingMs);
           if (remainingMs <= 0) onFinish?.('time');

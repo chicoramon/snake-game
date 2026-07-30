@@ -332,20 +332,23 @@ This is the recommended Vs MVP because it works reliably across mobile Safari, i
 
 Use Supabase Realtime Presence and Broadcast for room coordination and low-latency progress only.
 
-- Create private room codes, invitations, ready states, and a synchronized countdown.
-- Start with a same-seed Sprint 60 race on independent boards.
-- Show opponent score, connection state, and a compact progress meter in the HUD.
-- Broadcast progress and status, but never accept a broadcast score as the final result.
-- Submit both input replays after the race and let the server confirm the winner.
-- Define reconnect, abandonment, timeout, and tie behavior before exposing ranked live matches.
+**First implementation slice completed locally 2026-07-30; Supabase SQL and Edge Function deployment plus two-device preview testing remain pending.**
+
+- Create private room codes, invitations, ready states, and a synchronized countdown. — **Implemented locally 2026-07-30**
+- Start with a same-seed Sprint 60 race on independent boards. — **Implemented locally 2026-07-30**
+- Show opponent score and connection state in the HUD. — **Opponent score and connection-loss handling implemented locally 2026-07-30; compact progress meter deferred**
+- Render a restrained live Rival Ghost behind food and the local snake at low opacity; it has no collision or gameplay effect and fades when updates become stale. — **Implemented locally 2026-07-30**
+- Broadcast progress and status, but never accept a broadcast score as the final result. — **Implemented locally 2026-07-30**
+- Submit both input replays after the race and let the server confirm the winner. — **Verifier and score/time tiebreak implemented locally 2026-07-30; deployment pending**
+- Define reconnect, abandonment, timeout, and tie behavior before exposing ranked live matches. — **Initial rules implemented locally 2026-07-30:** a brief Realtime grace period protects transient drops; focus loss or a sustained disconnect forfeits an active race; pre-start departures cancel the room; exact score/time equality is a draw. Longer reconnection and abandoned-room cleanup still require preview validation.
 - Do not use split-screen boards on mobile.
 - Defer attacks, garbage blocks, shared obstacles, and board-to-board mutations until basic live races are proven reliable.
 
-Suggested Vs data model:
+Implemented first-slice Vs data model:
 
-- `versus_rooms`: code, ruleset, seed, theme, state, creator, expiration, and winner.
-- `versus_players`: room, player, seat, ready state, result, verification state, and connection timestamps.
-- `run_replays`: reusable versioned replay storage referenced by Daily and Vs results.
+- `live_vs_matches`: code, ruleset, seed, theme, state, creator, synchronized start, expiration, outcome, and winner.
+- `live_vs_players`: match, player, seat, ready/connection state, replay, verified result, and connection timestamps.
+- Replays are stored with the match participant for this first slice; reusable shared replay storage remains a later normalization option.
 - Edge Functions or security-definer RPCs for room creation, joining, attempt issuance, replay submission, and winner confirmation.
 - Strict row-level security so room participants can update only their permitted presence and submission records.
 

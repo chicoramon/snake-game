@@ -247,7 +247,7 @@
     const rows = replay.board?.rows;
     assertBoard(cols, rows);
     const random = createSeededRandom(replay.seed);
-    const foodPlacement = replay.mode === 'daily' || options.foodPlacement === 'free-cells'
+    const foodPlacement = replay.mode === 'daily' || replay.mode === 'versus' || options.foodPlacement === 'free-cells'
       ? placeFoodFromFreeCells
       : placeFood;
     let state = {
@@ -275,7 +275,7 @@
         rows,
         baseInterval: options.baseInterval,
         minInterval: options.minInterval,
-        foodPlacement: replay.mode === 'daily' ? 'free-cells' : options.foodPlacement
+        foodPlacement: replay.mode === 'daily' || replay.mode === 'versus' ? 'free-cells' : options.foodPlacement
       }, random);
       ticksSimulated++;
     }

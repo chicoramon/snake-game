@@ -3,11 +3,12 @@ export const RUN_COUNTDOWN_MS = 3_000;
 
 export function modeHudLabel(mode) {
   if (mode === 'daily') return 'DAILY';
+  if (mode === 'versus') return 'VS LIVE';
   return mode === 'sprint' ? 'SPRINT' : 'CLASSIC';
 }
 
 export function isTimedMode(mode) {
-  return mode === 'sprint' || mode === 'daily';
+  return mode === 'sprint' || mode === 'daily' || mode === 'versus';
 }
 
 export function formatTimedRunTime(ms) {

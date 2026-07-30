@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { validateDailyReplay } from '../supabase/functions/_shared/daily-validator.mjs';
+import {
+  validateDailyReplay,
+  validateSeededTimedReplay
+} from '../supabase/functions/_shared/daily-validator.mjs';
 
 const require = createRequire(import.meta.url);
 const SnakeCore = require('../snake-core.js');
@@ -49,6 +52,12 @@ const collisionReplay = SnakeCore.createReplay({
 SnakeCore.finalizeReplay(collisionReplay, { tick: 10, score: 0, reason: 'collision' });
 assert.equal(
   validateDailyReplay(collisionReplay, challenge, { score: 0, finalFoodMs: null }).verified,
+  true
+);
+
+const versusReplay = { ...replay, mode: 'versus' };
+assert.equal(
+  validateSeededTimedReplay(versusReplay, challenge, { score: 0, finalFoodMs: null }, 'versus').verified,
   true
 );
 

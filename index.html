@@ -72,6 +72,10 @@
   </div>
   <div id="dailyChallengeInfo" hidden></div>
   <button id="startBtn">Play</button>
+  <button id="vs-live-btn" type="button" title="Challenge another player to a live race">
+    <svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true"><rect x="0" y="2" width="2" height="6"/><rect x="2" y="4" width="2" height="4"/><rect x="4" y="6" width="2" height="2"/><rect x="6" y="4" width="2" height="4"/><rect x="8" y="2" width="2" height="6"/></svg>
+    Live Vs
+  </button>
   <div id="namePrompt">
     <span class="np-label">Enter your initials</span>
     <span id="scoreMethodLabel"></span>
@@ -106,6 +110,41 @@
     <div id="whats-new-current"></div>
     <div id="whats-new-releases"></div>
     <button id="whats-new-close" type="button">Got It</button>
+  </div>
+</div>
+
+<div id="live-vs-panel" role="dialog" aria-modal="true" aria-labelledby="live-vs-heading">
+  <div class="live-vs-card">
+    <span class="menu-kicker">Realtime Battle</span>
+    <h2 id="live-vs-heading">Live Vs</h2>
+    <p class="live-vs-tagline">Same arena seed. Same 60 seconds. Highest score wins.</p>
+
+    <div id="live-vs-setup">
+      <button id="live-vs-create" class="primary" type="button">Create Private Room</button>
+      <div class="live-vs-divider"><span>OR</span></div>
+      <label for="live-vs-code">Rival room code</label>
+      <div class="live-vs-code-entry">
+        <input id="live-vs-code" type="text" maxlength="6" inputmode="text" autocomplete="off" placeholder="ABC123">
+        <button id="live-vs-join" type="button">Join</button>
+      </div>
+    </div>
+
+    <div id="live-vs-lobby" hidden>
+      <span class="live-vs-label">Room Code</span>
+      <strong id="live-vs-room-code">------</strong>
+      <button id="live-vs-share" type="button">Share Invite</button>
+      <p id="live-vs-room-status">Waiting for rival…</p>
+      <div class="live-vs-fighters">
+        <div id="live-vs-player-one" class="live-vs-fighter empty"></div>
+        <div class="live-vs-bolt">VS</div>
+        <div id="live-vs-player-two" class="live-vs-fighter empty"></div>
+      </div>
+      <p class="live-vs-ghost-note">Your rival appears as a faint ghost on the board. Ghosts never collide or affect gameplay.</p>
+      <button id="live-vs-ready" class="primary" type="button" disabled>Ready!</button>
+    </div>
+
+    <p id="live-vs-message" aria-live="polite"></p>
+    <button id="live-vs-close" type="button">Back</button>
   </div>
 </div>
 

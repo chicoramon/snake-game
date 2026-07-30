@@ -16,8 +16,10 @@ test('competitive modes retain their labels, duration, and countdown rules', () 
   assert.equal(modeHudLabel('classic'), 'CLASSIC');
   assert.equal(modeHudLabel('sprint'), 'SPRINT');
   assert.equal(modeHudLabel('daily'), 'DAILY');
+  assert.equal(modeHudLabel('versus'), 'VS LIVE');
   assert.equal(isTimedMode('classic'), false);
   assert.equal(isTimedMode('sprint'), true);
+  assert.equal(isTimedMode('versus'), true);
   assert.deepEqual(createTimedRunState({ mode: 'sprint' }), {
     durationMs: SPRINT_DURATION_MS,
     remainingMs: SPRINT_DURATION_MS,

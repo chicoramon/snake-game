@@ -233,14 +233,47 @@ export function createCanvasRenderer({
     ctx.shadowBlur = 0; ctx.restore();
   }
 
+  function drawRivalGhost(ghost) {
+    if (!ghost?.snake?.length) return;
+    const age = Math.max(0, Date.now() - Number(ghost.receivedAt || 0));
+    if (age >= 2200) return;
+    const freshness = age <= 700 ? 1 : 1 - ((age - 700) / 1500);
+    const transition = Math.min(1, Math.max(0, age / Math.max(80, Number(ghost.intervalMs || 100))));
+    const previousSnake = ghost.previousSnake?.length === ghost.snake.length
+      ? ghost.previousSnake
+      : ghost.snake;
+
+    ctx.save();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#ff5a8b';
+    ctx.fillStyle = '#ff5a8b';
+    ctx.lineWidth = 1.5;
+    for (let index = ghost.snake.length - 1; index >= 0; index--) {
+      const segment = ghost.snake[index];
+      const previous = previousSnake[index] || segment;
+      const x = lerp(previous.x, segment.x, transition) * cellSize;
+      const y = lerp(previous.y, segment.y, transition) * cellSize;
+      ctx.globalAlpha = freshness * (index === 0 ? 0.24 : 0.14);
+      ctx.strokeRect(x + 3.5, y + 3.5, cellSize - 7, cellSize - 7);
+      const offset = index % 2 ? 4 : 10;
+      ctx.fillRect(x + offset, y + offset, 3, 3);
+      if (index === 0) {
+        ctx.globalAlpha = freshness * 0.3;
+        ctx.fillRect(x + 7, y + 7, 6, 6);
+      }
+    }
+    ctx.restore();
+  }
+
   function draw(interpolation) {
-    const { snake, direction, food, theme, themeId, alive, paused } = getGameState();
+    const { snake, direction, food, theme, themeId, alive, paused, rivalGhost } = getGameState();
     if (!snake?.length || !food || !theme) return;
     ctx.fillStyle = theme.bg; ctx.fillRect(0, 0, canvasWidth, canvasHeight);
     ctx.strokeStyle = theme.grid; ctx.lineWidth = 0.5;
     for (let x = 0; x <= cols; x++) { ctx.beginPath(); ctx.moveTo(x * cellSize, 0); ctx.lineTo(x * cellSize, canvasHeight); ctx.stroke(); }
     for (let y = 0; y <= rows; y++) { ctx.beginPath(); ctx.moveTo(0, y * cellSize); ctx.lineTo(canvasWidth, y * cellSize); ctx.stroke(); }
     drawBoardPattern(theme);
+    drawRivalGhost(rivalGhost);
 
     const interpolateSnake = prevSnake && prevSnake.length === snake.length && interpolation < 1;
     const t = interpolateSnake ? Math.min(interpolation, 1) : 1;

@@ -23,14 +23,15 @@ test('main delegates frame scheduling and clock resets to the game controller', 
   assert.match(mainSource, /gameController\.resetClock\(\)/);
 });
 
-test('leaving the page pauses regular runs and invalidates Daily Run', () => {
+test('leaving the page pauses regular runs and invalidates unpausable competitive runs', () => {
   assert.match(mainSource, /function pauseForInactivity\(event\) \{/);
   assert.match(mainSource, /const isFreshVisibleBlur = event\?\.type === 'blur'/);
   assert.match(mainSource, /if \(runGameMode === 'daily'\) \{\s+invalidateDailyRun\(\);\s+return;/);
-  assert.match(mainSource, /if \(!alive \|\| runGameMode === 'daily'\) return;/);
-  assert.match(mainSource, /pauseBtn\.hidden = dailyPauseDisabled;/);
-  assert.match(mainSource, /pauseBtn\.disabled = dailyPauseDisabled;/);
+  assert.match(mainSource, /if \(!alive \|\| runGameMode === 'daily' \|\| runGameMode === 'versus'\) return;/);
+  assert.match(mainSource, /pauseBtn\.hidden = competitivePauseDisabled;/);
+  assert.match(mainSource, /pauseBtn\.disabled = competitivePauseDisabled;/);
   assert.match(mainSource, /function invalidateDailyRun\(\) \{/);
+  assert.match(mainSource, /function invalidateVersusRun\(\) \{/);
   assert.match(mainSource, /showRunResult\('interrupted'\)/);
   assert.match(mainSource, /document\.visibilityState !== 'visible'\) pauseForInactivity\(\)/);
   assert.match(mainSource, /window\.addEventListener\('pagehide', pauseForInactivity, \{ capture: true \}\)/);
