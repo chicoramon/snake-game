@@ -152,7 +152,12 @@
       x: state.snake[0].x + direction.x,
       y: state.snake[0].y + direction.y
     };
-    const hitWall = head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows;
+    const wrapWalls = options && options.wrapWalls === true;
+    if (wrapWalls) {
+      head.x = (head.x + cols) % cols;
+      head.y = (head.y + rows) % rows;
+    }
+    const hitWall = !wrapWalls && (head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows);
     const hitSelf = state.snake.some(segment => segment.x === head.x && segment.y === head.y);
 
     if (hitWall || hitSelf) {
