@@ -151,7 +151,17 @@ export function createLiveVsService({ supabase, getPlayerId, now = () => Date.no
     });
   }
 
-  async function broadcastGhost({ matchId, tick, snake, direction, score, alive, force = false }) {
+  async function broadcastGhost({
+    matchId,
+    tick,
+    snake,
+    direction,
+    food = null,
+    score,
+    remainingMs = 0,
+    alive,
+    force = false
+  }) {
     if (!channel) return false;
     const timestamp = now();
     if (!force && timestamp - lastBroadcastAt < 100) return false;
@@ -167,7 +177,9 @@ export function createLiveVsService({ supabase, getPlayerId, now = () => Date.no
         tick,
         snake: snake.map(({ x, y }) => [x, y]),
         direction: [direction.x, direction.y],
+        food: food ? [food.x, food.y] : null,
         score,
+        remainingMs: Math.max(0, Math.round(Number(remainingMs) || 0)),
         alive,
         sentAt: timestamp
       }

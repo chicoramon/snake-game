@@ -25,6 +25,9 @@ test('Live Vs lobby and controller are present in the modular app', () => {
     'live-vs-waiting',
     'live-vs-waiting-score',
     'live-vs-waiting-status',
+    'live-vs-spectate',
+    'live-vs-spectator-bar',
+    'live-vs-stop-spectating',
     'live-vs-stage-select',
     'live-vs-stage-grid',
     'live-vs-stage-reveal',
@@ -48,6 +51,8 @@ test('Live Vs lobby and controller are present in the modular app', () => {
   assert.match(controller, /navigator\.share\(\{\s*title:\s*'Snake Vs Casual',\s*text,\s*url\s*\}\)/);
   assert.match(controller, /returnToLobby/);
   assert.match(controller, /waitForRival/);
+  assert.match(controller, /showWaitingRoom/);
+  assert.match(controller, /onSpectate/);
   assert.match(controller, /service\.selectStage\(room\.id, choice, !mine\.ready\)/);
   assert.match(controller, /resolveCurrentStageChoice\(localStageChoice, mine\.themeChoice\)/);
   assert.match(controller, /stageRevealAt/);
@@ -71,6 +76,9 @@ test('Live Vs lobby and controller are present in the modular app', () => {
     'The next-round Ready action must remain above the archived results'
   );
   assert.match(main, /invalidateVersusRun/);
+  assert.match(main, /startVersusSpectating/);
+  assert.match(main, /decodeSpectatorSnapshot/);
+  assert.match(main, /remainingMs:\s*Math\.max/);
   assert.match(main, /latencyDiagnostics:\s*LIVE_VS_LATENCY_DEBUG/);
   assert.match(debugConfig, /DEFAULT_LIVE_VS_LATENCY_DEBUG\s*=\s*true/);
   assert.match(debugConfig, /vsdebug/);

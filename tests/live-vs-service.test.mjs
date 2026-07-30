@@ -102,7 +102,9 @@ test('Rival Ghost transport is capped at ten broadcasts per second', async () =>
     tick: 1,
     snake: [{ x: 1, y: 2 }],
     direction: { x: 1, y: 0 },
+    food: { x: 7, y: 8 },
     score: 0,
+    remainingMs: 12345,
     alive: true
   };
   assert.equal(await service.broadcastGhost(state), true);
@@ -113,5 +115,8 @@ test('Rival Ghost transport is capped at ten broadcasts per second', async () =>
   assert.equal(await service.broadcastGhost(state), true);
   assert.equal(await service.broadcastLatency({ matchId: 'match-1', latencyMs: 63.7 }), true);
   assert.equal(sent.filter(message => message.event === 'ghost-state').length, 3);
+  const firstGhost = sent.find(message => message.event === 'ghost-state').payload;
+  assert.deepEqual(firstGhost.food, [7, 8]);
+  assert.equal(firstGhost.remainingMs, 12345);
   assert.equal(sent.find(message => message.event === 'latency-state').payload.latencyMs, 64);
 });

@@ -5,6 +5,11 @@ import { LIVE_VS_LATENCY_DEBUG } from './config/debug.js';
 import { createDailyRunService, outranksDailyLeader } from './daily/daily-run-service.js';
 import { createLeaderboardService } from './leaderboard/leaderboard-service.js';
 import { createLiveVsService } from './versus/live-vs-service.js';
+import {
+  decodeSpectatorSnapshot,
+  spectatorFeedStatus,
+  spectatorRemainingMs
+} from './versus/live-vs-spectator.js';
 import { createSupabaseClient } from './services/supabase-client.js';
 import { createPlayerAuthService } from './player/player-auth-service.js';
 import { createPlayerProfileService } from './player/player-profile-service.js';
@@ -112,6 +117,10 @@ const hudMode = document.getElementById('hud-mode');
 const timerBlock = document.getElementById('timer-block');
 const timerEl = document.getElementById('timer');
 const countdownDisplay = document.getElementById('countdownDisplay');
+const liveVsSpectatorBar = document.getElementById('live-vs-spectator-bar');
+const liveVsSpectatorName = document.getElementById('live-vs-spectator-name');
+const liveVsSpectatorSignal = document.getElementById('live-vs-spectator-signal');
+const liveVsStopSpectating = document.getElementById('live-vs-stop-spectating');
 const recordChaseEl = document.getElementById('record-chase');
 const recordCelebrationEl = document.getElementById('record-celebration');
 const recordFireworksCanvas = document.getElementById('record-fireworks');
@@ -383,6 +392,10 @@ let activeVsRoom = null;
 let rivalGhost = null;
 let rivalGhostSequence = -1;
 let rivalScore = 0;
+let versusSpectatorActive = false;
+let versusSpectatorState = null;
+let versusSpectatorFrame = null;
+let versusSpectatorLastFrameAt = 0;
 let versusLocalLatencyMs = null;
 let versusRivalLatencyMs = null;
 let versusLastFoodElapsedMs = null;
@@ -709,18 +722,99 @@ const canvasRenderer = createCanvasRenderer({
   canvasHeight: canvasH,
   foodSprites: FOOD_SPRITES,
   getGameState: () => ({
-    snake,
-    direction: dir,
-    food,
+    snake: versusSpectatorActive && versusSpectatorState?.snake?.length ? versusSpectatorState.snake : snake,
+    direction: versusSpectatorActive && versusSpectatorState ? versusSpectatorState.direction : dir,
+    food: versusSpectatorActive && versusSpectatorState?.food ? versusSpectatorState.food : food,
     theme: THEMES[currentTheme],
     themeId: currentTheme,
-    alive,
-    paused,
-    rivalGhost
+    alive: versusSpectatorActive ? versusSpectatorState?.alive !== false : alive,
+    paused: versusSpectatorActive ? false : paused,
+    rivalGhost: versusSpectatorActive ? null : rivalGhost
   })
 });
 
-function registerControlMethod(method) {
+function versusRivalLabel(room = activeVsRoom) {
+  const rival = room?.players?.find(player => player.playerId !== currentUser?.id);
+  if (!rival) return 'RIVAL';
+  return rival.displayName
+    || `${rival.initials || 'RIVAL'}${rival.playerCode ? `·${rival.playerCode}` : ''}`;
+}
+
+function updateSpectatorHud(now = Date.now()) {
+  if (!versusSpectatorActive) return;
+  const feedState = spectatorFeedStatus(versusSpectatorState, now);
+  const finished = versusSpectatorState?.alive === false;
+  scoreEl.textContent = String(versusSpectatorState?.score || 0);
+  bestEl.textContent = String(score);
+  timerEl.textContent = formatTimedRunTime(spectatorRemainingMs(versusSpectatorState, now));
+  hudMode.textContent = 'SPECTATING';
+  liveVsSpectatorSignal.dataset.state = finished ? 'finished' : feedState;
+  liveVsSpectatorSignal.textContent = finished
+    ? 'FINISHED'
+    : feedState === 'live'
+      ? 'LIVE'
+      : feedState === 'reconnecting'
+        ? 'RECONNECTING'
+        : feedState === 'signal-lost'
+          ? 'SIGNAL LOST'
+          : 'SYNCING';
+}
+
+function spectatorLoop(now) {
+  if (!versusSpectatorActive) return;
+  const dt = versusSpectatorLastFrameAt ? Math.min(100, now - versusSpectatorLastFrameAt) : 0;
+  versusSpectatorLastFrameAt = now;
+  canvasRenderer.update(dt);
+  const transition = versusSpectatorState
+    ? Math.min(1, (Date.now() - versusSpectatorState.receivedAt) / versusSpectatorState.intervalMs)
+    : 1;
+  canvasRenderer.draw(transition);
+  updateSpectatorHud();
+  versusSpectatorFrame = requestAnimationFrame(spectatorLoop);
+}
+
+function startVersusSpectating(room = activeVsRoom) {
+  if (!room || runGameMode !== 'versus' || alive) return false;
+  versusSpectatorActive = true;
+  versusSpectatorState = rivalGhost?.food ? rivalGhost : null;
+  versusSpectatorLastFrameAt = 0;
+  liveVsSpectatorName.textContent = versusRivalLabel(room);
+  liveVsSpectatorBar.hidden = false;
+  document.body.classList.add('live-vs-spectating');
+  bestLabel.textContent = 'YOUR SCORE';
+  timerBlock.classList.add('visible');
+  MenuAudio.close();
+  AudioEngine.start();
+  if (versusSpectatorState) AudioEngine.updateTempo(versusSpectatorState.snake.length);
+  updateSpectatorHud();
+  cancelAnimationFrame(versusSpectatorFrame);
+  versusSpectatorFrame = requestAnimationFrame(spectatorLoop);
+  return true;
+}
+
+function stopVersusSpectating({ showWaiting = true } = {}) {
+  if (!versusSpectatorActive && liveVsSpectatorBar.hidden) return;
+  versusSpectatorActive = false;
+  versusSpectatorState = null;
+  cancelAnimationFrame(versusSpectatorFrame);
+  versusSpectatorFrame = null;
+  versusSpectatorLastFrameAt = 0;
+  liveVsSpectatorBar.hidden = true;
+  document.body.classList.remove('live-vs-spectating');
+  AudioEngine.stop();
+  bestLabel.textContent = 'RIVAL';
+  scoreEl.textContent = String(score);
+  bestEl.textContent = String(rivalScore);
+  hudMode.textContent = modeHudLabel('versus');
+  if (showWaiting) {
+    MenuAudio.open();
+    liveVsUi.showWaitingRoom();
+  }
+}
+
+liveVsStopSpectating.addEventListener('click', () => stopVersusSpectating());
+
+function registerControlMethod(method) {
   if (!alive || countdownActive) return;
   if (!runControlMethod) {
     runControlMethod = method;
@@ -1115,6 +1209,7 @@ function renderVerifiedVersusResult(room) {
   if (!room || runGameMode !== 'versus' || !activeVsRoom) return false;
   activeVsRoom = room;
   if (room.status !== 'complete') return false;
+  stopVersusSpectating({ showWaiting: false });
   overlay.classList.add('hidden');
   overlay.setAttribute('aria-hidden', 'true');
   namePrompt.style.display = 'none';
@@ -1193,7 +1288,9 @@ function showRunResult(reason) {
       tick: runTick,
       snake,
       direction: dir,
+      food,
       score,
+      remainingMs: Math.max(0, (activeVsRoom?.durationMs || MODE_SPRINT_DURATION_MS) - dailyTickElapsedMs),
       alive: false,
       force: true
     }).catch(() => {});
@@ -1351,7 +1448,9 @@ const liveGameSession = createLiveGameSession({
         tick: runTick,
         snake,
         direction: dir,
+        food,
         score,
+        remainingMs: Math.max(0, (activeVsRoom.durationMs || MODE_SPRINT_DURATION_MS) - dailyTickElapsedMs),
         alive
       }).catch(() => {});
     }
@@ -1613,9 +1712,11 @@ window.addEventListener('focus', () => {
 // ============================================================
 const AudioEngine = createAudioEngine({
   getCurrentTheme: () => THEMES[currentTheme],
-  isRunActive: () => alive,
-  isPaused: () => paused,
-  getSnakeLength: () => snake?.length || 3,
+  isRunActive: () => alive || versusSpectatorActive,
+  isPaused: () => versusSpectatorActive ? false : paused,
+  getSnakeLength: () => versusSpectatorActive
+    ? (versusSpectatorState?.snake?.length || 3)
+    : (snake?.length || 3),
 });
 
 const BG_MUSIC_MUTED_KEY = 'snake_bg_music_muted';
@@ -3406,26 +3507,31 @@ const liveVsUi = createLiveVsController({
     return false;
   },
   onMatchStart: room => startGame({ versusRoom: room }),
+  onSpectate: room => startVersusSpectating(room),
   onGhost: payload => {
     if (!activeVsRoom || payload.matchId !== activeVsRoom.id || payload.sequence <= rivalGhostSequence) return;
     rivalGhostSequence = payload.sequence;
-    const nextSnake = Array.isArray(payload.snake)
-      ? payload.snake.map(([x, y]) => ({ x: Number(x), y: Number(y) }))
-      : [];
-      rivalGhost = {
-      ...payload,
-      snake: nextSnake,
-      previousSnake: rivalGhost?.snake || nextSnake,
-        intervalMs: 100
-      };
-      if (payload.alive === false) {
-        canvasRenderer.triggerRivalTombstone({
-          snake: nextSnake,
-          sequence: payload.sequence
-        });
+    const previousGhost = rivalGhost;
+    rivalGhost = decodeSpectatorSnapshot(payload, previousGhost);
+    if (versusSpectatorActive) {
+      canvasRenderer.capturePreviousSnake(versusSpectatorState?.snake || rivalGhost.snake);
+      if (rivalGhost.score > (versusSpectatorState?.score || 0)) {
+        const eatenFood = versusSpectatorState?.food;
+        if (eatenFood) canvasRenderer.triggerFoodEat({ food: eatenFood, theme: THEMES[currentTheme] });
+        AudioEngine.sfxEat();
+        AudioEngine.updateTempo(rivalGhost.snake.length);
       }
+      versusSpectatorState = rivalGhost;
+      updateSpectatorHud();
+    }
+    if (payload.alive === false) {
+      canvasRenderer.triggerRivalTombstone({
+        snake: rivalGhost.snake,
+        sequence: payload.sequence
+      });
+    }
     rivalScore = Math.max(0, Number(payload.score) || 0);
-    if (runGameMode === 'versus') bestEl.textContent = rivalScore;
+    if (runGameMode === 'versus' && !versusSpectatorActive) bestEl.textContent = rivalScore;
   },
   onConnectionChange: status => {
     if (status === 'SUBSCRIBED') {
@@ -3451,6 +3557,7 @@ const liveVsUi = createLiveVsController({
 
 async function returnFromVersusToMainMenu({ disconnect = true } = {}) {
   if (disconnect) await liveVsUi.disconnect();
+  stopVersusSpectating({ showWaiting: false });
   clearTimeout(versusDisconnectTimer);
   versusDisconnectTimer = null;
   versusSubmissionPending = false;

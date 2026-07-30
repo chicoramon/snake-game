@@ -50,6 +50,14 @@
 
 <canvas id="game" role="img" aria-label="Snake game board"></canvas>
 <div id="countdownDisplay" aria-live="assertive"></div>
+<div id="live-vs-spectator-bar" hidden aria-live="polite">
+  <div>
+    <span>SPECTATING</span>
+    <strong id="live-vs-spectator-name">RIVAL</strong>
+  </div>
+  <span id="live-vs-spectator-signal" data-state="syncing">SYNCING</span>
+  <button id="live-vs-stop-spectating" type="button">Return to Lobby</button>
+</div>
 
 <div id="record-celebration" aria-hidden="true">
   <canvas id="record-fireworks"></canvas>
@@ -156,6 +164,7 @@
         <strong><span id="live-vs-waiting-score">0</span> PTS LOCKED</strong>
         <div class="live-vs-waiting-pulse" aria-hidden="true"><i></i><i></i><i></i></div>
         <p id="live-vs-waiting-status">Score secured • rival still fighting</p>
+        <button id="live-vs-spectate" type="button">Spectate Rival</button>
       </section>
       <div class="live-vs-fighters">
         <div id="live-vs-player-one" class="live-vs-fighter empty"></div>

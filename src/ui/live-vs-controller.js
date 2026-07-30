@@ -61,6 +61,7 @@ export function createLiveVsController({
   onGhost,
   onConnectionChange,
   onLatencyChange,
+  onSpectate,
   onLeave
 } = {}) {
   let room = null;
@@ -92,6 +93,7 @@ export function createLiveVsController({
   const waitingPanel = panel.querySelector('#live-vs-waiting');
   const waitingScore = panel.querySelector('#live-vs-waiting-score');
   const waitingStatus = panel.querySelector('#live-vs-waiting-status');
+  const spectateButton = panel.querySelector('#live-vs-spectate');
   const stageSelect = panel.querySelector('#live-vs-stage-select');
   const stageGrid = panel.querySelector('#live-vs-stage-grid');
   const stageLockStatus = panel.querySelector('#live-vs-stage-lock-status');
@@ -654,6 +656,14 @@ export function createLiveVsController({
     beginPolling();
   }
 
+  function showWaitingRoom() {
+    if (!room || !waitingForResult) return;
+    panel.classList.add('visible', 'waiting-for-rival');
+    panel.setAttribute('aria-hidden', 'false');
+    if (waitingPanel) waitingPanel.hidden = false;
+    beginPolling();
+  }
+
   function updateWaitingStatus(text, error = false) {
     if (waitingStatus && text) waitingStatus.textContent = text;
     setMessage(text, error);
@@ -668,6 +678,7 @@ export function createLiveVsController({
     lobby.hidden = false;
     closeButton.textContent = 'Leave Battle Room';
     if (waitingPanel) waitingPanel.hidden = false;
+    if (spectateButton) spectateButton.hidden = interrupted;
     if (waitingScore) waitingScore.textContent = String(Math.max(0, Number(score) || 0));
     if (waitingStatus) {
       waitingStatus.textContent = interrupted
@@ -717,6 +728,11 @@ export function createLiveVsController({
   joinButton.addEventListener('click', join);
   readyButton.addEventListener('click', toggleStageLock);
   shareButton.addEventListener('click', shareRoom);
+  spectateButton?.addEventListener('click', () => {
+    if (onSpectate?.(room) === false) return;
+    panel.classList.remove('visible');
+    panel.setAttribute('aria-hidden', 'true');
+  });
 
   return {
     open,
@@ -724,6 +740,7 @@ export function createLiveVsController({
     close,
     refreshRoom,
     returnToLobby,
+    showWaitingRoom,
     waitForRival,
     updateWaitingStatus,
     getRoom: () => room,
