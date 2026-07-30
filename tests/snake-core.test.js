@@ -43,6 +43,38 @@ assert.deepEqual(repeatedRun, firstRun, 'same seed and inputs must reproduce the
 assert.notDeepEqual(differentRun.food, firstRun.food, 'different seeds should alter gameplay food placement');
 assert.equal(firstRun.score, 1);
 
+const wrappedState = SnakeCore.advanceState({
+  snake: [{ x: 3, y: 1 }, { x: 2, y: 1 }, { x: 1, y: 1 }],
+  direction: { x: 1, y: 0 },
+  food: { x: 2, y: 0 },
+  score: 0,
+  speed: 150,
+  alive: true
+}, { x: 1, y: 0 }, {
+  cols: 4,
+  rows: 3,
+  baseInterval: 150,
+  minInterval: 90,
+  wrapWalls: true
+}, () => 0.5);
+assert.equal(wrappedState.event, 'move', 'wall wrapping must keep the secret child-friendly run alive');
+assert.deepEqual(wrappedState.snake[0], { x: 0, y: 1 }, 'crossing the right wall must emerge from the left');
+
+const normalWallState = SnakeCore.advanceState({
+  snake: [{ x: 3, y: 1 }, { x: 2, y: 1 }, { x: 1, y: 1 }],
+  direction: { x: 1, y: 0 },
+  food: { x: 2, y: 0 },
+  score: 0,
+  speed: 110,
+  alive: true
+}, { x: 1, y: 0 }, {
+  cols: 4,
+  rows: 3,
+  baseInterval: 110,
+  minInterval: 55
+}, () => 0.5);
+assert.equal(normalWallState.event, 'collision', 'normal ranked game rules must still collide with walls');
+
 let dailyRandomCalls = 0;
 const dailyFood = SnakeCore.placeFoodFromFreeCells({
   cols: 4,

@@ -240,6 +240,32 @@ export function createCanvasRenderer({
       ctx.restore();
       return;
     }
+    if (theme.boardPattern === 'golden-stage') {
+      ctx.save();
+      const horizon = canvasHeight - 86;
+      ctx.globalAlpha = 0.16;
+      ctx.fillStyle = '#77e7ff';
+      ctx.beginPath(); ctx.moveTo(24, 0); ctx.lineTo(122, horizon); ctx.lineTo(176, horizon); ctx.lineTo(78, 0); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#ff70cf';
+      ctx.beginPath(); ctx.moveTo(canvasWidth - 78, 0); ctx.lineTo(canvasWidth - 176, horizon); ctx.lineTo(canvasWidth - 122, horizon); ctx.lineTo(canvasWidth - 24, 0); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = 0.22;
+      ctx.fillStyle = '#ffd447';
+      for (let index = 0; index < 30; index++) {
+        const x = (index * 97 + 29) % canvasWidth;
+        const y = (index * 163 + 41) % Math.max(1, horizon - 12);
+        const size = index % 5 === 0 ? 3 : 1.5;
+        ctx.fillRect(x - size, y, size * 2 + 1, 1.5);
+        ctx.fillRect(x, y - size, 1.5, size * 2 + 1);
+      }
+      ctx.globalAlpha = 0.2;
+      ctx.fillStyle = '#2d1762'; ctx.fillRect(0, horizon, canvasWidth, 86);
+      ctx.fillStyle = '#ffd447';
+      for (let x = 8; x < canvasWidth; x += 34) ctx.fillRect(x, horizon + 15 + (x % 3) * 8, 18, 3);
+      ctx.fillStyle = '#ff70cf'; ctx.fillRect(0, canvasHeight - 31, canvasWidth, 4);
+      ctx.fillStyle = '#77e7ff'; ctx.fillRect(0, canvasHeight - 20, canvasWidth, 2);
+      ctx.restore();
+      return;
+    }
     if (theme.boardPattern === 'kenstage') {
       ctx.save();
       ctx.globalAlpha = 0.18;
@@ -347,12 +373,18 @@ export function createCanvasRenderer({
 
     for (let i = snake.length - 1; i >= 0; i--) {
       const segment = snake[i];
-      const previous = interpolateSnake && prevSnake[i] ? prevSnake[i] : segment;
+      const candidatePrevious = interpolateSnake && prevSnake[i] ? prevSnake[i] : segment;
+      const crossedWrappedEdge = Math.abs(candidatePrevious.x - segment.x) > 1
+        || Math.abs(candidatePrevious.y - segment.y) > 1;
+      const previous = crossedWrappedEdge ? segment : candidatePrevious;
       const x = lerp(previous.x, segment.x, t) * cellSize;
       const y = lerp(previous.y, segment.y, t) * cellSize;
       const ratio = i / Math.max(snake.length, 1);
       const tail = theme.snakeTail;
-      const color = (theme.snakeStyle === 'bricks' || theme.snakeStyle === 'cel' || theme.snakeStyle === 'fighter')
+      const color = (theme.snakeStyle === 'bricks'
+          || theme.snakeStyle === 'cel'
+          || theme.snakeStyle === 'fighter'
+          || theme.snakeStyle === 'golden-idol')
         ? theme.snakePalette[i % theme.snakePalette.length]
         : `rgb(${Math.round(tail[0] + tail[0] * 0.4 * (1 - ratio))},${Math.round(tail[1] - tail[1] * 0.3 * ratio)},${Math.round(tail[2] - tail[2] * 0.25 * ratio)})`;
       const padding = i === 0 ? 1 : 2;
@@ -372,14 +404,43 @@ export function createCanvasRenderer({
       } else if (theme.snakeStyle === 'fighter') {
         ctx.fillStyle = '#11131a'; roundRect(x + padding, y + padding, cellSize - padding * 2, cellSize - padding * 2, i === 0 ? 5 : 3); ctx.fillStyle = i === 0 ? theme.fighterSkin : (i % 3 === 0 ? theme.fighterGiShadow : theme.fighterGi); roundRect(x + padding + 1.5, y + padding + 1.5, cellSize - padding * 2 - 3, cellSize - padding * 2 - 3, i === 0 ? 4 : 2);
         if (i === 0) { ctx.fillStyle = theme.fighterHair; ctx.fillRect(x + 3, y + 2, 14, 4); ctx.fillRect(x + 5, y, 3, 4); ctx.fillRect(x + 11, y + 1, 4, 4); ctx.fillStyle = theme.fighterBand; ctx.fillRect(x + 2, y + 6, 16, 2); } else if (i % 4 === 0) { ctx.fillStyle = theme.fighterBand; ctx.fillRect(x + padding + 1, y + 8, cellSize - padding * 2 - 2, 4); } else { ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fillRect(x + padding + 4, y + padding + 3, 4, 2); }
+      } else if (theme.snakeStyle === 'golden-idol') {
+        ctx.fillStyle = '#3a2100';
+        roundRect(x + padding, y + padding, cellSize - padding * 2, cellSize - padding * 2, i === 0 ? 5 : 3);
+        ctx.fillStyle = color;
+        roundRect(x + padding + 1.5, y + padding + 1.5, cellSize - padding * 2 - 3, cellSize - padding * 2 - 3, i === 0 ? 4 : 2);
+        ctx.fillStyle = i % 2 ? '#fff3a6' : 'rgba(255,255,255,0.7)';
+        ctx.fillRect(x + padding + 4, y + padding + 4, i === 0 ? 7 : 4, 2);
+        if (i > 0 && i % 3 === 0) {
+          ctx.fillStyle = '#ff70cf';
+          ctx.fillRect(x + 8, y + 8, 4, 4);
+        }
       } else roundRect(x + padding, y + padding, cellSize - padding * 2, cellSize - padding * 2, i === 0 ? 6 : 3);
       ctx.shadowBlur = 0;
     }
 
-    const head = snake[0]; const previousHead = interpolateSnake && prevSnake[0] ? prevSnake[0] : head;
+    const head = snake[0];
+    const candidatePreviousHead = interpolateSnake && prevSnake[0] ? prevSnake[0] : head;
+    const previousHead = Math.abs(candidatePreviousHead.x - head.x) > 1
+      || Math.abs(candidatePreviousHead.y - head.y) > 1
+      ? head
+      : candidatePreviousHead;
     const headX = lerp(previousHead.x, head.x, t) * cellSize; const headY = lerp(previousHead.y, head.y, t) * cellSize;
     if (theme.snakeStyle === 'dragon') drawDragonHeadAndFire(headX, headY, theme, direction, alive, paused);
     else {
+      if (theme.snakeStyle === 'golden-idol') {
+        ctx.save();
+        ctx.translate(headX + cellSize / 2, headY + cellSize / 2);
+        ctx.fillStyle = '#ffd447';
+        ctx.strokeStyle = '#6f3f00';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-8, -7); ctx.lineTo(-7, -13); ctx.lineTo(-2, -9);
+        ctx.lineTo(0, -15); ctx.lineTo(3, -9); ctx.lineTo(8, -13);
+        ctx.lineTo(8, -7); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#77e7ff'; ctx.fillRect(-1, -12, 3, 3);
+        ctx.restore();
+      }
       ctx.fillStyle = '#fff';
       const eyeOne = direction.x === 0 ? { x: 5, y: direction.y > 0 ? 12 : 5 } : { x: direction.x > 0 ? 12 : 5, y: 5 };
       const eyeTwo = direction.x === 0 ? { x: 13, y: direction.y > 0 ? 12 : 5 } : { x: direction.x > 0 ? 12 : 5, y: 13 };

@@ -27,13 +27,21 @@ import {
 import { createCanvasRenderer } from './rendering/canvas-renderer.js';
 import { drawFoodSprite as drawFoodSpriteAsset } from './rendering/food-sprite.js';
 import { THEMES, FOOD_SPRITES, THEME_ICON_URLS, buildMusicArc } from './themes/catalog.js';
+import { GOLDEN_SECRET_THEME, GOLDEN_SECRET_FOOD_SPRITE } from './themes/golden-secret-theme.js';
 import { validateThemeCatalog } from './themes/validate-theme.js';
 
+const URL_PARAMS = new URLSearchParams(window.location.search);
+const GOLDEN_BACKDOOR = URL_PARAMS.get('golden') === '1';
+if (GOLDEN_BACKDOOR) {
+  THEMES.golden = GOLDEN_SECRET_THEME;
+  FOOD_SPRITES.golden = GOLDEN_SECRET_FOOD_SPRITE;
+}
 validateThemeCatalog(THEMES, FOOD_SPRITES);
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
-if (new URLSearchParams(location.search).has('debug')) document.body.classList.add('debug');
+if (URL_PARAMS.has('debug')) document.body.classList.add('debug');
+if (GOLDEN_BACKDOOR) document.body.classList.add('golden-secret');
 const overlay = document.getElementById('overlay');
 const startBtn = document.getElementById('startBtn');
 const shareBtn = document.getElementById('shareBtn');
@@ -172,8 +180,8 @@ const WHATS_NEW_RELEASES = Object.freeze([
     ]
   }
 ]);
-const FORCE_WHATS_NEW = new URLSearchParams(location.search).has('whatsnew');
-const invitedLiveVsCode = new URLSearchParams(window.location.search).get('vs');
+const FORCE_WHATS_NEW = URL_PARAMS.has('whatsnew');
+const invitedLiveVsCode = URL_PARAMS.get('vs');
 const DISPLAY_NAME_INVITE_KEY = 'snake_display_name_invite_v1';
 const DISPLAY_NAME_INVITE_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
 const DISPLAY_NAME_INVITE_MAX_DISMISSALS = 2;
@@ -258,9 +266,10 @@ whatsNewView = createWhatsNewDialog({
 });
 displayNameInviteSuppressedThisSession = FORCE_WHATS_NEW
   || !!invitedLiveVsCode
+  || GOLDEN_BACKDOOR
   || !whatsNewView.hasSeenCurrentRelease();
 whatsNewView.bind();
-if (!invitedLiveVsCode) whatsNewView.scheduleInitialOpen();
+if (!invitedLiveVsCode && !GOLDEN_BACKDOOR) whatsNewView.scheduleInitialOpen();
 
 // --- Responsive canvas ---
 const CELL = 20;
@@ -355,7 +364,7 @@ let recordResultVisible = false;
 let recordCelebrationShown = false;
 const gameController = createGameController();
 const runLifecycle = createRunLifecycle({ controller: gameController });
-let gameMode = localStorage.getItem('snake_game_mode') || 'classic';
+let gameMode = GOLDEN_BACKDOOR ? 'classic' : (localStorage.getItem('snake_game_mode') || 'classic');
 if (!['classic', 'sprint', 'daily'].includes(gameMode)) gameMode = 'classic';
 let runGameMode = gameMode;
 let countdownActive = false;
@@ -391,17 +400,31 @@ function renderVersusLatencyHud() {
   hudMode.classList.add('vs-latency-debug');
 }
 
-const BEST_KEYS = { classic: 'snakeBest120', sprint: 'snakeBest120_sprint' };
-const bestScores = {
-  classic: parseInt(localStorage.getItem(BEST_KEYS.classic)) || 0,
+const BEST_KEYS = {
+  classic: 'snakeBest120',
+  sprint: 'snakeBest120_sprint',
+  golden: 'snakeBestGoldenSecret'
+};
+const bestScores = {
+  classic: parseInt(localStorage.getItem(GOLDEN_BACKDOOR ? BEST_KEYS.golden : BEST_KEYS.classic)) || 0,
   sprint: parseInt(localStorage.getItem(BEST_KEYS.sprint)) || 0,
   daily: 0
 };
 best = bestScores[gameMode];
 bestEl.textContent = best;
 
-const BASE_INTERVAL = 110;  // ms per game step
-const MIN_INTERVAL = 55;
+const BASE_INTERVAL = 110;  // ms per game step
+const MIN_INTERVAL = 55;
+const GOLDEN_BASE_INTERVAL = 150;
+const GOLDEN_MIN_INTERVAL = 90;
+
+function activeBaseInterval() {
+  return GOLDEN_BACKDOOR ? GOLDEN_BASE_INTERVAL : BASE_INTERVAL;
+}
+
+function activeMinInterval() {
+  return GOLDEN_BACKDOOR ? GOLDEN_MIN_INTERVAL : MIN_INTERVAL;
+}
 const SPRINT_DURATION_MS = 60000;
 const SPRINT_COUNTDOWN_MS = 3000;
 
@@ -662,13 +685,17 @@ Object.assign(THEMES.streetfighter.music, {
 });
 
 const savedThemeSelection = localStorage.getItem('snakeTheme') || 'default';
-let themeSelection = savedThemeSelection === 'random' || THEMES[savedThemeSelection]
-  ? savedThemeSelection
-  : 'default';
+let themeSelection = GOLDEN_BACKDOOR
+  ? 'golden'
+  : (savedThemeSelection === 'random' || THEMES[savedThemeSelection]
+      ? savedThemeSelection
+      : 'default');
 const savedActiveTheme = localStorage.getItem('snakeThemeActive');
-let currentTheme = themeSelection === 'random'
-  ? (THEMES[savedActiveTheme] ? savedActiveTheme : 'default')
-  : themeSelection;
+let currentTheme = GOLDEN_BACKDOOR
+  ? 'golden'
+  : (themeSelection === 'random'
+      ? (THEMES[savedActiveTheme] ? savedActiveTheme : 'default')
+      : themeSelection);
 let controlMode = localStorage.getItem('snake_control_mode') || 'dpad'; // 'dpad', 'turn', or 'tap'
 const TURN_ORDER = ['up','right','down','left']; // clockwise
 const CONTROL_LABELS = { dpad: 'D-PAD', turn: 'TURN', tap: 'TAP', keyboard: 'KEYBOARD', mixed: 'MIXED', legacy: 'LEGACY' };
@@ -734,8 +761,10 @@ function updateThemeSelectionUI() {
 
 function selectRandomThemeMode() {
   themeSelection = 'random';
-  localStorage.setItem('snakeTheme', themeSelection);
-  localStorage.setItem('snakeThemeActive', currentTheme);
+  if (!GOLDEN_BACKDOOR) {
+    localStorage.setItem('snakeTheme', themeSelection);
+    localStorage.setItem('snakeThemeActive', currentTheme);
+  }
   updateThemeSelectionUI();
 }
 
@@ -744,10 +773,10 @@ function applyTheme(id, { updateSelection = true } = {}) {
   if (!THEMES[id]) return;
   if (updateSelection) {
     themeSelection = id;
-    localStorage.setItem('snakeTheme', themeSelection);
+    if (!GOLDEN_BACKDOOR) localStorage.setItem('snakeTheme', themeSelection);
   }
   currentTheme = id;
-  localStorage.setItem('snakeThemeActive', currentTheme);
+  if (!GOLDEN_BACKDOOR) localStorage.setItem('snakeThemeActive', currentTheme);
   const t = THEMES[id];
   const r = document.documentElement.style;
   r.setProperty('--accent', t.accent);
@@ -766,13 +795,14 @@ function applyTheme(id, { updateSelection = true } = {}) {
   // Update selected state in the extracted picker view.
   updateThemeSelectionUI();
   themeLabel.textContent = t.name + ' Theme';
-  overlayTitle.textContent = id === 'got' ? 'DRAGON' : 'SNAKE';
+  overlayTitle.textContent = id === 'got' ? 'DRAGON' : (id === 'golden' ? 'GOLDEN SNAKE' : 'SNAKE');
 }
 
 // Initialize theme
 applyTheme(currentTheme, { updateSelection: false });
 
 function modeHudLabel(mode) {
+  if (GOLDEN_BACKDOOR) return 'GOLDEN';
   if (mode === 'daily') return 'DAILY';
   if (mode === 'versus') return 'VS CASUAL';
   return mode === 'sprint' ? 'SPRINT' : 'CLASSIC';
@@ -926,9 +956,10 @@ function updateSprintTimer(force = false) {
 }
 
 function applyGameMode(mode) {
+  if (GOLDEN_BACKDOOR) mode = 'classic';
   if (!['classic', 'sprint', 'daily'].includes(mode)) mode = 'classic';
   gameMode = mode;
-  localStorage.setItem('snake_game_mode', mode);
+  if (!GOLDEN_BACKDOOR) localStorage.setItem('snake_game_mode', mode);
   const challenge = mode === 'daily' ? ensureDailyChallenge() : null;
   if (challenge) applyTheme(challenge.theme, { updateSelection: false });
   else if (themeSelection !== 'random') applyTheme(themeSelection, { updateSelection: false });
@@ -967,7 +998,7 @@ function reset(startingRun = false) {
   nextDir = {x: 1, y: 0};
   runTick = 0;
   score = 0;
-  speed = BASE_INTERVAL;
+  speed = activeBaseInterval();
   alive = startingRun;
   paused = false;
   gameController.resetClock();
@@ -997,7 +1028,9 @@ function reset(startingRun = false) {
   pauseBtn.setAttribute('aria-label', competitivePauseDisabled ? `${modeHudLabel(runGameMode)} cannot be paused` : 'Pause game');
   pauseBtn.title = competitivePauseDisabled ? `${modeHudLabel(runGameMode)} cannot be paused` : 'Pause (P)';
   // Keep the game identity primary; the selected theme has its own label.
-  overlayTitle.textContent = currentTheme === 'got' ? 'DRAGON' : 'SNAKE';
+  overlayTitle.textContent = currentTheme === 'got'
+    ? 'DRAGON'
+    : (currentTheme === 'golden' ? 'GOLDEN SNAKE' : 'SNAKE');
   themeLabel.textContent = THEMES[currentTheme].name + ' Theme';
   overlayMsg.textContent = 'Ready to play?';
   placeFood();
@@ -1038,9 +1071,10 @@ function gameTick() {
   const nextState = SnakeCore.advanceState({ snake, direction: dir, food, score, speed, alive }, nextDir, {
     cols: COLS,
     rows: ROWS,
-    baseInterval: BASE_INTERVAL,
-    minInterval: MIN_INTERVAL,
-    foodPlacement: runGameMode === 'daily' || runGameMode === 'versus' ? 'free-cells' : 'rejection'
+    baseInterval: activeBaseInterval(),
+    minInterval: activeMinInterval(),
+    foodPlacement: runGameMode === 'daily' || runGameMode === 'versus' ? 'free-cells' : 'rejection',
+    wrapWalls: GOLDEN_BACKDOOR
   }, gameplayRandom);
 
   if (nextState.event === 'collision') {
@@ -1071,7 +1105,7 @@ function gameTick() {
       bestEl.textContent = best;
       const bestKey = runGameMode === 'daily'
         ? ensureDailyChallenge().bestKey
-        : BEST_KEYS[runGameMode];
+        : (GOLDEN_BACKDOOR ? BEST_KEYS.golden : BEST_KEYS[runGameMode]);
       localStorage.setItem(bestKey, best);
     }
   }
@@ -1188,6 +1222,21 @@ function showRunResult(reason) {
     namePrompt.style.display = 'none';
     scoreMethodLabel.textContent = 'Daily Run invalidated — focus was lost';
     scoreMethodLabel.classList.add('unranked');
+    overlay.classList.remove('hidden');
+    overlay.setAttribute('aria-hidden', 'false');
+    recordResultVisible = false;
+    hideRecordChase();
+    return;
+  }
+  if (GOLDEN_BACKDOOR) {
+    overlayTitle.textContent = reason === 'collision' ? 'SHINE AGAIN!' : 'GOLDEN STAR!';
+    overlayMsg.textContent = `Score: ${score} • Keep shining!`;
+    startBtn.textContent = 'Play Again';
+    shareBtn.style.display = 'none';
+    lbBtn.style.display = 'none';
+    namePrompt.style.display = 'none';
+    nameInput.style.display = 'none';
+    scoreMethodLabel.textContent = '';
     overlay.classList.remove('hidden');
     overlay.setAttribute('aria-hidden', 'false');
     recordResultVisible = false;
@@ -1447,6 +1496,7 @@ async function startGame(options = {}) {
         countdownDisplay.classList.add('visible');
         if (!countdownActive) setTimeout(() => countdownDisplay.classList.remove('visible'), 350);
       } else if (runGameMode === 'daily') beginDailyRecordChase();
+      else if (GOLDEN_BACKDOOR) disableRecordChase();
       else beginRecordChase();
       AudioEngine.start();
     },
@@ -1640,6 +1690,24 @@ renderMusicButton(backgroundMusicBtn, 'BG', backgroundMusicMuted);
 renderMusicButton(muteBtn, 'GAME', gameMusicMuted);
 
 // --- Main menu theme/options view ---
+if (GOLDEN_BACKDOOR) {
+  const goldenThemeButton = document.getElementById('golden-theme-btn');
+  if (goldenThemeButton) goldenThemeButton.hidden = false;
+  document.querySelector('.ov-content > .menu-kicker')?.setAttribute('hidden', '');
+  document.querySelector('.game-mode-toggle')?.setAttribute('hidden', '');
+  liveVsButton.hidden = true;
+  lbBtn.hidden = true;
+  playerBtn.hidden = true;
+  shareBtn.hidden = true;
+  whatsNewBtn.hidden = true;
+  document.getElementById('how-to-play-btn')?.setAttribute('hidden', '');
+  displayNameInvite.hidden = true;
+  dailyChallengeInfo.hidden = true;
+  overlayTitle.textContent = 'GOLDEN SNAKE';
+  overlayMsg.textContent = 'A golden surprise awaits!';
+  hudMode.textContent = 'GOLDEN';
+}
+
 themePicker = createThemePicker({
   themes: THEMES,
   themeIconUrls: THEME_ICON_URLS,
@@ -1689,12 +1757,14 @@ themePicker.syncModeSelection(gameMode);
 // --- Supabase Leaderboard ---
 const SB_URL = 'https://suuwudlnsapyvthjscwp.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1dXd1ZGxuc2FweXZ0aGpzY3dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MTc3ODcsImV4cCI6MjA4MDQ5Mzc4N30.eI0bkImttIQ_AeiCj59lUpjbcrSU4skFbsDIXVCHkEk';
-let sb = null;
-sb = createSupabaseClient({
-  supabaseGlobal: window.supabase,
-  url: SB_URL,
-  anonKey: SB_KEY
-});
+let sb = null;
+if (!GOLDEN_BACKDOOR) {
+  sb = createSupabaseClient({
+    supabaseGlobal: window.supabase,
+    url: SB_URL,
+    anonKey: SB_KEY
+  });
+}
 
 const playerProfileService = createPlayerProfileService({ getClient: () => sb });
 const playerAuthService = createPlayerAuthService({ getClient: () => sb });
@@ -2459,6 +2529,10 @@ async function retryPendingDailyAttempt() {
 }
 
 async function prepareRunSubmission() {
+  if (GOLDEN_BACKDOOR) {
+    namePrompt.style.display = 'none';
+    return;
+  }
   namePrompt.style.setProperty('display', 'flex', 'important');
   const promptLabel = namePrompt.querySelector('.np-label');
   if (runGameMode === 'daily') {
@@ -2524,6 +2598,7 @@ nameInput.addEventListener('keydown', (e) => {
 });
 
 async function submitScore() {
+  if (GOLDEN_BACKDOOR) return;
   if (runGameMode === 'versus') {
     await submitVersusResult();
     return;
@@ -2793,7 +2868,7 @@ onboardingView = createOnboardingDialog({
   onAfterClose: renderDisplayNameInvitation
 });
 onboardingView.bind();
-if (!invitedLiveVsCode) onboardingView.scheduleInitialOpen();
+if (!invitedLiveVsCode && !GOLDEN_BACKDOOR) onboardingView.scheduleInitialOpen();
 
 /* Legacy leaderboard controller retained temporarily as source context during extraction.
 const publicPlayerCardCache = new Map();
@@ -3442,6 +3517,7 @@ canvasRenderer.draw(1);
 // Attach and render the core game first. Identity is an optional enhancement
 // and may fail in restrictive mobile browsers or embedded web views.
 setTimeout(() => {
+  if (GOLDEN_BACKDOOR) return;
   Promise.resolve(startPlayerIdentity())
     .then(waitForPlayerIdentity)
     .then(() => {

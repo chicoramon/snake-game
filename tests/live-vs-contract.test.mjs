@@ -38,9 +38,10 @@ test('Live Vs lobby and controller are present in the modular app', () => {
   assert.match(main, /createLiveVsController/);
   assert.match(main, /submitVersusResult/);
   assert.match(main, /liveVsUi\.returnToLobby/);
-  assert.match(main, /URLSearchParams\(window\.location\.search\)\.get\('vs'\)/);
-  assert.match(main, /if \(!invitedLiveVsCode\) whatsNewView\.scheduleInitialOpen\(\)/);
-  assert.match(main, /if \(!invitedLiveVsCode\) onboardingView\.scheduleInitialOpen\(\)/);
+  assert.match(main, /const URL_PARAMS = new URLSearchParams\(window\.location\.search\)/);
+  assert.match(main, /const invitedLiveVsCode = URL_PARAMS\.get\('vs'\)/);
+  assert.match(main, /if \(!invitedLiveVsCode && !GOLDEN_BACKDOOR\) whatsNewView\.scheduleInitialOpen\(\)/);
+  assert.match(main, /if \(!invitedLiveVsCode && !GOLDEN_BACKDOOR\) onboardingView\.scheduleInitialOpen\(\)/);
   assert.match(main, /Promise\.resolve\(startPlayerIdentity\(\)\)[\s\S]*?\.then\(waitForPlayerIdentity\)[\s\S]*?liveVsUi\.openInvite\(invitedLiveVsCode\)/);
   assert.doesNotMatch(main, /playerIdentityPromise\s*[\r\n]+\s*\.catch\(\(\) => \{\}\)\s*[\r\n]+\s*\.then\(\(\) => liveVsUi\.openInvite/);
   assert.match(controller, /searchParams\.set\('vs', code\)/);
