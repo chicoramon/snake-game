@@ -34,8 +34,8 @@
 <title>Snake Game</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="./snake-core.js"></script>
-  <script type="module" crossorigin src="./assets/index-CcphrLoR.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-iC1hXGMk.css">
+  <script type="module" crossorigin src="./assets/index-BpPxVZ3s.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-KZ6-HZ7x.css">
 </head>
 <body>
 
@@ -74,7 +74,7 @@
   <button id="startBtn">Play</button>
   <button id="vs-live-btn" type="button" title="Challenge another player to a live race">
     <svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true"><rect x="0" y="2" width="2" height="6"/><rect x="2" y="4" width="2" height="4"/><rect x="4" y="6" width="2" height="2"/><rect x="6" y="4" width="2" height="4"/><rect x="8" y="2" width="2" height="6"/></svg>
-    Live Vs
+    Vs Casual
   </button>
   <div id="namePrompt">
     <span class="np-label">Enter your initials</span>
@@ -118,8 +118,8 @@
     <header class="live-vs-marquee">
       <span class="live-vs-live-dot" aria-hidden="true"></span>
       <span class="menu-kicker">Realtime Battle Network</span>
-      <h2 id="live-vs-heading">Live Vs</h2>
-      <p class="live-vs-tagline">Same arena. Same 60 seconds. One champion.</p>
+      <h2 id="live-vs-heading">Vs Casual</h2>
+      <p class="live-vs-tagline">Choose your arena. Race the same 60 seconds. Claim the set.</p>
     </header>
 
     <div id="live-vs-setup">
@@ -151,11 +151,37 @@
       </div>
 
       <p id="live-vs-room-status">Waiting for rival…</p>
+      <section id="live-vs-waiting" class="live-vs-waiting-board" hidden aria-live="polite">
+        <span class="live-vs-label">Run Complete</span>
+        <strong><span id="live-vs-waiting-score">0</span> PTS LOCKED</strong>
+        <div class="live-vs-waiting-pulse" aria-hidden="true"><i></i><i></i><i></i></div>
+        <p id="live-vs-waiting-status">Score secured • rival still fighting</p>
+      </section>
       <div class="live-vs-fighters">
         <div id="live-vs-player-one" class="live-vs-fighter empty"></div>
         <div class="live-vs-bolt"><span>VS</span></div>
         <div id="live-vs-player-two" class="live-vs-fighter empty"></div>
       </div>
+
+      <section id="live-vs-stage-select" class="live-vs-stage-select">
+        <div class="live-vs-stage-heading">
+          <span class="live-vs-label">Stage Select</span>
+          <strong>CHOOSE YOUR ARENA</strong>
+        </div>
+        <div id="live-vs-stage-grid" class="live-vs-stage-grid"></div>
+        <p id="live-vs-stage-lock-status">Select a stage or take your chances with Random.</p>
+      </section>
+
+      <section id="live-vs-stage-reveal" class="live-vs-stage-reveal" hidden aria-live="assertive">
+        <span class="live-vs-label">Stage Roulette</span>
+        <div class="live-vs-stage-duel">
+          <div id="live-vs-host-stage" class="live-vs-stage-card"><span>1P PICK</span><strong>---</strong></div>
+          <b>VS</b>
+          <div id="live-vs-guest-stage" class="live-vs-stage-card"><span>2P PICK</span><strong>---</strong></div>
+        </div>
+        <div id="live-vs-roulette-stage" class="live-vs-roulette-stage">SYNCING…</div>
+        <p id="live-vs-roulette-status">Both selections locked</p>
+      </section>
 
       <section id="live-vs-last-round" class="live-vs-result-board" hidden aria-live="polite">
         <span class="live-vs-label">Last Battle</span>
@@ -178,7 +204,7 @@
         <span>SYNCED SEED</span>
       </div>
       <p class="live-vs-ghost-note">Your rival appears as a faint ghost on the board. Ghosts never collide or affect gameplay.</p>
-      <button id="live-vs-ready" class="primary" type="button" disabled>Ready for Round 1</button>
+      <button id="live-vs-ready" class="primary" type="button" disabled>Lock Stage</button>
     </div>
 
     <p id="live-vs-message" aria-live="polite"></p>
