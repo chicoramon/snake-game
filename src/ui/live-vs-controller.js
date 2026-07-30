@@ -31,6 +31,10 @@ function inviteUrl(code) {
   return url.toString();
 }
 
+export function resolveCurrentStageChoice(localChoice, serverChoice) {
+  return localChoice || serverChoice || null;
+}
+
 export function createLiveVsController({
   service,
   themes,
@@ -584,7 +588,10 @@ export function createLiveVsController({
   async function toggleStageLock() {
     const mine = myPlayer();
     if (!room || !mine) return;
-    const choice = mine.themeChoice || localStageChoice;
+    // On a completed round, the room snapshot still contains the previous
+    // round's server choice until the first Ready action creates the next
+    // round. The stage highlighted in this client is authoritative here.
+    const choice = resolveCurrentStageChoice(localStageChoice, mine.themeChoice);
     if (!mine.ready && !choice) {
       setMessage('Choose an arena before locking in', true);
       return;

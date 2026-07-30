@@ -49,6 +49,7 @@ test('Live Vs lobby and controller are present in the modular app', () => {
   assert.match(controller, /returnToLobby/);
   assert.match(controller, /waitForRival/);
   assert.match(controller, /service\.selectStage\(room\.id, choice, !mine\.ready\)/);
+  assert.match(controller, /resolveCurrentStageChoice\(localStageChoice, mine\.themeChoice\)/);
   assert.match(controller, /stageRevealAt/);
   assert.match(controller, /ARENA ROULETTE/);
   assert.match(controller, /\['random', \{ name: 'Random'/);
