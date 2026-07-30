@@ -1,4 +1,4 @@
--- Live Vs persistent rooms, rounds, rematches, and Realtime authorization.
+-- Live Vs persistent rooms, continuous rounds, and Realtime authorization.
 -- Run this entire file in the Supabase SQL editor before deploying the matching
 -- submit-live-vs-result Edge Function.
 
@@ -211,6 +211,7 @@ as $$
           'roundNumber', r.round_number,
           'winnerPlayerId', r.winner_player_id,
           'outcome', r.outcome,
+          'theme', r.theme,
           'hostScore', r.host_score,
           'guestScore', r.guest_score,
           'hostFinalFoodMs', r.host_final_food_ms,
@@ -471,8 +472,8 @@ begin
         theme = v_final_theme,
         stage_reveal_at = now(),
         starts_at = now() + case
-          when v_host_theme = v_guest_theme then interval '2 seconds'
-          else interval '3.2 seconds'
+          when v_host_theme = v_guest_theme then interval '4.2 seconds'
+          else interval '5.8 seconds'
         end,
         expires_at = now() + interval '30 minutes',
         updated_at = now()

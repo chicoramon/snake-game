@@ -183,6 +183,8 @@
         <p id="live-vs-roulette-status">Both selections locked</p>
       </section>
 
+      <button id="live-vs-ready" class="primary" type="button" disabled>Ready</button>
+
       <section id="live-vs-last-round" class="live-vs-result-board" hidden aria-live="polite">
         <span class="live-vs-label">Last Battle</span>
         <strong id="live-vs-result-title">Result Verified</strong>
@@ -193,10 +195,15 @@
         </div>
       </section>
 
-      <section id="live-vs-history-wrap" class="live-vs-history" hidden>
-        <span class="live-vs-label">Battle Log</span>
+      <details id="live-vs-history-wrap" class="live-vs-history" hidden>
+        <summary>
+          <span class="live-vs-label">Battle Archive</span>
+          <strong id="live-vs-history-count">0 EARLIER ROUNDS</strong>
+          <i>OPEN</i>
+        </summary>
+        <p>Latest archived rounds from this battle room.</p>
         <div id="live-vs-history-list"></div>
-      </section>
+      </details>
 
       <div class="live-vs-arena-spec">
         <span id="live-vs-theme-name">DEFAULT ARENA</span>
@@ -204,7 +211,6 @@
         <span>SYNCED SEED</span>
       </div>
       <p class="live-vs-ghost-note">Your rival appears as a faint ghost on the board. Ghosts never collide or affect gameplay.</p>
-      <button id="live-vs-ready" class="primary" type="button" disabled>Ready</button>
     </div>
 
     <p id="live-vs-message" aria-live="polite"></p>

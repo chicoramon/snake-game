@@ -1,5 +1,8 @@
 import { isValidRoomCode, normalizeRoomCode } from '../versus/live-vs-service.js';
 
+const GAMEPLAY_COUNTDOWN_MS = 3000;
+const ROULETTE_RESULT_HOLD_MS = 650;
+
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, character => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -79,6 +82,7 @@ export function createLiveVsController({
   const hostResultTime = panel.querySelector('#live-vs-host-result-time');
   const guestResultTime = panel.querySelector('#live-vs-guest-result-time');
   const historyWrap = panel.querySelector('#live-vs-history-wrap');
+  const historyCount = panel.querySelector('#live-vs-history-count');
   const historyList = panel.querySelector('#live-vs-history-list');
   const themeName = panel.querySelector('#live-vs-theme-name');
   const waitingPanel = panel.querySelector('#live-vs-waiting');
@@ -210,8 +214,13 @@ export function createLiveVsController({
     const last = room?.lastRound;
     const host = playerAtSeat(1);
     const guest = playerAtSeat(2);
+    const archivedRounds = (room?.recentRounds || []).slice(1);
+    const earlierRoundCount = Math.max(
+      archivedRounds.length,
+      Math.max(0, Number(last?.roundNumber || 1) - 1)
+    );
     lastRoundPanel.hidden = !last;
-    historyWrap.hidden = !(room?.recentRounds?.length > 1);
+    historyWrap.hidden = !last || earlierRoundCount < 1;
     if (!last) return;
 
     resultTitle.textContent = resultHeading(last);
@@ -224,11 +233,30 @@ export function createLiveVsController({
     lastRoundPanel.classList.toggle('you-won', last.winnerPlayerId === getPlayerId?.());
     lastRoundPanel.classList.toggle('you-lost', !!last.winnerPlayerId && last.winnerPlayerId !== getPlayerId?.());
 
-    historyList.innerHTML = (room.recentRounds || []).slice(1).map(round => {
+    if (historyCount) {
+      historyCount.textContent = `${earlierRoundCount} EARLIER ${earlierRoundCount === 1 ? 'ROUND' : 'ROUNDS'}`;
+    }
+    const cards = archivedRounds.map(round => {
       const winner = room.players?.find(player => player.playerId === round.winnerPlayerId);
       const result = round.outcome === 'draw' ? 'DRAW' : `${compactPlayerLabel(winner)} WON`;
-      return `<div><span>R${round.roundNumber}</span><b>${round.hostScore}–${round.guestScore}</b><em>${escapeHtml(result)}</em></div>`;
-    }).join('');
+      const card = document.createElement('article');
+      card.className = 'live-vs-history-card';
+      if (round.outcome === 'draw') card.classList.add('draw');
+      else if (round.winnerPlayerId === getPlayerId?.()) card.classList.add('you-won');
+      else card.classList.add('you-lost');
+
+      const copy = document.createElement('span');
+      const roundLabel = document.createElement('small');
+      roundLabel.textContent = `ROUND ${round.roundNumber}`;
+      const scoreLine = document.createElement('b');
+      scoreLine.textContent = `${round.hostScore ?? 0} – ${round.guestScore ?? 0}`;
+      const outcome = document.createElement('em');
+      outcome.textContent = result;
+      copy.append(roundLabel, scoreLine, outcome);
+      card.append(createThemeArtwork(round.theme, 'live-vs-history-art'), copy);
+      return card;
+    });
+    historyList.replaceChildren(...cards);
   }
 
   function reportLatencies() {
@@ -244,7 +272,8 @@ export function createLiveVsController({
   function renderStageSelection() {
     buildStageGrid();
     const mine = myPlayer();
-    const selected = mine?.themeChoice || localStageChoice;
+    const completedRound = room?.status === 'complete';
+    const selected = completedRound ? localStageChoice : (mine?.themeChoice || localStageChoice);
     const selectable = !!room && ['waiting', 'complete'].includes(room.status) && !mine?.ready;
     if (stageSelect) stageSelect.hidden = !['waiting', 'complete'].includes(room?.status);
     if (stageReveal) stageReveal.hidden = room?.status !== 'countdown';
@@ -257,7 +286,7 @@ export function createLiveVsController({
     if (stageLockStatus) {
       stageLockStatus.textContent = mine?.ready
         ? `${themeLabel(selected)} locked • waiting for rival`
-        : (selected ? `${themeLabel(selected)} selected • lock when ready` : 'Choose an arena');
+        : (selected ? `${themeLabel(selected)} selected • press Ready when set` : 'Choose an arena');
     }
   }
 
@@ -307,6 +336,7 @@ export function createLiveVsController({
     const guestChoice = guest?.themeResolved || room.theme;
     const revealMs = Date.parse(room.stageRevealAt || room.serverNow || new Date().toISOString());
     const startMs = Date.parse(room.startsAt);
+    const boardLaunchMs = Math.max(revealMs, startMs - GAMEPLAY_COUNTDOWN_MS);
     const serverOffset = Date.parse(room.serverNow || new Date().toISOString()) - Date.now();
     const sequenceKey = `${room.id}:${room.roundNumber}:${room.startsAt}`;
 
@@ -318,7 +348,7 @@ export function createLiveVsController({
     if (scheduledStartKey !== sequenceKey) {
       clearStartSequence();
       scheduledStartKey = sequenceKey;
-      const delay = Math.max(0, startMs - (Date.now() + serverOffset));
+      const delay = Math.max(0, boardLaunchMs - (Date.now() + serverOffset));
       startTimer = setTimeout(() => startMatchFromLobby(serverOffset), delay);
     }
 
@@ -328,7 +358,7 @@ export function createLiveVsController({
       return;
     }
 
-    const settleAt = Math.max(revealMs, startMs - 650);
+    const settleAt = Math.max(revealMs, boardLaunchMs - ROULETTE_RESULT_HOLD_MS);
     const boundaries = [0, .12, .24, .36, .48, .60, .70, .79, .87, .93, .97, 1];
     const animate = () => {
       rouletteRaf = null;
@@ -396,7 +426,9 @@ export function createLiveVsController({
     renderLastRound();
 
     const mine = myPlayer();
-    if (!localStageChoice && mine?.themeChoice) localStageChoice = mine.themeChoice;
+    if (!localStageChoice && mine?.themeChoice && room.status !== 'complete') {
+      localStageChoice = mine.themeChoice;
+    }
     renderStageSelection();
     const nextRound = Number(room.roundNumber || 1) + (room.status === 'complete' ? 1 : 0);
     const roomClosed = ['cancelled', 'expired'].includes(room.status) || !!departedRival();
@@ -604,6 +636,7 @@ export function createLiveVsController({
     startNotified = false;
     waitingForResult = false;
     localStageChoice = null;
+    if (historyWrap) historyWrap.open = false;
     panel.classList.remove('waiting-for-rival');
     if (waitingPanel) waitingPanel.hidden = true;
     panel.classList.add('visible');

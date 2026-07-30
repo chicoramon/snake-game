@@ -20,6 +20,7 @@ test('Live Vs lobby and controller are present in the modular app', () => {
     'live-vs-share',
     'live-vs-session-score',
     'live-vs-last-round',
+    'live-vs-history-count',
     'live-vs-history-list',
     'live-vs-waiting',
     'live-vs-waiting-score',
@@ -54,8 +55,19 @@ test('Live Vs lobby and controller are present in the modular app', () => {
   assert.match(controller, /getElementById\(`ti-\$\{id\}`\)/);
   assert.match(controller, /theme-random-btn \.theme-icon/);
   assert.match(controller, /player\?\.ready \? 'READY'/);
+  assert.match(controller, /const GAMEPLAY_COUNTDOWN_MS = 3000/);
+  assert.match(controller, /startMs - GAMEPLAY_COUNTDOWN_MS/);
+  assert.match(controller, /boardLaunchMs - ROULETTE_RESULT_HOLD_MS/);
+  assert.match(controller, /completedRound \? localStageChoice/);
+  assert.match(controller, /historyList\.replaceChildren\(\.\.\.cards\)/);
   assert.doesNotMatch(styles, /\.live-vs-stage-option::before/);
   assert.match(styles, /\.live-vs-stage-art > img/);
+  assert.match(styles, /\.live-vs-history summary/);
+  assert.match(styles, /max-height: 178px/);
+  assert.ok(
+    html.indexOf('id="live-vs-ready"') < html.indexOf('id="live-vs-last-round"'),
+    'The next-round Ready action must remain above the archived results'
+  );
   assert.match(main, /invalidateVersusRun/);
   assert.match(main, /latencyDiagnostics:\s*LIVE_VS_LATENCY_DEBUG/);
   assert.match(debugConfig, /DEFAULT_LIVE_VS_LATENCY_DEBUG\s*=\s*true/);
@@ -108,8 +120,9 @@ test('Live Vs backend uses private participant rooms and verified replay results
   assert.match(sql, /theme_resolved/);
   assert.match(sql, /when v_host_theme = v_guest_theme then v_host_theme/);
   assert.match(sql, /when \(v_match\.seed % 2\) = 0 then v_host_theme/);
-  assert.match(sql, /then interval '2 seconds'/);
-  assert.match(sql, /else interval '3\.2 seconds'/);
+  assert.match(sql, /then interval '4\.2 seconds'/);
+  assert.match(sql, /else interval '5\.8 seconds'/);
+  assert.match(sql, /'theme', r\.theme/);
   assert.match(sql, /host_wins/);
   assert.match(sql, /guest_wins/);
   assert.match(sql, /round_number = round_number \+ 1/);

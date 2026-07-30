@@ -2064,20 +2064,86 @@
   .live-vs-result-scores b { color: #fff; font-size: 1.5rem; }
   .live-vs-result-scores small { color: #65dfff; font-size: 0.52rem; }
   .live-vs-result-scores em { color: #6f7a80; font-size: 0.45rem; font-style: normal; }
-  .live-vs-history { margin: 12px 0; padding: 9px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.32); }
-  #live-vs-history-list { display: grid; gap: 4px; }
-  #live-vs-history-list div {
+  .live-vs-history {
+    margin: 12px 0;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.32);
+  }
+  .live-vs-history summary {
     display: grid;
-    grid-template-columns: 34px 45px 1fr;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
     gap: 8px;
-    padding: 5px 7px;
-    background: rgba(255,255,255,0.025);
+    min-height: 42px;
+    padding: 8px 10px;
+    cursor: pointer;
+    list-style: none;
+    background: linear-gradient(90deg, rgba(37,220,255,0.06), rgba(255,72,120,0.035));
+  }
+  .live-vs-history summary::-webkit-details-marker { display: none; }
+  .live-vs-history summary strong {
+    color: #d4e0e6;
+    font-size: 0.48rem;
+    letter-spacing: 0.05em;
+  }
+  .live-vs-history summary i {
+    color: #65dfff;
+    font-size: 0.45rem;
+    font-style: normal;
+  }
+  .live-vs-history[open] summary i::before { content: 'CLOSE'; }
+  .live-vs-history[open] summary i { font-size: 0; }
+  .live-vs-history[open] summary i::before { font-size: 0.45rem; }
+  .live-vs-history > p {
+    margin: 8px 10px 6px;
+    color: #748892;
+    font-size: 0.46rem;
+    line-height: 1.4;
+  }
+  #live-vs-history-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    max-height: 178px;
+    padding: 0 9px 9px;
+    overflow-y: auto;
+  }
+  .live-vs-history-card {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    padding: 7px;
+    border-left: 2px solid #65dfff;
+    background: rgba(255,255,255,0.03);
     color: #8b9aa3;
     font-size: 0.5rem;
     text-align: left;
   }
-  #live-vs-history-list b { color: #fff; }
-  #live-vs-history-list em { color: #ffe45b; font-style: normal; text-align: right; }
+  .live-vs-history-card.you-won { border-left-color: #66ffb3; }
+  .live-vs-history-card.you-lost { border-left-color: #ff6b93; }
+  .live-vs-history-card.draw { border-left-color: #ffe45b; }
+  .live-vs-history-art { width: 30px; height: 30px; }
+  .live-vs-history-art > img,
+  .live-vs-history-art > canvas,
+  .live-vs-history-art > svg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+  }
+  .live-vs-history-card > span { display: grid; min-width: 0; gap: 2px; }
+  .live-vs-history-card small { color: #758994; font-size: 0.42rem; }
+  .live-vs-history-card b { color: #fff; font-size: 0.62rem; }
+  .live-vs-history-card em {
+    overflow: hidden;
+    color: #ffe45b;
+    font-size: 0.43rem;
+    font-style: normal;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .live-vs-arena-spec {
     display: flex;
     flex-wrap: wrap;
@@ -2093,7 +2159,7 @@
     font-size: 0.46rem;
     letter-spacing: 0.08em;
   }
-  #live-vs-ready { margin-top: 12px; }
+  #live-vs-ready { margin: 12px 0 4px; }
   #live-vs-ready.armed {
     background: linear-gradient(90deg, #66ffb3, #a4ffd0);
     border-color: #66ffb3;
