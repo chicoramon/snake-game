@@ -33,13 +33,31 @@ export function createWhatsNewDialog({
     const meta = document.createElement('div');
     meta.className = 'whats-new-release-meta';
     meta.textContent = release.version;
-    const list = document.createElement('ul');
-    release.items.forEach(item => {
-      const entry = document.createElement('li');
-      entry.textContent = item;
-      list.appendChild(entry);
-    });
-    section.append(heading, meta, list);
+    const createList = items => {
+      const list = document.createElement('ul');
+      (items || []).forEach(item => {
+        const entry = document.createElement('li');
+        entry.textContent = item;
+        list.appendChild(entry);
+      });
+      return list;
+    };
+    section.append(heading, meta);
+    if (release.sections?.length) {
+      const sections = document.createElement('div');
+      sections.className = 'whats-new-headlines';
+      release.sections.forEach(headline => {
+        const block = document.createElement('div');
+        block.className = 'whats-new-headline';
+        const subheading = document.createElement('h4');
+        subheading.textContent = headline.title;
+        block.append(subheading, createList(headline.items));
+        sections.appendChild(block);
+      });
+      section.appendChild(sections);
+    } else {
+      section.appendChild(createList(release.items));
+    }
     return section;
   }
 

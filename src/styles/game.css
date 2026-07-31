@@ -1683,7 +1683,7 @@
     margin-bottom: 5px;
     color: var(--muted);
     font-family: var(--pixel-font);
-    font-size: 0.48rem;
+    font-size: 0.55rem;
     font-weight: 800;
     letter-spacing: 0.16em;
     line-height: 1;
@@ -1713,7 +1713,7 @@
     min-height: 46px;
     margin: 0;
     padding: 8px 5px;
-    font-size: 0.56rem;
+    font-size: 0.68rem;
     letter-spacing: 0.03em;
   }
   #overlay .menu-action-grid > button {
@@ -1744,6 +1744,7 @@
     height: 44px;
     min-height: 44px;
     color: var(--text);
+    font-size: 0.68rem;
   }
   #overlay .menu-setup #music-controls .music-toggle.muted { color: #d0d4d2; }
   #overlay .menu-setup #music-controls .music-toggle.muted svg { color: #8f9995; }
@@ -1752,6 +1753,7 @@
     border: 1px solid rgba(255,139,139,0.38);
     padding: 2px 3px;
   }
+  #overlay .menu-setup #music-controls .music-toggle b { font-size: 0.58rem; }
   #overlay .menu-setup #music-controls .music-toggle:not(.muted) b {
     border: 1px solid var(--accent-glow);
     padding: 2px 3px;
@@ -1776,7 +1778,7 @@
   .player-menu-copy strong {
     color: var(--text);
     font-family: var(--pixel-font);
-    font-size: 0.64rem;
+    font-size: 0.75rem;
     letter-spacing: 0.04em;
     line-height: 1.1;
     white-space: nowrap;
@@ -1785,7 +1787,7 @@
     overflow: hidden;
     color: var(--muted);
     font-family: var(--pixel-font);
-    font-size: 0.45rem;
+    font-size: 0.55rem;
     letter-spacing: 0.07em;
     line-height: 1.1;
     text-overflow: ellipsis;
@@ -2681,6 +2683,19 @@
     font-family: var(--pixel-font);
     font-size: 0.56rem;
     letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .whats-new-headline + .whats-new-headline {
+    margin-top: 15px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+  }
+  .whats-new-headline h4 {
+    margin: 0 0 7px;
+    color: var(--accent);
+    font-family: var(--pixel-font);
+    font-size: 0.76rem;
+    letter-spacing: 0.07em;
     text-transform: uppercase;
   }
   .whats-new-release ul {

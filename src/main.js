@@ -141,13 +141,25 @@ let playerIdentityController = null;
 // Do not include bugs, fixes, caching, builds, deployments, or backend details.
 const WHATS_NEW_RELEASES = Object.freeze([
   {
-    id: '2026-07-30-vs-casual-arenas',
+    id: '2026-07-30-vs-mode-main-menu',
     version: 'Update 2026.07.30',
-    title: 'Choose Your Vs Arena',
-    items: [
-      'Vs Casual now lets both fighters privately choose and lock a theme before every round.',
-      'Matching picks win instantly; different picks enter a synchronized arcade-style arena roulette.',
-      'Random is available as a stage choice, and fallen rivals now leave a brief pixel tombstone on the board.'
+    title: 'Two Major Upgrades',
+    sections: [
+      {
+        title: 'Vs Mode Launch',
+        items: [
+          'Challenge a friend to a live 60-second race with identical food and a live rival ghost.',
+          'Create a private room, share a joinable invite link, and keep the rivalry going across rounds or a series.',
+          'Choose room rules and stages together, with arcade roulette settling different arena picks.'
+        ]
+      },
+      {
+        title: 'Main Menu Uplift',
+        items: [
+          'The main menu now groups competition, game setup, and player options into a faster arcade launch screen.',
+          'Larger text, clearer music controls, and stronger player identity make every option easier to find and use.'
+        ]
+      }
     ]
   },
   {
