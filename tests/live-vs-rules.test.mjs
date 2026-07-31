@@ -39,7 +39,7 @@ test('series targets and full speed-curve scaling are deterministic', () => {
 });
 
 test('ghost transport increases its update rate with room speed', () => {
-  assert.equal(liveVsGhostInterval(1), 100);
-  assert.equal(liveVsGhostInterval(2), 67);
-  assert.equal(liveVsGhostInterval(4), 50);
+  assert.equal(liveVsGhostInterval(1), 67);
+  assert.equal(liveVsGhostInterval(2), 40);
+  assert.equal(liveVsGhostInterval(4), 25);
 });

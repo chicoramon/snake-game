@@ -15,6 +15,7 @@ export function createLiveGameSession({
   onSprintTimeChange,
   onDailyElapsedChange,
   onTick,
+  onFrame,
   onFinish,
   getDailyDuration,
   getFpsElement
@@ -72,6 +73,7 @@ export function createLiveGameSession({
     }
 
     state = getState();
+    onFrame?.({ rawDt, dt, clock, state });
     renderer.update(dt);
     renderer.draw(state.alive && !state.paused ? clock.tickAccum / state.speed : 1);
     renderer.updateFps(getFpsElement?.());

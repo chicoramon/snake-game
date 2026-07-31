@@ -1456,7 +1456,9 @@ const liveGameSession = createLiveGameSession({
   onTick: () => {
     canvasRenderer.capturePreviousSnake(snake);
     gameTick();
-    if (runGameMode === 'versus' && activeVsRoom?.id) {
+  },
+  onFrame: () => {
+    if (runGameMode === 'versus' && activeVsRoom?.id && alive && !countdownActive) {
       liveVsService.broadcastGhost({
         matchId: activeVsRoom.id,
         tick: runTick,

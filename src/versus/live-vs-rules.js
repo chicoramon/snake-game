@@ -42,5 +42,7 @@ export function scaleLiveVsInterval(intervalMs, speedMultiplier = 1) {
 }
 
 export function liveVsGhostInterval(speedMultiplier = 1) {
-  return ({ 1: 100, 2: 67, 4: 50 })[Number(speedMultiplier)] || 100;
+  // Keep network traffic proportional to the room's gameplay speed. Rendering
+  // remains refresh-rate smooth by interpolating between these snapshots.
+  return ({ 1: 67, 2: 40, 4: 25 })[Number(speedMultiplier)] || 67;
 }

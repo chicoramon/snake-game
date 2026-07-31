@@ -177,7 +177,8 @@ export function createLiveVsService({ supabase, getPlayerId, now = () => Date.no
   }) {
     if (!channel) return false;
     const timestamp = now();
-    if (!force && timestamp - lastBroadcastAt < liveVsGhostInterval(speedMultiplier)) return false;
+    const intervalMs = liveVsGhostInterval(speedMultiplier);
+    if (!force && timestamp - lastBroadcastAt < intervalMs) return false;
     lastBroadcastAt = timestamp;
     sequence++;
     await channel.send({
@@ -194,6 +195,7 @@ export function createLiveVsService({ supabase, getPlayerId, now = () => Date.no
         score,
         remainingMs: Math.max(0, Math.round(Number(remainingMs) || 0)),
         alive,
+        intervalMs,
         sentAt: timestamp
       }
     });

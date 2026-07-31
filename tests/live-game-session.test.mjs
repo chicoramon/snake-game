@@ -60,3 +60,20 @@ test('live session stops only after gameplay and visual effects are both inactiv
   assert.equal(session.frame({ rawDt: 16, dt: 16, clock: { tickAccum: 0 } }), true);
   assert.equal(renderer.draws.length, 1);
 });
+
+test('live session exposes every rendered frame for independently throttled networking', () => {
+  const renderer = createRenderer();
+  const state = { alive: true, paused: false, countdownActive: false, runGameMode: 'classic', speed: 110 };
+  const frames = [];
+  const session = createLiveGameSession({
+    renderer,
+    getState: () => state,
+    onTick: () => {},
+    onFrame: frame => frames.push(frame)
+  });
+
+  session.frame({ rawDt: 16, dt: 16, clock: { tickAccum: 0 } });
+  session.frame({ rawDt: 16, dt: 16, clock: { tickAccum: 16 } });
+  assert.equal(frames.length, 2);
+  assert.equal(frames[0].state, state);
+});

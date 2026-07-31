@@ -1,4 +1,5 @@
 import { drawFoodSprite as drawFoodSpriteAsset } from './food-sprite.js';
+import { interpolateRivalGhost } from '../versus/live-vs-spectator.js';
 
 // Canvas rendering and visual effects are intentionally isolated from the
 // game rules. The module receives a read-only game-state snapshot and exposes
@@ -324,21 +325,17 @@ export function createCanvasRenderer({
     const age = Math.max(0, Date.now() - Number(ghost.receivedAt || 0));
     if (age >= 2200) return;
     const freshness = age <= 700 ? 1 : 1 - ((age - 700) / 1500);
-    const transition = Math.min(1, Math.max(0, age / Math.max(80, Number(ghost.intervalMs || 100))));
-    const previousSnake = ghost.previousSnake?.length === ghost.snake.length
-      ? ghost.previousSnake
-      : ghost.snake;
+    const renderedGhost = interpolateRivalGhost(ghost, Date.now());
 
     ctx.save();
     ctx.shadowBlur = 0;
     ctx.strokeStyle = '#ff5a8b';
     ctx.fillStyle = '#ff5a8b';
     ctx.lineWidth = 1.5;
-    for (let index = ghost.snake.length - 1; index >= 0; index--) {
-      const segment = ghost.snake[index];
-      const previous = previousSnake[index] || segment;
-      const x = lerp(previous.x, segment.x, transition) * cellSize;
-      const y = lerp(previous.y, segment.y, transition) * cellSize;
+    for (let index = renderedGhost.snake.length - 1; index >= 0; index--) {
+      const segment = renderedGhost.snake[index];
+      const x = segment.x * cellSize;
+      const y = segment.y * cellSize;
       ctx.globalAlpha = freshness * (index === 0 ? 0.24 : 0.14);
       ctx.strokeRect(x + 3.5, y + 3.5, cellSize - 7, cellSize - 7);
       const offset = index % 2 ? 4 : 10;

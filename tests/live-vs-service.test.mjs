@@ -87,7 +87,7 @@ test('Live Vs measures server round-trip latency without trusting browser connec
   assert.equal(sample.room.id, 'match-1');
 });
 
-test('Rival Ghost transport adapts from 10 Hz to 20 Hz in faster rooms', async () => {
+test('Rival Ghost transport adapts from 15 Hz to 40 Hz in faster rooms', async () => {
   let time = 1000;
   const sent = [];
   const channel = {
@@ -130,5 +130,7 @@ test('Rival Ghost transport adapts from 10 Hz to 20 Hz in faster rooms', async (
   const firstGhost = sent.find(message => message.event === 'ghost-state').payload;
   assert.deepEqual(firstGhost.food, [7, 8]);
   assert.equal(firstGhost.remainingMs, 12345);
+  assert.equal(firstGhost.intervalMs, 67);
+  assert.equal(sent.filter(message => message.event === 'ghost-state')[1].payload.intervalMs, 25);
   assert.equal(sent.find(message => message.event === 'latency-state').payload.latencyMs, 64);
 });
