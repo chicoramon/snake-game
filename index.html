@@ -34,8 +34,8 @@
 <title>Snake Game</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="./snake-core.js"></script>
-  <script type="module" crossorigin src="./assets/index-Cozwv1YZ.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-sRXOJF-K.css">
+  <script type="module" crossorigin src="./assets/index-DvtQFFdP.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-794MiLLF.css">
 </head>
 <body>
 
@@ -136,9 +136,16 @@
         <span>BUILD THE BATTLE</span>
       </div>
       <button id="live-vs-settings-open" class="live-vs-settings-open" type="button" aria-haspopup="dialog" aria-controls="live-vs-room-settings">
-        <img class="live-vs-settings-icon" src="./assets/vs-room-settings-BjNIwOuW.png" alt="" aria-hidden="true">
-        <span><b>Room Settings</b><small id="live-vs-settings-summary">Continuous • ×1 • Keyboard • Ghost</small></span>
-        <em>OPEN</em>
+        <img class="live-vs-settings-icon" src="./assets/vs-room-settings-BO_yeKAS.png" alt="" aria-hidden="true">
+        <span class="live-vs-settings-copy">
+          <b>Room Settings</b>
+        </span>
+        <span id="live-vs-settings-summary" class="live-vs-settings-summary" role="list" aria-label="Current room settings">
+          <span class="live-vs-settings-chip" data-setting="format" role="listitem"><span class="live-vs-rule-icon trophy" aria-hidden="true"></span><small>∞</small></span>
+          <span class="live-vs-settings-chip" data-setting="speed" role="listitem"><span class="live-vs-rule-icon speed" aria-hidden="true"></span><small>×1</small></span>
+          <span class="live-vs-settings-chip" data-setting="keyboard" role="listitem"><span class="live-vs-rule-icon keyboard" aria-hidden="true"></span><small>ON</small></span>
+          <span class="live-vs-settings-chip" data-setting="ghost" role="listitem"><span class="live-vs-rule-icon ghost" aria-hidden="true"></span><small>ON</small></span>
+        </span>
       </button>
       <section id="live-vs-room-settings" class="live-vs-room-settings" role="dialog" aria-modal="true" aria-labelledby="live-vs-room-settings-title" hidden>
         <div class="live-vs-settings-heading">
