@@ -1708,6 +1708,60 @@
     line-height: 1.55;
   }
   #live-vs-setup { margin: 22px auto 4px; max-width: 390px; }
+  .live-vs-room-settings {
+    margin: 14px 0;
+    padding: 13px;
+    border: 1px solid rgba(37,220,255,0.32);
+    background: linear-gradient(135deg, rgba(37,220,255,0.07), rgba(255,72,120,0.045));
+    text-align: left;
+  }
+  .live-vs-settings-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 9px;
+    border-bottom: 1px dashed rgba(255,255,255,0.12);
+  }
+  .live-vs-settings-heading strong { color: #fff; font-size: 0.58rem; letter-spacing: 0.08em; }
+  .live-vs-room-settings fieldset { min-width: 0; margin: 12px 0 0; padding: 0; border: 0; }
+  .live-vs-room-settings legend {
+    margin-bottom: 6px;
+    color: #8ca7b8;
+    font-size: 0.48rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .live-vs-setting-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+  .live-vs-setting-options.compact { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #live-vs-panel .live-vs-setting-options button {
+    min-height: 34px;
+    padding: 7px 5px;
+    border-color: rgba(255,255,255,0.15);
+    color: #9fb6c3;
+    font-size: 0.52rem;
+  }
+  #live-vs-panel .live-vs-setting-options button.selected {
+    border-color: #25dcff;
+    background: rgba(37,220,255,0.13);
+    color: #fff;
+    box-shadow: inset 0 -2px #25dcff, 0 0 10px rgba(37,220,255,0.12);
+  }
+  .live-vs-setting-help { margin: 6px 0 0; color: #687f8c; font-size: 0.46rem; line-height: 1.45; }
+  .live-vs-switch-row { display: grid; gap: 5px; margin-top: 12px; }
+  .live-vs-switch-row label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 9px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.24);
+  }
+  .live-vs-switch-row label span { display: grid; gap: 3px; }
+  .live-vs-switch-row label b { color: #e8f9ff; font-size: 0.52rem; }
+  .live-vs-switch-row label small { color: #718995; font-size: 0.42rem; line-height: 1.35; }
+  .live-vs-switch-row input { width: 22px; height: 22px; accent-color: #25dcff; }
   .live-vs-setup-art {
     display: grid;
     grid-template-columns: 1fr 52px 1fr;
@@ -1830,6 +1884,38 @@
     text-shadow: -2px 0 #25dcff, 2px 0 #ff4878;
   }
   .live-vs-session-strip span:last-child { text-align: right; }
+  .live-vs-rule-strip {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px;
+    margin: 8px 0 12px;
+  }
+  .live-vs-rule-strip span {
+    padding: 4px 6px;
+    border: 1px solid rgba(37,220,255,0.24);
+    background: rgba(37,220,255,0.055);
+    color: #9cefff;
+    font-size: 0.43rem;
+    letter-spacing: 0.08em;
+  }
+  .live-vs-series-result {
+    margin: 12px 0;
+    padding: 15px 12px;
+    border: 2px solid #ffe45b;
+    background: radial-gradient(circle at 50% 0, rgba(255,228,91,0.18), transparent 68%), #070806;
+    text-align: center;
+    box-shadow: 0 0 18px rgba(255,228,91,0.14);
+  }
+  .live-vs-series-result > strong {
+    display: block;
+    margin: 7px 0;
+    color: #ffe45b;
+    font-size: 0.74rem;
+    letter-spacing: 0.09em;
+    text-shadow: 0 0 12px rgba(255,228,91,0.52);
+  }
+  .live-vs-series-result p { margin: 0; color: #a9b2ae; font-size: 0.48rem; line-height: 1.5; }
   #live-vs-room-status {
     margin: 12px 0 9px;
     color: #d9f8ff;

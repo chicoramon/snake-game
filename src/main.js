@@ -5,6 +5,7 @@ import { LIVE_VS_LATENCY_DEBUG } from './config/debug.js';
 import { createDailyRunService, outranksDailyLeader } from './daily/daily-run-service.js';
 import { createLeaderboardService } from './leaderboard/leaderboard-service.js';
 import { createLiveVsService } from './versus/live-vs-service.js';
+import { scaleLiveVsInterval } from './versus/live-vs-rules.js';
 import {
   decodeSpectatorSnapshot,
   spectatorFeedStatus,
@@ -432,11 +433,21 @@ const GOLDEN_BASE_INTERVAL = 150;
 const GOLDEN_MIN_INTERVAL = 90;
 
 function activeBaseInterval() {
-  return GOLDEN_BACKDOOR ? GOLDEN_BASE_INTERVAL : BASE_INTERVAL;
+  if (GOLDEN_BACKDOOR) return GOLDEN_BASE_INTERVAL;
+  return runGameMode === 'versus'
+    ? scaleLiveVsInterval(BASE_INTERVAL, activeVsRoom?.speedMultiplier)
+    : BASE_INTERVAL;
 }
 
 function activeMinInterval() {
-  return GOLDEN_BACKDOOR ? GOLDEN_MIN_INTERVAL : MIN_INTERVAL;
+  if (GOLDEN_BACKDOOR) return GOLDEN_MIN_INTERVAL;
+  return runGameMode === 'versus'
+    ? scaleLiveVsInterval(MIN_INTERVAL, activeVsRoom?.speedMultiplier)
+    : MIN_INTERVAL;
+}
+
+function activeSpeedMultiplier() {
+  return runGameMode === 'versus' ? Number(activeVsRoom?.speedMultiplier) || 1 : 1;
 }
 const SPRINT_DURATION_MS = 60000;
 const SPRINT_COUNTDOWN_MS = 3000;
@@ -729,7 +740,7 @@ const canvasRenderer = createCanvasRenderer({
     themeId: currentTheme,
     alive: versusSpectatorActive ? versusSpectatorState?.alive !== false : alive,
     paused: versusSpectatorActive ? false : paused,
-    rivalGhost: versusSpectatorActive ? null : rivalGhost
+    rivalGhost: versusSpectatorActive || activeVsRoom?.rivalGhostEnabled === false ? null : rivalGhost
   })
 });
 
@@ -1165,8 +1176,9 @@ function gameTick() {
   const nextState = SnakeCore.advanceState({ snake, direction: dir, food, score, speed, alive }, nextDir, {
     cols: COLS,
     rows: ROWS,
-    baseInterval: activeBaseInterval(),
-    minInterval: activeMinInterval(),
+    baseInterval: GOLDEN_BACKDOOR ? GOLDEN_BASE_INTERVAL : BASE_INTERVAL,
+    minInterval: GOLDEN_BACKDOOR ? GOLDEN_MIN_INTERVAL : MIN_INTERVAL,
+    speedMultiplier: activeSpeedMultiplier(),
     foodPlacement: runGameMode === 'daily' || runGameMode === 'versus' ? 'free-cells' : 'rejection',
     wrapWalls: GOLDEN_BACKDOOR
   }, gameplayRandom);
@@ -1292,6 +1304,7 @@ function showRunResult(reason) {
       score,
       remainingMs: Math.max(0, (activeVsRoom?.durationMs || MODE_SPRINT_DURATION_MS) - dailyTickElapsedMs),
       alive: false,
+      speedMultiplier: activeVsRoom?.speedMultiplier,
       force: true
     }).catch(() => {});
     if (reason !== 'interrupted') {
@@ -1374,6 +1387,7 @@ function finishRun(reason) {
         const replayCheck = SnakeCore.simulateReplay(runReplay, {
           baseInterval: BASE_INTERVAL,
           minInterval: MIN_INTERVAL,
+          speedMultiplier: activeSpeedMultiplier(),
           foodPlacement: 'free-cells'
         });
         runReplay.localVerification = replayCheck.verified ? 'verified' : 'failed';
@@ -1451,7 +1465,8 @@ const liveGameSession = createLiveGameSession({
         food,
         score,
         remainingMs: Math.max(0, (activeVsRoom.durationMs || MODE_SPRINT_DURATION_MS) - dailyTickElapsedMs),
-        alive
+        alive,
+        speedMultiplier: activeVsRoom.speedMultiplier
       }).catch(() => {});
     }
   },
@@ -1758,6 +1773,7 @@ const controls = createControlManager({
   isRunActive: () => alive,
   isPaused: () => paused,
   isOverlayHidden: () => overlay.classList.contains('hidden'),
+  isKeyboardAllowed: () => runGameMode !== 'versus' || activeVsRoom?.allowKeyboard !== false,
 });
 
 // --- Independent menu and gameplay music controls ---
@@ -2510,8 +2526,14 @@ function currentScorePayload() {
 }
 
 async function submitDailyAttempt() {
-  if (!dailyAttempt?.ranked || dailyAttempt.submitted || !runReplay) return dailyAttempt?.result || null;
-  const replayVerified = runReplay.localVerification === 'verified';
+  const submittingAttempt = dailyAttempt;
+  const submittingReplay = runReplay;
+  const submittingFinalFoodMs = dailyLastFoodElapsedMs;
+  const submittingControlMethod = runUsesMixedControls ? 'mixed' : (runControlMethod || controlMode);
+  if (!submittingAttempt?.ranked || submittingAttempt.submitted || !submittingReplay) {
+    return submittingAttempt?.result || null;
+  }
+  const replayVerified = submittingReplay.localVerification === 'verified';
   if (!replayVerified) {
     scoreMethodLabel.textContent = 'Replay check failed • ranked result not submitted';
     scoreMethodLabel.classList.add('unranked');
@@ -2523,34 +2545,41 @@ async function submitDailyAttempt() {
   submitScoreBtn.textContent = 'Verifying...';
   submitScoreBtn.disabled = true;
   const payload = {
-    attemptId: dailyAttempt.id,
-    runToken: dailyAttempt.runToken,
-    replay: runReplay,
-    finalFoodMs: dailyLastFoodElapsedMs,
-    controlMethod: runUsesMixedControls ? 'mixed' : (runControlMethod || controlMode)
+    attemptId: submittingAttempt.id,
+    runToken: submittingAttempt.runToken,
+    replay: submittingReplay,
+    finalFoodMs: submittingFinalFoodMs,
+    controlMethod: submittingControlMethod
   };
   savePendingDailyAttempt(payload);
   try {
     const data = await dailyRunService.submitAttempt(payload);
     clearPendingDailyAttempt(payload.attemptId);
-    dailyAttempt.submitted = true;
-    dailyAttempt.result = data;
-    dailyAttempt.attemptsRemaining = Number(data.attemptsRemaining) < 0
+    submittingAttempt.submitted = true;
+    submittingAttempt.result = data;
+    submittingAttempt.attemptsRemaining = Number(data.attemptsRemaining) < 0
       ? -1
       : Math.max(0, Number(data.attemptsRemaining) || 0);
-    if (dailyChallenge) dailyChallenge.attemptsRemaining = dailyAttempt.attemptsRemaining;
+    if (dailyAttempt !== submittingAttempt) {
+      if (leaderboardOverlay.classList.contains('visible')) {
+        leaderboardUi?.loadDailyArchiveData({ force: true });
+        leaderboardUi?.loadLeaderboard();
+      }
+      return data;
+    }
+    if (dailyChallenge) dailyChallenge.attemptsRemaining = submittingAttempt.attemptsRemaining;
     renderDailyChallengeInfo();
     submittedThisRound = true;
     const rankText = data.leaderboardRank ? `rank #${data.leaderboardRank}` : 'rank pending';
     scoreMethodLabel.textContent = `Verified • ${rankText} • ${dailyAttemptsRemainingLabel(dailyChallenge)}`;
     scoreMethodLabel.classList.remove('unranked');
     submitScoreBtn.textContent = 'Verified';
-    const frozenDailyTop = dailyAttempt.recordTargetLoaded === true
-      ? Number(dailyAttempt.recordTargetScore)
+    const frozenDailyTop = submittingAttempt.recordTargetLoaded === true
+      ? Number(submittingAttempt.recordTargetScore)
       : null;
-    const frozenDailyTopTime = dailyAttempt.recordTargetFinalFoodMs == null
+    const frozenDailyTopTime = submittingAttempt.recordTargetFinalFoodMs == null
       ? null
-      : Number(dailyAttempt.recordTargetFinalFoodMs);
+      : Number(submittingAttempt.recordTargetFinalFoodMs);
     const confirmedNewDailyTop = Number(data.leaderboardRank) === 1 &&
       Number(data.score) > 0 &&
       Number.isFinite(frozenDailyTop) &&
@@ -2576,6 +2605,7 @@ async function submitDailyAttempt() {
   } catch (error) {
     console.warn('Daily attempt submission failed:', error);
     if (isTerminalDailySubmissionError(error)) clearPendingDailyAttempt(payload.attemptId);
+    if (dailyAttempt !== submittingAttempt) return null;
     scoreMethodLabel.textContent = `${error.message || 'Submission failed'} • retry before the run token expires`;
     scoreMethodLabel.classList.add('unranked');
     submitScoreBtn.textContent = navigator.onLine ? 'Retry Submission' : 'Retry When Online';

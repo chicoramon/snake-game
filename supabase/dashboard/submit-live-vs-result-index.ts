@@ -49,6 +49,11 @@ function acceptDirection(current, requested) {
 
 function validateSeededTimedReplay(replay, challenge, submitted = {}, expectedMode = 'daily') {
   const fail = reason => ({ verified: false, reason });
+  const speedMultiplier = expectedMode === 'versus' && [1, 2, 4].includes(Number(challenge.speedMultiplier))
+    ? Number(challenge.speedMultiplier)
+    : 1;
+  const scaledInterval = value => Math.max(1, Math.round(value / speedMultiplier));
+  const maximumTicks = Math.ceil(Number(challenge.durationMs || 60000) / scaledInterval(55)) + 2;
   if (!replay || typeof replay !== 'object') return fail('Replay is missing');
   if (replay.formatVersion !== 1) return fail('Unsupported replay format');
   if (replay.rulesetVersion !== challenge.rulesetVersion || replay.rulesetVersion !== DAILY_RULESET_VERSION) {
@@ -61,10 +66,10 @@ function validateSeededTimedReplay(replay, challenge, submitted = {}, expectedMo
     return fail('Board mismatch');
   }
   if (!['time', 'collision'].includes(replay.finishReason)) return fail('Invalid finish reason');
-  if (!Number.isInteger(replay.finalTick) || replay.finalTick < 1 || replay.finalTick > 1200) {
+  if (!Number.isInteger(replay.finalTick) || replay.finalTick < 1 || replay.finalTick > maximumTicks) {
     return fail('Invalid replay length');
   }
-  if (!Array.isArray(replay.inputs) || replay.inputs.length > 1200) return fail('Invalid inputs');
+  if (!Array.isArray(replay.inputs) || replay.inputs.length > maximumTicks) return fail('Invalid inputs');
 
   const inputs = new Map();
   let previousTick = -1;
@@ -83,7 +88,7 @@ function validateSeededTimedReplay(replay, challenge, submitted = {}, expectedMo
   let direction = { x: 1, y: 0 };
   let food = placeFood(challenge.boardCols, challenge.boardRows, snake, random);
   let score = 0;
-  let speed = 110;
+  let speed = scaledInterval(110);
   let elapsedMs = 0;
   let finalFoodMs = null;
   let alive = true;
@@ -106,7 +111,7 @@ function validateSeededTimedReplay(replay, challenge, submitted = {}, expectedMo
     if (ate) {
       score++;
       finalFoodMs = elapsedMs;
-      speed = Math.max(55, 110 - score * 2);
+      speed = Math.max(scaledInterval(55), scaledInterval(110 - score * 2));
       food = placeFood(challenge.boardCols, challenge.boardRows, snake, random);
     } else {
       snake.pop();
@@ -118,7 +123,7 @@ function validateSeededTimedReplay(replay, challenge, submitted = {}, expectedMo
   if (replay.finishReason === 'time' && (elapsedMs > challenge.durationMs || challenge.durationMs - elapsedMs >= speed)) {
     return fail('Run did not end at the time limit');
   }
-  if (elapsedMs > challenge.durationMs + 110) return fail('Run exceeds the time limit');
+  if (elapsedMs > challenge.durationMs + scaledInterval(110)) return fail('Run exceeds the time limit');
   if (score !== replay.finalScore || score !== submitted.score) return fail('Score mismatch');
   if ((submitted.finalFoodMs ?? null) !== finalFoodMs) return fail('Final-food time mismatch');
 
@@ -220,6 +225,9 @@ Deno.serve(async request => {
   if (participant.verification_state === 'rejected') {
     return json({ error: participant.rejection_reason || 'This result was rejected' }, 409);
   }
+  if (match.allow_keyboard === false && ['keyboard', 'mixed'].includes(controlMethod)) {
+    return json({ error: 'Keyboard input is disabled in this battle room' }, 422);
+  }
 
   const challenge = {
     seed: Number(match.seed),
@@ -227,7 +235,8 @@ Deno.serve(async request => {
     durationMs: match.duration_ms,
     boardCols: match.board_cols,
     boardRows: match.board_rows,
-    rulesetVersion: match.ruleset_version
+    rulesetVersion: match.ruleset_version,
+    speedMultiplier: match.speed_multiplier
   };
   const validation = validateSeededTimedReplay(replay, challenge, {
     score: Number(replay?.finalScore),

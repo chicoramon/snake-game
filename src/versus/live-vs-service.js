@@ -1,3 +1,8 @@
+import {
+  liveVsGhostInterval,
+  normalizeLiveVsRoomSettings
+} from './live-vs-rules.js';
+
 const ROOM_CODE_PATTERN = /^[A-F0-9]{6}$/;
 
 function throwIfError(result, fallback) {
@@ -23,10 +28,17 @@ export function createLiveVsService({ supabase, getPlayerId, now = () => Date.no
     if (!supabase?.rpc) throw new Error('Live Vs is unavailable while player services are offline');
   }
 
-  async function createRoom(theme) {
+  async function createRoom(theme, settings = {}) {
     requireClient();
+    const rules = normalizeLiveVsRoomSettings(settings);
     return throwIfError(
-      await supabase.rpc('create_live_vs_room', { p_theme: theme }),
+      await supabase.rpc('create_live_vs_room', {
+        p_theme: theme,
+        p_match_format: rules.matchFormat,
+        p_speed_multiplier: rules.speedMultiplier,
+        p_allow_keyboard: rules.allowKeyboard,
+        p_rival_ghost_enabled: rules.rivalGhostEnabled
+      }),
       'Could not create the Vs room'
     );
   }
@@ -160,11 +172,12 @@ export function createLiveVsService({ supabase, getPlayerId, now = () => Date.no
     score,
     remainingMs = 0,
     alive,
+    speedMultiplier = 1,
     force = false
   }) {
     if (!channel) return false;
     const timestamp = now();
-    if (!force && timestamp - lastBroadcastAt < 100) return false;
+    if (!force && timestamp - lastBroadcastAt < liveVsGhostInterval(speedMultiplier)) return false;
     lastBroadcastAt = timestamp;
     sequence++;
     await channel.send({

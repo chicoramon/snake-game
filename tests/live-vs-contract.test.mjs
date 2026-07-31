@@ -10,15 +10,28 @@ test('Live Vs lobby and controller are present in the modular app', () => {
   const controller = read('src/ui/live-vs-controller.js');
   const debugConfig = read('src/config/debug.js');
   const styles = read('src/styles/game.css');
+  const liveVsStyles = read('src/styles/live-vs.css');
 
   for (const id of [
     'vs-live-btn',
     'live-vs-panel',
     'live-vs-create',
+    'live-vs-settings-open',
+    'live-vs-settings-close',
+    'live-vs-settings-summary',
+    'live-vs-format-options',
+    'live-vs-speed-options',
+    'live-vs-allow-keyboard',
+    'live-vs-rival-ghost',
+    'live-vs-rule-strip',
+    'live-vs-series-result',
     'live-vs-join',
     'live-vs-ready',
     'live-vs-share',
+    'live-vs-leave',
     'live-vs-session-score',
+    'live-vs-player-one-score',
+    'live-vs-player-two-score',
     'live-vs-last-round',
     'live-vs-history-count',
     'live-vs-history-list',
@@ -29,6 +42,9 @@ test('Live Vs lobby and controller are present in the modular app', () => {
     'live-vs-spectator-bar',
     'live-vs-stop-spectating',
     'live-vs-stage-select',
+    'live-vs-stage-open',
+    'live-vs-stage-picker',
+    'live-vs-stage-close',
     'live-vs-stage-grid',
     'live-vs-stage-reveal',
     'live-vs-host-stage',
@@ -67,6 +83,12 @@ test('Live Vs lobby and controller are present in the modular app', () => {
   assert.match(controller, /boardLaunchMs - ROULETTE_RESULT_HOLD_MS/);
   assert.match(controller, /completedRound \? localStageChoice/);
   assert.match(controller, /historyList\.replaceChildren\(\.\.\.cards\)/);
+  assert.match(controller, /codeInput\.blur\(\)/);
+  assert.doesNotMatch(controller, /codeInput\.focus\(/);
+  assert.match(liveVsStyles, /\.live-vs-arena-score/);
+  assert.match(liveVsStyles, /\.live-vs-stage-picker/);
+  assert.match(liveVsStyles, /\.live-vs-settings-icon/);
+  assert.doesNotMatch(liveVsStyles, /\.live-vs-command-deck\s*\{[^}]*position:\s*fixed/s);
   assert.doesNotMatch(styles, /\.live-vs-stage-option::before/);
   assert.match(styles, /\.live-vs-stage-art > img/);
   assert.match(styles, /\.live-vs-history summary/);
@@ -120,6 +142,11 @@ test('Live Vs backend uses private participant rooms and verified replay results
   assert.match(sql, /create policy "Live Vs participants receive Realtime"/);
   assert.match(sql, /create policy "Live Vs participants send Realtime"/);
   assert.match(sql, /create or replace function public\.create_live_vs_room/);
+  assert.match(sql, /match_format text not null default 'continuous'/);
+  assert.match(sql, /speed_multiplier smallint not null default 1/);
+  assert.match(sql, /series_winner_player_id uuid/);
+  assert.match(sql, /p_allow_keyboard boolean/);
+  assert.match(sql, /v_win_target := case v_match\.match_format/);
   assert.match(sql, /create or replace function public\.join_live_vs_room/);
   assert.match(sql, /create table if not exists public\.live_vs_rounds/);
   assert.match(sql, /create or replace function public\.finalize_live_vs_round/);
@@ -140,6 +167,8 @@ test('Live Vs backend uses private participant rooms and verified replay results
   assert.match(sql, /floor\(random\(\) \* 4294967296\)::bigint/);
   assert.match(sql, /winner_player_id = v_rival\.player_id/);
   assert.match(edge, /validateSeededTimedReplay/);
+  assert.match(edge, /match\.allow_keyboard === false/);
+  assert.match(edge, /speedMultiplier: match\.speed_multiplier/);
   assert.match(edge, /finalize_live_vs_round/);
   assert.match(edge, /},\s*'versus'\);/);
   assert.doesNotMatch(dashboardEdge, /\.\.\/_shared\/daily-validator/);

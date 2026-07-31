@@ -52,7 +52,15 @@ test('Daily Run service owns reservation and verified submission requests', asyn
     functions: {
       invoke: async (name, options) => {
         calls.push({ name, options });
-        return { data: { verified: true, attemptsRemaining: -1 }, error: null };
+        return {
+          data: {
+            verified: true,
+            persisted: true,
+            attemptId: 'attempt-1',
+            attemptsRemaining: -1
+          },
+          error: null
+        };
       }
     }
   });
@@ -62,6 +70,42 @@ test('Daily Run service owns reservation and verified submission requests', asyn
   const result = await service.submitAttempt({ attemptId: 'attempt-1' });
   assert.equal(result.verified, true);
   assert.deepEqual(calls.map(call => call.name), ['start_daily_attempt', 'submit-daily-attempt']);
+});
+
+test('Daily Run service rejects a success response for another attempt', async () => {
+  const service = createService({
+    functions: {
+      invoke: async () => ({
+        data: {
+          verified: true,
+          persisted: true,
+          attemptId: 'older-attempt'
+        },
+        error: null
+      })
+    }
+  });
+
+  await assert.rejects(
+    () => service.submitAttempt({ attemptId: 'current-attempt' }),
+    /did not match this run/
+  );
+});
+
+test('Daily Run service rejects verification that was not confirmed as persisted', async () => {
+  const service = createService({
+    functions: {
+      invoke: async () => ({
+        data: { verified: true, attemptId: 'attempt-1' },
+        error: null
+      })
+    }
+  });
+
+  await assert.rejects(
+    () => service.submitAttempt({ attemptId: 'attempt-1' }),
+    /not confirmed by the database/
+  );
 });
 
 test('Daily Run service reads the undisputed current leader across controls', async () => {

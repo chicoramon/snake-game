@@ -196,7 +196,7 @@ Deno.serve(async request => {
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
   const { data: attempt, error: attemptError } = await admin
     .from('daily_attempts')
-    .select('id, player_id, attempt_number, run_token, token_expires_at, status, score, final_food_ms, challenge:daily_challenges(*)')
+    .select('id, player_id, attempt_number, run_token, token_expires_at, status, verification_state, score, final_food_ms, challenge:daily_challenges(*)')
     .eq('id', attemptId)
     .eq('player_id', user.id)
     .maybeSingle();
@@ -238,8 +238,9 @@ Deno.serve(async request => {
     return json({ error: validation.reason || 'Replay verification failed' }, 422);
   }
 
+  let persistedAttempt = attempt;
   if (attempt.status === 'reserved') {
-    const { error: updateError } = await admin.from('daily_attempts').update({
+    const { data: updatedAttempt, error: updateError } = await admin.from('daily_attempts').update({
       status: 'verified',
       verification_state: 'verified',
       score: validation.score,
@@ -249,8 +250,37 @@ Deno.serve(async request => {
       replay,
       rejection_reason: null,
       completed_at: new Date().toISOString()
-    }).eq('id', attempt.id).eq('status', 'reserved');
+    })
+      .eq('id', attempt.id)
+      .eq('status', 'reserved')
+      .select('id, attempt_number, status, verification_state, score, final_food_ms')
+      .maybeSingle();
     if (updateError) return json({ error: 'Could not save the verified attempt' }, 500);
+    if (updatedAttempt) {
+      persistedAttempt = updatedAttempt;
+    } else {
+      const { data: concurrentAttempt, error: concurrentError } = await admin
+        .from('daily_attempts')
+        .select('id, attempt_number, status, verification_state, score, final_food_ms')
+        .eq('id', attempt.id)
+        .eq('player_id', user.id)
+        .maybeSingle();
+      if (concurrentError || !concurrentAttempt) {
+        return json({ error: 'Could not confirm the verified attempt' }, 500);
+      }
+      persistedAttempt = concurrentAttempt;
+    }
+  }
+
+  const persistedScore = Number(persistedAttempt.score);
+  const persistedFinalFoodMs = persistedAttempt.final_food_ms == null
+    ? null
+    : Number(persistedAttempt.final_food_ms);
+  if (persistedAttempt.status !== 'verified' ||
+      persistedAttempt.verification_state !== 'verified' ||
+      persistedScore !== validation.score ||
+      persistedFinalFoodMs !== validation.finalFoodMs) {
+    return json({ error: 'Daily attempt persistence conflict. Retry this submission.' }, 409);
   }
 
   const [{ data: ranking }, { count: attemptsUsed }, { data: runConfig }] = await Promise.all([
@@ -273,10 +303,12 @@ Deno.serve(async request => {
 
   return json({
     verified: true,
-    attemptNumber: attempt.attempt_number,
+    persisted: true,
+    attemptId: persistedAttempt.id,
+    attemptNumber: persistedAttempt.attempt_number,
     attemptsRemaining: unlimitedRankedRuns ? -1 : Math.max(0, 3 - (attemptsUsed || 0)),
-    score: validation.score,
-    finalFoodMs: validation.finalFoodMs,
+    score: persistedScore,
+    finalFoodMs: persistedFinalFoodMs,
     leaderboardRank: ranking?.leaderboard_rank ?? null,
     personalBest: ranking?.score ?? validation.score
   });

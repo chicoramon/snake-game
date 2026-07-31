@@ -61,4 +61,22 @@ assert.equal(
   true
 );
 
+const fastChallenge = { ...challenge, speedMultiplier: 4 };
+const fastReplay = SnakeCore.createReplay({
+  seed: fastChallenge.seed,
+  mode: 'versus',
+  theme: fastChallenge.theme,
+  cols: fastChallenge.boardCols,
+  rows: fastChallenge.boardRows
+});
+for (let tick = 0; tick < 2142; tick++) {
+  SnakeCore.recordDirection(fastReplay, tick, cycle[tick % cycle.length]);
+}
+SnakeCore.finalizeReplay(fastReplay, { tick: 2142, score: 0, reason: 'time' });
+assert.equal(
+  validateSeededTimedReplay(fastReplay, fastChallenge, { score: 0, finalFoodMs: null }, 'versus').verified,
+  true,
+  'x4 rooms must permit and verify the larger deterministic tick stream'
+);
+
 console.log('daily validator tests passed');

@@ -137,6 +137,12 @@ export function createDailyRunService({
       throw submissionError;
     }
     if (!data?.verified) throw new Error(data?.error || 'Daily replay was not verified');
+    if (data.persisted !== true) {
+      throw new Error('Daily verification was not confirmed by the database. Retry your submission.');
+    }
+    if (data.attemptId !== payload?.attemptId) {
+      throw new Error('Daily verification response did not match this run. Retry your submission.');
+    }
     return data;
   }
 

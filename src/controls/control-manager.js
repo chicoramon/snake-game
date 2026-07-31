@@ -19,6 +19,7 @@ export function createControlManager({
   isRunActive,
   isPaused,
   isOverlayHidden,
+  isKeyboardAllowed = () => true,
 }) {
   let controlMode = initialMode;
 
@@ -26,7 +27,16 @@ export function createControlManager({
 document.addEventListener('keydown', e => {
   // Don't hijack keys when user is typing in an input
   if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
-  switch (e.key) {
+  const movementKey = [
+    'ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown',
+    'd', 'D', 'a', 'A', 'w', 'W', 's', 'S'
+  ].includes(e.key);
+  if (movementKey && !isKeyboardAllowed()) {
+    e.preventDefault();
+    return;
+  }
+
+  switch (e.key) {
 
     case 'ArrowRight': case 'd': case 'D':
       e.preventDefault();

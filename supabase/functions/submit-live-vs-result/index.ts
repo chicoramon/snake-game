@@ -85,6 +85,9 @@ Deno.serve(async request => {
   if (participant.verification_state === 'rejected') {
     return json({ error: participant.rejection_reason || 'This result was rejected' }, 409);
   }
+  if (match.allow_keyboard === false && ['keyboard', 'mixed'].includes(controlMethod)) {
+    return json({ error: 'Keyboard input is disabled in this battle room' }, 422);
+  }
 
   const challenge = {
     seed: Number(match.seed),
@@ -92,7 +95,8 @@ Deno.serve(async request => {
     durationMs: match.duration_ms,
     boardCols: match.board_cols,
     boardRows: match.board_rows,
-    rulesetVersion: match.ruleset_version
+    rulesetVersion: match.ruleset_version,
+    speedMultiplier: match.speed_multiplier
   };
   const validation = validateSeededTimedReplay(replay, challenge, {
     score: Number(replay?.finalScore),

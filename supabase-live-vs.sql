@@ -22,6 +22,13 @@ create table if not exists public.live_vs_matches (
   host_wins integer not null default 0 check (host_wins >= 0),
   guest_wins integer not null default 0 check (guest_wins >= 0),
   draws integer not null default 0 check (draws >= 0),
+  match_format text not null default 'continuous'
+    check (match_format in ('continuous', 'best_of_3', 'best_of_5', 'best_of_7')),
+  speed_multiplier smallint not null default 1 check (speed_multiplier in (1, 2, 4)),
+  allow_keyboard boolean not null default true,
+  rival_ghost_enabled boolean not null default true,
+  series_winner_player_id uuid references auth.users(id) on delete set null,
+  series_completed_at timestamptz,
   winner_player_id uuid references auth.users(id) on delete set null,
   outcome text check (outcome is null or outcome in ('host', 'guest', 'draw', 'forfeit')),
   created_at timestamptz not null default now(),
@@ -80,6 +87,12 @@ alter table public.live_vs_matches add column if not exists host_wins integer no
 alter table public.live_vs_matches add column if not exists guest_wins integer not null default 0;
 alter table public.live_vs_matches add column if not exists draws integer not null default 0;
 alter table public.live_vs_matches add column if not exists stage_reveal_at timestamptz;
+alter table public.live_vs_matches add column if not exists match_format text not null default 'continuous';
+alter table public.live_vs_matches add column if not exists speed_multiplier smallint not null default 1;
+alter table public.live_vs_matches add column if not exists allow_keyboard boolean not null default true;
+alter table public.live_vs_matches add column if not exists rival_ghost_enabled boolean not null default true;
+alter table public.live_vs_matches add column if not exists series_winner_player_id uuid references auth.users(id) on delete set null;
+alter table public.live_vs_matches add column if not exists series_completed_at timestamptz;
 alter table public.live_vs_players add column if not exists control_method text;
 alter table public.live_vs_players add column if not exists last_seen_at timestamptz not null default now();
 alter table public.live_vs_players add column if not exists theme_choice text;
@@ -155,6 +168,14 @@ as $$
     'hostWins', m.host_wins,
     'guestWins', m.guest_wins,
     'draws', m.draws,
+    'matchFormat', m.match_format,
+    'winTarget', case m.match_format
+      when 'best_of_3' then 2 when 'best_of_5' then 3 when 'best_of_7' then 4 else 0 end,
+    'speedMultiplier', m.speed_multiplier,
+    'allowKeyboard', m.allow_keyboard,
+    'rivalGhostEnabled', m.rival_ghost_enabled,
+    'seriesWinnerPlayerId', m.series_winner_player_id,
+    'seriesCompletedAt', m.series_completed_at,
     'winnerPlayerId', m.winner_player_id,
     'outcome', m.outcome,
     'expiresAt', m.expires_at,
@@ -233,7 +254,13 @@ as $$
     );
 $$;
 
-create or replace function public.create_live_vs_room(p_theme text)
+create or replace function public.create_live_vs_room(
+  p_theme text,
+  p_match_format text,
+  p_speed_multiplier smallint,
+  p_allow_keyboard boolean,
+  p_rival_ghost_enabled boolean
+)
 returns jsonb
 language plpgsql
 security definer
@@ -252,6 +279,12 @@ begin
   if p_theme is null or p_theme !~ '^[a-z0-9_-]{1,32}$' then
     raise exception 'Invalid theme';
   end if;
+  if p_match_format not in ('continuous', 'best_of_3', 'best_of_5', 'best_of_7') then
+    raise exception 'Invalid match format';
+  end if;
+  if p_speed_multiplier not in (1, 2, 4) then
+    raise exception 'Invalid game speed';
+  end if;
 
   loop
     v_attempt := v_attempt + 1;
@@ -260,9 +293,12 @@ begin
     ), 1, 6));
     begin
       insert into public.live_vs_matches (
-        room_code, host_player_id, seed, theme, ruleset_version
+        room_code, host_player_id, seed, theme, ruleset_version,
+        match_format, speed_multiplier, allow_keyboard, rival_ghost_enabled
       ) values (
-        v_code, v_uid, floor(random() * 4294967296)::bigint, p_theme, 'snake-rules-v1'
+        v_code, v_uid, floor(random() * 4294967296)::bigint, p_theme, 'snake-rules-v1',
+        p_match_format, p_speed_multiplier, coalesce(p_allow_keyboard, true),
+        coalesce(p_rival_ghost_enabled, true)
       )
       returning id into v_match_id;
       exit;
@@ -275,6 +311,22 @@ begin
   values (v_match_id, v_uid, 1);
   return public.live_vs_room_snapshot(v_match_id);
 end;
+$$;
+
+-- Compatibility for already-cached clients.
+create or replace function public.create_live_vs_room(p_theme text)
+returns jsonb
+language sql
+security definer
+set search_path = public
+as $$
+  select public.create_live_vs_room(
+    p_theme,
+    'continuous'::text,
+    1::smallint,
+    true,
+    true
+  );
 $$;
 
 create or replace function public.join_live_vs_room(p_room_code text)
@@ -398,6 +450,9 @@ begin
   where id = p_match_id and status in ('waiting', 'complete')
   for update;
   if v_match.id is null then raise exception 'Room is no longer accepting stage selections'; end if;
+  if v_match.series_winner_player_id is not null then
+    raise exception 'This series is complete';
+  end if;
 
   if v_match.status = 'complete' then
     update public.live_vs_matches
@@ -517,6 +572,10 @@ declare
   v_outcome text;
   v_winner uuid;
   v_inserted uuid;
+  v_host_wins integer;
+  v_guest_wins integer;
+  v_win_target integer;
+  v_series_winner uuid;
 begin
   select * into v_match from public.live_vs_matches where id = p_match_id for update;
   if v_match.id is null then raise exception 'Match not found'; end if;
@@ -566,13 +625,35 @@ begin
     set host_wins = host_wins + case when v_outcome = 'host' then 1 else 0 end,
         guest_wins = guest_wins + case when v_outcome = 'guest' then 1 else 0 end,
         draws = draws + case when v_outcome = 'draw' then 1 else 0 end
-    where id = p_match_id;
+    where id = p_match_id
+    returning host_wins, guest_wins into v_host_wins, v_guest_wins;
+  else
+    select host_wins, guest_wins into v_host_wins, v_guest_wins
+    from public.live_vs_matches where id = p_match_id;
   end if;
+
+  v_win_target := case v_match.match_format
+    when 'best_of_3' then 2
+    when 'best_of_5' then 3
+    when 'best_of_7' then 4
+    else 0
+  end;
+  v_series_winner := case
+    when v_win_target > 0 and v_host_wins >= v_win_target then v_host.player_id
+    when v_win_target > 0 and v_guest_wins >= v_win_target then v_guest.player_id
+    else null
+  end;
 
   update public.live_vs_matches
   set status = 'complete',
       winner_player_id = v_winner,
       outcome = v_outcome,
+      series_winner_player_id = coalesce(series_winner_player_id, v_series_winner),
+      series_completed_at = case
+        when coalesce(series_winner_player_id, v_series_winner) is not null
+        then coalesce(series_completed_at, now())
+        else null
+      end,
       completed_at = coalesce(completed_at, now()),
       expires_at = now() + interval '30 minutes',
       updated_at = now()
@@ -583,6 +664,7 @@ begin
     'complete', true,
     'outcome', v_outcome,
     'winnerPlayerId', v_winner,
+    'seriesWinnerPlayerId', v_series_winner,
     'roundNumber', v_match.round_number
   );
 end;
@@ -651,6 +733,7 @@ $$;
 
 revoke all on function public.live_vs_room_snapshot(uuid) from public;
 revoke all on function public.create_live_vs_room(text) from public;
+revoke all on function public.create_live_vs_room(text, text, smallint, boolean, boolean) from public;
 revoke all on function public.join_live_vs_room(text) from public;
 revoke all on function public.get_live_vs_room(uuid) from public;
 revoke all on function public.set_live_vs_ready(uuid, boolean) from public;
@@ -659,6 +742,7 @@ revoke all on function public.select_live_vs_stage(uuid, text, boolean) from pub
 revoke all on function public.finalize_live_vs_round(uuid) from public;
 revoke all on function public.leave_live_vs_room(uuid) from public;
 grant execute on function public.create_live_vs_room(text) to authenticated;
+grant execute on function public.create_live_vs_room(text, text, smallint, boolean, boolean) to authenticated;
 grant execute on function public.join_live_vs_room(text) to authenticated;
 grant execute on function public.get_live_vs_room(uuid) to authenticated;
 grant execute on function public.set_live_vs_ready(uuid, boolean) to authenticated;

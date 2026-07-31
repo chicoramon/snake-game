@@ -21,11 +21,22 @@ test('Live Vs room actions use authenticated RPCs', async () => {
     }
   };
   const service = createLiveVsService({ supabase, getPlayerId: () => 'player-1' });
-  await service.createRoom('sonic');
+  await service.createRoom('sonic', {
+    matchFormat: 'best_of_5',
+    speedMultiplier: 4,
+    allowKeyboard: false,
+    rivalGhostEnabled: true
+  });
   await service.joinRoom('abc123');
   await service.selectStage('match-1', 'random', true);
   assert.deepEqual(calls, [
-    ['create_live_vs_room', { p_theme: 'sonic' }],
+    ['create_live_vs_room', {
+      p_theme: 'sonic',
+      p_match_format: 'best_of_5',
+      p_speed_multiplier: 4,
+      p_allow_keyboard: false,
+      p_rival_ghost_enabled: true
+    }],
     ['join_live_vs_room', { p_room_code: 'ABC123' }],
     ['select_live_vs_stage', {
       p_match_id: 'match-1',
@@ -76,7 +87,7 @@ test('Live Vs measures server round-trip latency without trusting browser connec
   assert.equal(sample.room.id, 'match-1');
 });
 
-test('Rival Ghost transport is capped at ten broadcasts per second', async () => {
+test('Rival Ghost transport adapts from 10 Hz to 20 Hz in faster rooms', async () => {
   let time = 1000;
   const sent = [];
   const channel = {
@@ -110,11 +121,12 @@ test('Rival Ghost transport is capped at ten broadcasts per second', async () =>
   assert.equal(await service.broadcastGhost(state), true);
   time += 50;
   assert.equal(await service.broadcastGhost(state), false);
+  assert.equal(await service.broadcastGhost({ ...state, speedMultiplier: 4 }), true);
   assert.equal(await service.broadcastGhost({ ...state, alive: false, force: true }), true);
   time += 100;
   assert.equal(await service.broadcastGhost(state), true);
   assert.equal(await service.broadcastLatency({ matchId: 'match-1', latencyMs: 63.7 }), true);
-  assert.equal(sent.filter(message => message.event === 'ghost-state').length, 3);
+  assert.equal(sent.filter(message => message.event === 'ghost-state').length, 4);
   const firstGhost = sent.find(message => message.event === 'ghost-state').payload;
   assert.deepEqual(firstGhost.food, [7, 8]);
   assert.equal(firstGhost.remainingMs, 12345);

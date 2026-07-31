@@ -114,4 +114,21 @@ assert.equal(
   'a forged final score must fail replay verification'
 );
 
+const fastState = SnakeCore.advanceState({
+  snake: [{ x: 1, y: 1 }, { x: 0, y: 1 }],
+  direction: { x: 1, y: 0 },
+  food: { x: 2, y: 1 },
+  score: 0,
+  speed: 28,
+  alive: true
+}, { x: 1, y: 0 }, {
+  cols: 20,
+  rows: 32,
+  baseInterval: 110,
+  minInterval: 55,
+  speedMultiplier: 4,
+  foodPlacement: 'free-cells'
+}, () => 0);
+assert.equal(fastState.speed, 27, 'x4 must scale the entire post-food speed curve');
+
 console.log('snake-core deterministic tests passed');

@@ -36,6 +36,7 @@
 <script src="./snake-core.js"></script>
 <link rel="stylesheet" href="./src/styles/game.css">
 <link rel="stylesheet" href="./src/styles/onboarding.css">
+<link rel="stylesheet" href="./src/styles/live-vs.css">
 </head>
 <body>
 
@@ -132,14 +133,57 @@
 
     <div id="live-vs-setup">
       <div class="live-vs-setup-art" aria-hidden="true">
-        <span>1P</span><b>VS</b><span>2P</span>
+        <img src="./assets/vs/vs-battle-crest.webp" alt="">
+        <span>BUILD THE BATTLE</span>
       </div>
-      <button id="live-vs-create" class="primary" type="button">Create Battle Room</button>
-      <div class="live-vs-divider"><span>OR</span></div>
-      <label for="live-vs-code">Enter an invite code</label>
+      <button id="live-vs-settings-open" class="live-vs-settings-open" type="button" aria-haspopup="dialog" aria-controls="live-vs-room-settings">
+        <img class="live-vs-settings-icon" src="./assets/vs/vs-room-settings.png" alt="" aria-hidden="true">
+        <span><b>Room Settings</b><small id="live-vs-settings-summary">Continuous • ×1 • Keyboard • Ghost</small></span>
+        <em>OPEN</em>
+      </button>
+      <section id="live-vs-room-settings" class="live-vs-room-settings" role="dialog" aria-modal="true" aria-labelledby="live-vs-room-settings-title" hidden>
+        <div class="live-vs-settings-heading">
+          <span><span class="live-vs-label">Battle Cartridge</span><strong id="live-vs-room-settings-title">ROOM SETTINGS</strong></span>
+          <button id="live-vs-settings-close" type="button" aria-label="Close room settings">Done</button>
+        </div>
+        <fieldset class="live-vs-format-fieldset">
+          <legend>Choose the set</legend>
+          <div class="live-vs-setting-options" id="live-vs-format-options">
+            <button type="button" data-value="continuous" class="selected" aria-pressed="true">Continuous</button>
+            <button type="button" data-value="best_of_3" aria-pressed="false">Best of 3</button>
+            <button type="button" data-value="best_of_5" aria-pressed="false">Best of 5</button>
+            <button type="button" data-value="best_of_7" aria-pressed="false">Best of 7</button>
+          </div>
+        </fieldset>
+        <fieldset class="live-vs-speed-fieldset">
+          <legend>Battle speed</legend>
+          <div class="live-vs-setting-options compact" id="live-vs-speed-options">
+            <button type="button" data-value="1" class="selected" aria-pressed="true">×1</button>
+            <button type="button" data-value="2" aria-pressed="false">×2</button>
+            <button type="button" data-value="4" aria-pressed="false">×4</button>
+          </div>
+        </fieldset>
+        <div class="live-vs-switch-row" aria-label="Optional battle rules">
+          <label class="live-vs-rule-card">
+            <span class="live-vs-rule-icon keyboard" aria-hidden="true"></span>
+            <span class="live-vs-rule-copy"><b>Keyboard</b></span>
+            <input id="live-vs-allow-keyboard" type="checkbox" checked>
+            <span class="live-vs-rule-state" aria-hidden="true">ON</span>
+          </label>
+          <label class="live-vs-rule-card">
+            <span class="live-vs-rule-icon ghost" aria-hidden="true"></span>
+            <span class="live-vs-rule-copy"><b>Rival Ghost</b></span>
+            <input id="live-vs-rival-ghost" type="checkbox" checked>
+            <span class="live-vs-rule-state" aria-hidden="true">ON</span>
+          </label>
+        </div>
+      </section>
+      <button id="live-vs-create" class="primary" type="button"><span>Create Battle Room</span><small>OPEN A NEW ARENA</small></button>
+      <div class="live-vs-divider"><span>OR JOIN A RIVAL</span></div>
       <div class="live-vs-code-entry">
+        <label for="live-vs-code">Invite Code</label>
         <input id="live-vs-code" type="text" maxlength="6" inputmode="text" autocomplete="off" placeholder="ABC123">
-        <button id="live-vs-join" type="button">Enter</button>
+        <button id="live-vs-join" type="button">Join</button>
       </div>
     </div>
 
@@ -149,16 +193,42 @@
           <span class="live-vs-label">Battle Room</span>
           <strong id="live-vs-room-code">------</strong>
         </div>
-        <button id="live-vs-share" type="button" aria-label="Share a joinable room link">Share Link</button>
+        <div class="live-vs-room-actions">
+          <button id="live-vs-share" type="button" aria-label="Share a joinable room link">Invite</button>
+          <button id="live-vs-leave" type="button">Leave</button>
+        </div>
       </div>
 
-      <div class="live-vs-session-strip">
-        <span id="live-vs-round-number">ROUND 1</span>
-        <strong id="live-vs-session-score">0 — 0</strong>
-        <span id="live-vs-draw-count">NO DRAWS</span>
+      <div class="live-vs-lobby-arena">
+        <div class="live-vs-session-strip">
+          <span id="live-vs-round-number">ROUND 1</span>
+          <span id="live-vs-draw-count">NO DRAWS</span>
+        </div>
+        <div id="live-vs-session-score" class="live-vs-arena-score" aria-label="Match score">
+          <strong id="live-vs-player-one-score">0</strong>
+          <i aria-hidden="true"></i>
+          <strong id="live-vs-player-two-score">0</strong>
+        </div>
+        <div class="live-vs-fighters">
+          <div id="live-vs-player-one" class="live-vs-fighter empty"></div>
+          <div class="live-vs-bolt" aria-hidden="true"><img src="./assets/vs/vs-battle-crest.webp" alt=""></div>
+          <div id="live-vs-player-two" class="live-vs-fighter empty"></div>
+        </div>
+      </div>
+      <div class="live-vs-lobby-status">
+        <p id="live-vs-room-status">Waiting for rival…</p>
+        <div id="live-vs-rule-strip" class="live-vs-rule-strip" aria-label="Battle room rules"></div>
+      </div>
+      <div class="live-vs-command-deck">
+        <button id="live-vs-ready" class="primary" type="button" disabled>Ready</button>
       </div>
 
-      <p id="live-vs-room-status">Waiting for rival…</p>
+      <section id="live-vs-series-result" class="live-vs-series-result" hidden aria-live="assertive">
+        <span class="live-vs-label">Series Complete</span>
+        <strong id="live-vs-series-winner">CHAMPION CROWNED</strong>
+        <p>The set is decided. Leave this arena to create a new series.</p>
+      </section>
+
       <section id="live-vs-waiting" class="live-vs-waiting-board" hidden aria-live="polite">
         <span class="live-vs-label">Run Complete</span>
         <strong><span id="live-vs-waiting-score">0</span> PTS LOCKED</strong>
@@ -166,19 +236,20 @@
         <p id="live-vs-waiting-status">Score secured • rival still fighting</p>
         <button id="live-vs-spectate" type="button">Spectate Rival</button>
       </section>
-      <div class="live-vs-fighters">
-        <div id="live-vs-player-one" class="live-vs-fighter empty"></div>
-        <div class="live-vs-bolt"><span>VS</span></div>
-        <div id="live-vs-player-two" class="live-vs-fighter empty"></div>
-      </div>
-
       <section id="live-vs-stage-select" class="live-vs-stage-select">
-        <div class="live-vs-stage-heading">
-          <span class="live-vs-label">Stage Select</span>
-          <strong>CHOOSE YOUR ARENA</strong>
+        <button id="live-vs-stage-open" class="live-vs-stage-open" type="button" aria-haspopup="dialog" aria-controls="live-vs-stage-picker">
+          <span id="live-vs-current-stage-art" class="live-vs-current-stage-art" aria-hidden="true"></span>
+          <span><small>Your Arena</small><strong id="live-vs-current-stage-name">Choose Stage</strong></span>
+          <em>CHANGE</em>
+        </button>
+        <div id="live-vs-stage-picker" class="live-vs-stage-picker" role="dialog" aria-modal="true" aria-labelledby="live-vs-stage-picker-title" hidden>
+          <div class="live-vs-stage-heading">
+            <span><span class="live-vs-label">Stage Select</span><strong id="live-vs-stage-picker-title">CHOOSE YOUR ARENA</strong></span>
+            <button id="live-vs-stage-close" type="button" aria-label="Close stage selection">Close</button>
+          </div>
+          <div id="live-vs-stage-grid" class="live-vs-stage-grid"></div>
+          <p id="live-vs-stage-lock-status">Select a stage or take your chances with Random.</p>
         </div>
-        <div id="live-vs-stage-grid" class="live-vs-stage-grid"></div>
-        <p id="live-vs-stage-lock-status">Select a stage or take your chances with Random.</p>
       </section>
 
       <section id="live-vs-stage-reveal" class="live-vs-stage-reveal" hidden aria-live="assertive">
@@ -191,8 +262,6 @@
         <div id="live-vs-roulette-stage" class="live-vs-roulette-stage">SYNCING…</div>
         <p id="live-vs-roulette-status">Both selections locked</p>
       </section>
-
-      <button id="live-vs-ready" class="primary" type="button" disabled>Ready</button>
 
       <section id="live-vs-last-round" class="live-vs-result-board" hidden aria-live="polite">
         <span class="live-vs-label">Last Battle</span>

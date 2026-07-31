@@ -1,4 +1,8 @@
 import { isValidRoomCode, normalizeRoomCode } from '../versus/live-vs-service.js';
+import {
+  liveVsFormatLabel,
+  normalizeLiveVsRoomSettings
+} from '../versus/live-vs-rules.js';
 
 const GAMEPLAY_COUNTDOWN_MS = 3000;
 const ROULETTE_RESULT_HOLD_MS = 650;
@@ -74,10 +78,24 @@ export function createLiveVsController({
   let startTimer = null;
   let rouletteRaf = null;
   let scheduledStartKey = '';
+  let createSettings = normalizeLiveVsRoomSettings();
   const latencyByPlayer = new Map();
   const roundNumber = panel.querySelector('#live-vs-round-number');
   const sessionScore = panel.querySelector('#live-vs-session-score');
+  const playerOneScore = panel.querySelector('#live-vs-player-one-score');
+  const playerTwoScore = panel.querySelector('#live-vs-player-two-score');
   const drawCount = panel.querySelector('#live-vs-draw-count');
+  const settingsPanel = panel.querySelector('#live-vs-room-settings');
+  const settingsOpen = panel.querySelector('#live-vs-settings-open');
+  const settingsClose = panel.querySelector('#live-vs-settings-close');
+  const settingsSummary = panel.querySelector('#live-vs-settings-summary');
+  const formatOptions = panel.querySelector('#live-vs-format-options');
+  const speedOptions = panel.querySelector('#live-vs-speed-options');
+  const allowKeyboard = panel.querySelector('#live-vs-allow-keyboard');
+  const rivalGhost = panel.querySelector('#live-vs-rival-ghost');
+  const ruleStrip = panel.querySelector('#live-vs-rule-strip');
+  const seriesResult = panel.querySelector('#live-vs-series-result');
+  const seriesWinner = panel.querySelector('#live-vs-series-winner');
   const lastRoundPanel = panel.querySelector('#live-vs-last-round');
   const resultTitle = panel.querySelector('#live-vs-result-title');
   const hostResultName = panel.querySelector('#live-vs-host-result-name');
@@ -95,6 +113,11 @@ export function createLiveVsController({
   const waitingStatus = panel.querySelector('#live-vs-waiting-status');
   const spectateButton = panel.querySelector('#live-vs-spectate');
   const stageSelect = panel.querySelector('#live-vs-stage-select');
+  const stagePicker = panel.querySelector('#live-vs-stage-picker');
+  const stageOpen = panel.querySelector('#live-vs-stage-open');
+  const stageClose = panel.querySelector('#live-vs-stage-close');
+  const currentStageArt = panel.querySelector('#live-vs-current-stage-art');
+  const currentStageName = panel.querySelector('#live-vs-current-stage-name');
   const stageGrid = panel.querySelector('#live-vs-stage-grid');
   const stageLockStatus = panel.querySelector('#live-vs-stage-lock-status');
   const stageReveal = panel.querySelector('#live-vs-stage-reveal');
@@ -102,6 +125,7 @@ export function createLiveVsController({
   const guestStage = panel.querySelector('#live-vs-guest-stage');
   const rouletteStage = panel.querySelector('#live-vs-roulette-stage');
   const rouletteStatus = panel.querySelector('#live-vs-roulette-status');
+  const leaveButton = panel.querySelector('#live-vs-leave');
   const themeEntries = Object.entries(themes || {});
 
   function themeLabel(id) {
@@ -163,6 +187,7 @@ export function createLiveVsController({
         const mine = myPlayer();
         if (mine?.ready || !['waiting', 'complete'].includes(room?.status)) return;
         localStageChoice = id;
+        if (stagePicker) stagePicker.hidden = true;
         renderRoom();
       });
       stageGrid.appendChild(button);
@@ -280,9 +305,18 @@ export function createLiveVsController({
     const mine = myPlayer();
     const completedRound = room?.status === 'complete';
     const selected = completedRound ? localStageChoice : (mine?.themeChoice || localStageChoice);
-    const selectable = !!room && ['waiting', 'complete'].includes(room.status) && !mine?.ready;
-    if (stageSelect) stageSelect.hidden = !['waiting', 'complete'].includes(room?.status);
+    const seriesComplete = !!room?.seriesWinnerPlayerId;
+    const selectable = !!room && ['waiting', 'complete'].includes(room.status) && !mine?.ready && !seriesComplete;
+    if (stageSelect) stageSelect.hidden = !['waiting', 'complete'].includes(room?.status) || seriesComplete;
     if (stageReveal) stageReveal.hidden = room?.status !== 'countdown';
+    if (stageOpen) stageOpen.disabled = !selectable;
+    if (!selectable && stagePicker) stagePicker.hidden = true;
+    if (currentStageName) currentStageName.textContent = selected ? themeLabel(selected) : 'Choose Stage';
+    if (currentStageArt) {
+      const art = createThemeArtwork(selected || 'random', 'live-vs-stage-art');
+      currentStageArt.replaceChildren(...(art ? [art] : []));
+      currentStageArt.style.setProperty('--stage-color', themeAccent(selected));
+    }
     stageGrid?.querySelectorAll('.live-vs-stage-option').forEach(button => {
       const isSelected = button.dataset.stage === selected;
       button.classList.toggle('selected', isSelected);
@@ -407,6 +441,7 @@ export function createLiveVsController({
     if (waitingForResult) return 'Your run is locked. The rival battle is still live.';
     if (room.status === 'verifying') return 'Your result is verified — waiting for the rival result.';
     if (room.status === 'countdown') return 'Stage decision locked — battle commencing!';
+    if (room.seriesWinnerPlayerId) return 'Series decided — the champion has claimed this battle room.';
     if (room.status === 'complete') return 'Round verified. Pick the next arena!';
     if (connected < 2) return 'Arena open — send your rival the invite link.';
     return 'Both fighters connected. Choose and lock your arena.';
@@ -417,11 +452,31 @@ export function createLiveVsController({
     setup.hidden = true;
     lobby.hidden = false;
     roomCode.textContent = room.code;
-    roundNumber.textContent = `ROUND ${room.roundNumber || 1}`;
-    sessionScore.textContent = `${room.hostWins || 0} — ${room.guestWins || 0}`;
+    const format = liveVsFormatLabel(room.matchFormat);
+    roundNumber.textContent = room.matchFormat === 'continuous'
+      ? `ROUND ${room.roundNumber || 1}`
+      : `GAME ${room.roundNumber || 1} • ${format}`;
+    const hostWins = Number(room.hostWins || 0);
+    const guestWins = Number(room.guestWins || 0);
+    if (playerOneScore) playerOneScore.textContent = String(hostWins);
+    if (playerTwoScore) playerTwoScore.textContent = String(guestWins);
+    sessionScore?.setAttribute('aria-label', `Player 1 ${hostWins}, Player 2 ${guestWins}`);
     drawCount.textContent = Number(room.draws || 0)
       ? `${room.draws} ${Number(room.draws) === 1 ? 'DRAW' : 'DRAWS'}`
       : 'NO DRAWS';
+    if (ruleStrip) {
+      ruleStrip.innerHTML = [
+        `<span><i class="live-vs-rule-icon trophy" aria-hidden="true"></i><b>${escapeHtml(format)}</b></span>`,
+        `<span><i class="live-vs-rule-icon speed" aria-hidden="true"></i><b>×${Number(room.speedMultiplier) || 1}</b></span>`,
+        `<span><i class="live-vs-rule-icon keyboard" aria-hidden="true"></i><b>${room.allowKeyboard === false ? 'OFF' : 'ON'}</b></span>`,
+        `<span><i class="live-vs-rule-icon ghost" aria-hidden="true"></i><b>${room.rivalGhostEnabled === false ? 'OFF' : 'ON'}</b></span>`
+      ].join('');
+    }
+    const champion = room.players?.find(player => player.playerId === room.seriesWinnerPlayerId);
+    if (seriesResult) seriesResult.hidden = !room.seriesWinnerPlayerId;
+    if (seriesWinner && room.seriesWinnerPlayerId) {
+      seriesWinner.textContent = `${playerLabel(champion).toUpperCase()} WINS THE SERIES`;
+    }
     themeName.textContent = ['countdown', 'running', 'verifying'].includes(room.status)
       ? `${themeLabel(room.theme).toUpperCase()} ARENA`
       : 'STAGE SELECT';
@@ -438,12 +493,14 @@ export function createLiveVsController({
     renderStageSelection();
     const nextRound = Number(room.roundNumber || 1) + (room.status === 'complete' ? 1 : 0);
     const roomClosed = ['cancelled', 'expired'].includes(room.status) || !!departedRival();
-    readyButton.disabled = waitingForResult || roomClosed || connected < 2
+    readyButton.disabled = waitingForResult || roomClosed || !!room.seriesWinnerPlayerId || connected < 2
       || !['waiting', 'complete'].includes(room.status)
       || (!mine?.ready && !localStageChoice && !mine?.themeChoice);
-    readyButton.textContent = mine?.ready
+    readyButton.textContent = room.seriesWinnerPlayerId
+      ? 'Series Complete'
+      : (mine?.ready
       ? 'Cancel Ready'
-      : `Ready — Round ${nextRound}`;
+      : `Ready — Round ${nextRound}`);
     readyButton.classList.toggle('armed', !!mine?.ready);
     closeButton.textContent = roomClosed ? 'Return to Main Menu' : 'Leave Battle Room';
     if (departedRival()) {
@@ -535,17 +592,21 @@ export function createLiveVsController({
     }
     setup.hidden = false;
     lobby.hidden = true;
+    if (settingsPanel) settingsPanel.hidden = true;
+    if (stagePicker) stagePicker.hidden = true;
     closeButton.textContent = 'Back';
     setMessage('Create a battle room or enter a rival invite code.');
-    codeInput.focus();
+    codeInput.blur();
+    panel.scrollTop = 0;
   }
 
   async function create() {
     if (!await ensurePlayer?.()) return;
+    if (settingsPanel) settingsPanel.hidden = true;
     createButton.disabled = true;
     setMessage('Building battle arena…');
     try {
-      await enterRoom(await service.createRoom(getCurrentTheme?.() || 'default'));
+      await enterRoom(await service.createRoom(getCurrentTheme?.() || 'default', createSettings));
       closeButton.textContent = 'Leave Battle Room';
     } catch (error) {
       setMessage(error.message || 'Could not create room', true);
@@ -582,6 +643,9 @@ export function createLiveVsController({
     panel.setAttribute('aria-hidden', 'false');
     setup.hidden = false;
     lobby.hidden = true;
+    if (settingsPanel) settingsPanel.hidden = true;
+    codeInput.blur();
+    panel.scrollTop = 0;
     setMessage(`Invite ${normalized} detected — entering battle room…`);
     await join();
     return !!room;
@@ -701,6 +765,8 @@ export function createLiveVsController({
     panel.classList.remove('visible');
     panel.classList.remove('waiting-for-rival');
     panel.setAttribute('aria-hidden', 'true');
+    if (settingsPanel) settingsPanel.hidden = true;
+    if (stagePicker) stagePicker.hidden = true;
     if (leave && room?.id) {
       const departedRoom = room;
       try {
@@ -724,15 +790,68 @@ export function createLiveVsController({
   });
   openButton.addEventListener('click', open);
   closeButton.addEventListener('click', () => close());
+  leaveButton?.addEventListener('click', () => close());
   createButton.addEventListener('click', create);
   joinButton.addEventListener('click', join);
   readyButton.addEventListener('click', toggleStageLock);
   shareButton.addEventListener('click', shareRoom);
+  settingsOpen?.addEventListener('click', () => {
+    if (settingsPanel) settingsPanel.hidden = false;
+  });
+  settingsClose?.addEventListener('click', () => {
+    if (settingsPanel) settingsPanel.hidden = true;
+    settingsOpen?.focus({ preventScroll: true });
+  });
+  stageOpen?.addEventListener('click', () => {
+    if (stageOpen.disabled || !stagePicker) return;
+    stagePicker.hidden = false;
+  });
+  stageClose?.addEventListener('click', () => {
+    if (stagePicker) stagePicker.hidden = true;
+    stageOpen?.focus({ preventScroll: true });
+  });
   spectateButton?.addEventListener('click', () => {
     if (onSpectate?.(room) === false) return;
     panel.classList.remove('visible');
     panel.setAttribute('aria-hidden', 'true');
   });
+  function bindSettingButtons(container, key, transform = value => value) {
+    container?.querySelectorAll('button[data-value]').forEach(button => {
+      button.addEventListener('click', () => {
+        createSettings = normalizeLiveVsRoomSettings({
+          ...createSettings,
+          [key]: transform(button.dataset.value)
+        });
+        container.querySelectorAll('button[data-value]').forEach(option => {
+          const selected = option === button;
+          option.classList.toggle('selected', selected);
+          option.setAttribute('aria-pressed', String(selected));
+        });
+        updateSettingsSummary();
+      });
+    });
+  }
+  function updateSettingsSummary() {
+    if (!settingsSummary) return;
+    const parts = [
+      liveVsFormatLabel(createSettings.matchFormat),
+      `×${createSettings.speedMultiplier}`,
+      createSettings.allowKeyboard ? 'Keyboard' : 'No Keyboard',
+      createSettings.rivalGhostEnabled ? 'Ghost' : 'No Ghost'
+    ];
+    settingsSummary.textContent = parts.join(' • ');
+  }
+  bindSettingButtons(formatOptions, 'matchFormat');
+  bindSettingButtons(speedOptions, 'speedMultiplier', Number);
+  allowKeyboard?.addEventListener('change', () => {
+    createSettings = normalizeLiveVsRoomSettings({ ...createSettings, allowKeyboard: allowKeyboard.checked });
+    updateSettingsSummary();
+  });
+  rivalGhost?.addEventListener('change', () => {
+    createSettings = normalizeLiveVsRoomSettings({ ...createSettings, rivalGhostEnabled: rivalGhost.checked });
+    updateSettingsSummary();
+  });
+  updateSettingsSummary();
 
   return {
     open,
