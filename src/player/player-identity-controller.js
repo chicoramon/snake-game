@@ -15,7 +15,7 @@ export function createPlayerIdentityController({
   snoozeDisplayNameInvitation = () => {}
 }) {
   const {
-    playerMenuLabel, playerIdentityStatus, playerProfileSetup, playerDisplaySetup,
+    playerMenuLabel, playerMenuMeta, playerIdentityStatus, playerProfileSetup, playerDisplaySetup,
     playerDisplayNameInput, playerAccountSetup, playerMessage, playerPanel,
     playerInitialsSave, playerInitialsInput, playerDisplayNameSave, playerEmailInput,
     playerSaveEmail, playerRestoreEmail, playerOtpInput, playerOtpGroup,
@@ -38,8 +38,16 @@ export function createPlayerIdentityController({
   function render() {
     const { currentUser, playerProfile } = getState();
     const displayName = playerDisplayName(playerProfile);
+    const publicName = String(playerProfile?.display_name || '').trim();
     const permanent = isPermanentPlayer();
-    playerMenuLabel.textContent = displayName ? `Player: ${displayName}` : 'Player: Guest';
+    playerMenuLabel.textContent = publicName || displayName || 'Guest Player';
+    if (playerMenuMeta) {
+      playerMenuMeta.textContent = publicName
+        ? displayName
+        : displayName
+          ? (permanent ? 'Saved player • Email restore' : 'Device player')
+          : currentUser ? 'Choose arcade initials' : 'Connecting';
+    }
     playerIdentityStatus.innerHTML = displayName
       ? `<span class="player-tag">${escHtml(displayName)}</span><br>${permanent ? 'Saved player • restorable by email' : 'Guest player • saved on this device'}`
       : currentUser ? 'Guest connected<br>Choose your arcade initials' : 'Connecting...';

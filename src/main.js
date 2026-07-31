@@ -73,6 +73,7 @@ const lbPageInfo = document.getElementById('lbPageInfo');
 const lbBack = document.getElementById('lbBack');
 const playerBtn = document.getElementById('player-btn');
 const playerMenuLabel = document.getElementById('player-menu-label');
+const playerMenuMeta = document.getElementById('player-menu-meta');
 const playerAddNameBadge = document.getElementById('player-add-name-badge');
 const displayNameInvite = document.getElementById('display-name-invite');
 const displayNameInviteId = document.getElementById('display-name-invite-id');
@@ -108,8 +109,9 @@ const whatsNewCurrent = document.getElementById('whats-new-current');
 const whatsNewReleases = document.getElementById('whats-new-releases');
 const whatsNewClose = document.getElementById('whats-new-close');
 const overlayTitle = document.getElementById('overlayTitle');
-const themeLabel = document.getElementById('themeLabel');
-const overlayMsg = document.getElementById('overlayMsg');
+const themeLabel = document.getElementById('themeLabel');
+const overlayMsg = document.getElementById('overlayMsg');
+const menuThemeArt = document.getElementById('menu-theme-art');
 const scoreEl = document.getElementById('score');
 const bestEl = document.getElementById('best');
 const bestLabel = document.querySelector('.hud-best .label');
@@ -864,6 +866,30 @@ function updateThemeSelectionUI() {
   themePicker?.syncThemeSelection(themeSelection);
 }
 
+function renderMenuThemeMarquee(themeId) {
+  if (!menuThemeArt) return;
+  if (themeId === 'random') {
+    themeLabel.textContent = 'Random Theme';
+    menuThemeArt.innerHTML = '<svg viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="1" y="0" width="8" height="1"/><rect x="0" y="1" width="1" height="8"/><rect x="9" y="1" width="1" height="8"/><rect x="1" y="9" width="8" height="1"/><rect x="2" y="2" width="2" height="2"/><rect x="6" y="2" width="2" height="2"/><rect x="4" y="4" width="2" height="2"/><rect x="2" y="6" width="2" height="2"/><rect x="6" y="6" width="2" height="2"/></svg>';
+    return;
+  }
+  const theme = THEMES[themeId];
+  if (!theme) return;
+  themeLabel.textContent = `${theme.name} Theme`;
+  if (THEME_ICON_URLS[themeId]) {
+    const image = document.createElement('img');
+    image.src = THEME_ICON_URLS[themeId];
+    image.alt = '';
+    menuThemeArt.replaceChildren(image);
+    return;
+  }
+  const iconCanvas = document.createElement('canvas');
+  iconCanvas.width = 48;
+  iconCanvas.height = 48;
+  drawFoodSpriteAsset(iconCanvas.getContext('2d'), 24, 24, 48, FOOD_SPRITES, 1, themeId);
+  menuThemeArt.replaceChildren(iconCanvas);
+}
+
 function selectRandomThemeMode() {
   themeSelection = 'random';
   if (!GOLDEN_BACKDOOR) {
@@ -871,6 +897,7 @@ function selectRandomThemeMode() {
     localStorage.setItem('snakeThemeActive', currentTheme);
   }
   updateThemeSelectionUI();
+  renderMenuThemeMarquee('random');
 }
 
 function applyTheme(id, { updateSelection = true } = {}) {
@@ -899,7 +926,7 @@ function applyTheme(id, { updateSelection = true } = {}) {
   document.querySelector('meta[name="theme-color"]').content = t.bg;
   // Update selected state in the extracted picker view.
   updateThemeSelectionUI();
-  themeLabel.textContent = t.name + ' Theme';
+  renderMenuThemeMarquee(id);
   overlayTitle.textContent = id === 'got' ? 'DRAGON' : (id === 'golden' ? 'GOLDEN SNAKE' : 'SNAKE');
 }
 
@@ -1136,8 +1163,8 @@ function reset(startingRun = false) {
   overlayTitle.textContent = currentTheme === 'got'
     ? 'DRAGON'
     : (currentTheme === 'golden' ? 'GOLDEN SNAKE' : 'SNAKE');
-  themeLabel.textContent = THEMES[currentTheme].name + ' Theme';
-  overlayMsg.textContent = 'Ready to play?';
+  renderMenuThemeMarquee(currentTheme);
+  overlayMsg.textContent = 'Select mode • Press play';
   placeFood();
 }
 
@@ -1845,6 +1872,7 @@ themePicker = createThemePicker({
 themePicker.bind();
 themePicker.syncThemeSelection(themeSelection);
 themePicker.syncModeSelection(gameMode);
+if (themeSelection === 'random') renderMenuThemeMarquee('random');
 
 // --- Controls Customization ---
 // --- PWA Setup ---
@@ -2908,7 +2936,7 @@ async function legacyHandleVerifyPlayerOtp(token) {
 */
 playerIdentityController = createPlayerIdentityController({
   elements: {
-    playerMenuLabel, playerIdentityStatus, playerProfileSetup, playerDisplaySetup,
+    playerMenuLabel, playerMenuMeta, playerIdentityStatus, playerProfileSetup, playerDisplaySetup,
     playerDisplayNameInput, playerAccountSetup, playerMessage, playerPanel,
     playerInitialsSave, playerInitialsInput, playerDisplayNameSave, playerEmailInput,
     playerSaveEmail, playerRestoreEmail, playerOtpInput, playerOtpGroup,
