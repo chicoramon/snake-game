@@ -34,8 +34,8 @@
 <title>Snake Game</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="./snake-core.js"></script>
-  <script type="module" crossorigin src="./assets/index-B1fq0Nkc.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-DeGCo5eD.css">
+  <script type="module" crossorigin src="./assets/index-Cbhwtbu6.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-CTbDNiDI.css">
 </head>
 <body>
 
@@ -182,15 +182,15 @@
     </div>
 
     <div id="live-vs-lobby" hidden>
-      <div class="live-vs-lobby-arena">
-        <div class="live-vs-room-bar">
-          <div>
-            <span class="live-vs-label">Room</span>
-            <strong id="live-vs-room-code">------</strong>
-          </div>
-          <button id="live-vs-share" type="button" aria-label="Share a joinable room link">Invite Rival</button>
+      <div class="live-vs-room-bar">
+        <div>
+          <span class="live-vs-label">Battle Room</span>
+          <strong id="live-vs-room-code">------</strong>
         </div>
+        <button id="live-vs-share" type="button" aria-label="Share a joinable room link">Invite Rival</button>
+      </div>
 
+      <div class="live-vs-lobby-arena">
         <div class="live-vs-session-strip">
           <span id="live-vs-round-number">ROUND 1</span>
           <strong id="live-vs-session-score">0 — 0</strong>
@@ -201,6 +201,8 @@
           <div class="live-vs-bolt" aria-hidden="true"><img src="./assets/vs-battle-crest-DR2j8AP6.webp" alt=""></div>
           <div id="live-vs-player-two" class="live-vs-fighter empty"></div>
         </div>
+      </div>
+      <div class="live-vs-lobby-status">
         <p id="live-vs-room-status">Waiting for rival…</p>
         <div id="live-vs-rule-strip" class="live-vs-rule-strip" aria-label="Battle room rules"></div>
       </div>
