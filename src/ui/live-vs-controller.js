@@ -82,6 +82,8 @@ export function createLiveVsController({
   const latencyByPlayer = new Map();
   const roundNumber = panel.querySelector('#live-vs-round-number');
   const sessionScore = panel.querySelector('#live-vs-session-score');
+  const playerOneMeta = panel.querySelector('#live-vs-player-one-meta');
+  const playerTwoMeta = panel.querySelector('#live-vs-player-two-meta');
   const playerOneScore = panel.querySelector('#live-vs-player-one-score');
   const playerTwoScore = panel.querySelector('#live-vs-player-two-score');
   const drawCount = panel.querySelector('#live-vs-draw-count');
@@ -207,30 +209,35 @@ export function createLiveVsController({
     return room?.players?.find(player => player.seat === seat) || null;
   }
 
-  function winsForSeat(seat) {
-    return seat === 1 ? Number(room?.hostWins || 0) : Number(room?.guestWins || 0);
-  }
-
   function renderPlayer(element, player, fallback) {
-    const latency = player ? latencyByPlayer.get(player.playerId) : null;
-    const wins = player ? winsForSeat(player.seat) : 0;
     const departed = player?.connectionState === 'forfeit';
-    const readyText = departed
-      ? 'LEFT ARENA'
-      : (player?.ready ? 'READY' : (player ? 'SELECTING STAGE' : 'SEARCHING'));
     element.classList.toggle('empty', !player);
     element.classList.toggle('ready', !!player?.ready);
     element.classList.toggle('departed', departed);
     element.classList.toggle('winner', !!player && !!room?.lastRound?.winnerPlayerId
       && room.lastRound.winnerPlayerId === player.playerId);
-    element.innerHTML = player
-      ? `<span class="live-vs-seat">PLAYER ${player.seat}</span>
-         <strong>${escapeHtml(playerLabel(player))}</strong>
-         <span class="live-vs-win-count">${wins} ${wins === 1 ? 'WIN' : 'WINS'}</span>
-         <span class="live-vs-ready-state">${readyText}</span>
-         ${latencyDiagnostics ? `<small>${latency == null ? 'PING --' : `PING ${latency} MS`}</small>` : ''}`
-      : `<span class="live-vs-seat">PLAYER ${fallback.slice(-1)}</span>
-         <strong>${fallback}</strong><span class="live-vs-ready-state">${readyText}…</span>`;
+    element.innerHTML = `<strong>${player ? escapeHtml(playerLabel(player)) : fallback}</strong>`;
+  }
+
+  function renderPlayerScoreMeta(element, player) {
+    if (!element) return;
+    let state = 'SEARCHING';
+    if (player?.connectionState === 'forfeit') state = 'LEFT ARENA';
+    else if (player) {
+      if (room?.status === 'countdown') state = 'READY';
+      else if (room?.status === 'running') state = 'RACING';
+      else if (room?.status === 'verifying') state = 'VERIFYING';
+      else state = player.ready ? 'READY' : 'SELECTING STAGE';
+    }
+    const stateLabel = document.createElement('b');
+    stateLabel.textContent = state;
+    const pingLabel = document.createElement('small');
+    if (!latencyDiagnostics || !player) pingLabel.hidden = true;
+    else {
+      const latency = latencyByPlayer.get(player.playerId);
+      pingLabel.textContent = latency == null ? 'PING --' : `PING ${latency} MS`;
+    }
+    element.replaceChildren(stateLabel, pingLabel);
   }
 
   function resultHeading(lastRound) {
@@ -482,8 +489,12 @@ export function createLiveVsController({
       : 'STAGE SELECT';
     const connected = room.players?.filter(player => player.connectionState !== 'forfeit').length || 0;
     roomStatus.textContent = statusText(connected);
-    renderPlayer(playerOne, playerAtSeat(1), 'PLAYER 1');
-    renderPlayer(playerTwo, playerAtSeat(2), 'PLAYER 2');
+    const hostPlayer = playerAtSeat(1);
+    const guestPlayer = playerAtSeat(2);
+    renderPlayer(playerOne, hostPlayer, 'PLAYER 1');
+    renderPlayer(playerTwo, guestPlayer, 'PLAYER 2');
+    renderPlayerScoreMeta(playerOneMeta, hostPlayer);
+    renderPlayerScoreMeta(playerTwoMeta, guestPlayer);
     renderLastRound();
 
     const mine = myPlayer();
@@ -833,13 +844,31 @@ export function createLiveVsController({
   }
   function updateSettingsSummary() {
     if (!settingsSummary) return;
-    const parts = [
-      liveVsFormatLabel(createSettings.matchFormat),
-      `×${createSettings.speedMultiplier}`,
-      createSettings.allowKeyboard ? 'Keyboard' : 'No Keyboard',
-      createSettings.rivalGhostEnabled ? 'Ghost' : 'No Ghost'
-    ];
-    settingsSummary.textContent = parts.join(' • ');
+    const formatLabel = liveVsFormatLabel(createSettings.matchFormat);
+    const values = {
+      format: createSettings.matchFormat === 'continuous'
+        ? { text: '∞', label: 'Continuous battle' }
+        : { text: formatLabel.replace('BEST OF ', 'BO'), label: formatLabel },
+      speed: { text: `×${createSettings.speedMultiplier}`, label: `Speed ×${createSettings.speedMultiplier}` },
+      keyboard: {
+        text: createSettings.allowKeyboard ? 'ON' : 'OFF',
+        label: `Keyboard ${createSettings.allowKeyboard ? 'enabled' : 'disabled'}`,
+        enabled: createSettings.allowKeyboard
+      },
+      ghost: {
+        text: createSettings.rivalGhostEnabled ? 'ON' : 'OFF',
+        label: `Rival ghost ${createSettings.rivalGhostEnabled ? 'enabled' : 'disabled'}`,
+        enabled: createSettings.rivalGhostEnabled
+      }
+    };
+    settingsSummary.querySelectorAll('[data-setting]').forEach(chip => {
+      const value = values[chip.dataset.setting];
+      if (!value) return;
+      const text = chip.querySelector('small');
+      if (text) text.textContent = value.text;
+      chip.setAttribute('aria-label', value.label);
+      chip.classList.toggle('off', value.enabled === false);
+    });
   }
   bindSettingButtons(formatOptions, 'matchFormat');
   bindSettingButtons(speedOptions, 'speedMultiplier', Number);

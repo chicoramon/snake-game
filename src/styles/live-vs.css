@@ -138,7 +138,7 @@
 #live-vs-panel .live-vs-settings-open {
   grid-area: settings-open;
   display: grid;
-  grid-template-columns: 58px minmax(0, 1fr) auto;
+  grid-template-columns: 58px minmax(108px, 1fr) auto;
   align-items: center;
   gap: 10px;
   width: 100%;
@@ -149,18 +149,65 @@
   text-align: left;
 }
 
-#live-vs-panel .live-vs-settings-open > span:nth-child(2) { display: grid; gap: 5px; min-width: 0; }
-#live-vs-panel .live-vs-settings-open b { color: #fff; font-size: .72rem; }
-#live-vs-panel .live-vs-settings-open small {
-  overflow: hidden;
-  color: #9eb4c0;
-  font-size: .48rem;
-  text-overflow: ellipsis;
+#live-vs-panel .live-vs-settings-copy {
+  grid-column: 2;
+  display: grid;
+  align-self: center;
+  min-width: 0;
+}
+#live-vs-panel .live-vs-settings-open b {
+  color: #fff;
+  font-size: .72rem;
+  line-height: 1.2;
   white-space: nowrap;
 }
-#live-vs-panel .live-vs-settings-open em { color: var(--vs-gold); font-size: .56rem; font-style: normal; }
-
+#live-vs-panel .live-vs-settings-summary {
+  grid-column: 3;
+  justify-self: end;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+#live-vs-panel .live-vs-settings-chip {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 34px;
+  border: 1px solid rgba(255,255,255,.1);
+  background: rgba(0,0,0,.42);
+}
+#live-vs-panel .live-vs-settings-chip .live-vs-rule-icon {
+  width: 33px;
+  height: 33px;
+}
+#live-vs-panel .live-vs-settings-chip small {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  min-width: 19px;
+  padding: 3px 4px;
+  color: #051015;
+  background: var(--vs-gold);
+  font-size: .43rem;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+#live-vs-panel .live-vs-settings-chip.off {
+  opacity: .42;
+  filter: grayscale(1);
+}
+#live-vs-panel .live-vs-settings-chip.off small {
+  color: #fff;
+  background: #42494d;
+}
 #live-vs-panel .live-vs-settings-icon {
+  grid-column: 1;
+  align-self: center;
   width: 56px;
   height: 56px;
   border: 1px solid rgba(255,228,91,.42);
@@ -431,16 +478,19 @@
   position: absolute;
   z-index: 2;
   top: 53%;
-  left: 35%;
+  left: 31%;
   display: grid;
   grid-template-columns: 1fr 2px 1fr;
+  grid-template-rows: auto auto;
   align-items: center;
-  width: 30%;
+  gap: 3px 0;
+  width: 38%;
   transform: translateY(-50%);
   pointer-events: none;
 }
 
 #live-vs-panel .live-vs-arena-score strong {
+  grid-row: 2;
   color: var(--vs-cyan);
   font-size: clamp(2.25rem, 6.4vw, 4.3rem);
   line-height: 1;
@@ -448,8 +498,27 @@
   text-shadow: 0 0 7px #000, 0 0 18px currentColor;
 }
 
-#live-vs-panel .live-vs-arena-score strong:last-child { color: var(--vs-pink); }
+#live-vs-panel #live-vs-player-one-score { grid-column: 1; }
+#live-vs-panel #live-vs-player-two-score { grid-column: 3; color: var(--vs-pink); }
+#live-vs-panel .live-vs-score-meta {
+  display: grid;
+  grid-row: 1;
+  gap: 1px;
+  justify-items: center;
+  font-size: clamp(.34rem, .72vw, .52rem);
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+  white-space: normal;
+}
+#live-vs-panel .live-vs-score-meta b,
+#live-vs-panel .live-vs-score-meta small { font: inherit; white-space: nowrap; }
+#live-vs-panel .live-vs-score-meta small { opacity: .78; }
+#live-vs-panel .live-vs-score-meta.player-one { grid-column: 1; color: var(--vs-cyan); }
+#live-vs-panel .live-vs-score-meta.player-two { grid-column: 3; color: var(--vs-pink); }
 #live-vs-panel .live-vs-arena-score i {
+  grid-column: 2;
+  grid-row: 1 / 3;
   width: 2px;
   height: 118%;
   background: linear-gradient(var(--vs-cyan), #fff 48%, var(--vs-pink));
@@ -469,15 +538,15 @@
   top: 14.5%;
   left: 2.1%;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
-  align-content: stretch;
+  grid-template-rows: 1fr;
+  align-content: center;
   align-items: center;
   justify-items: center;
   gap: clamp(2px, .55vw, 7px);
   width: 22.7%;
   height: 43.5%;
   min-height: 0;
-  padding: 5% 8% 7% 5%;
+  padding: 0;
   overflow: hidden;
   border: 0;
   background: radial-gradient(circle at 50% 45%, rgba(37,220,255,.12), rgba(1,5,11,.26) 72%);
@@ -488,7 +557,7 @@
 #live-vs-panel .live-vs-fighter:last-child {
   right: 2.1%;
   left: auto;
-  padding: 5% 5% 7% 8%;
+  padding: 0;
   border: 0;
   background: radial-gradient(circle at 50% 45%, rgba(255,72,120,.12), rgba(1,5,11,.26) 72%);
   clip-path: polygon(8% 4%, 96% 2%, 99% 84%, 87% 98%, 2% 92%, 2% 18%);
@@ -500,20 +569,11 @@
   max-width: 100%;
   overflow: hidden;
   color: #fff;
-  font-size: clamp(.6rem, 1.75vw, 1.05rem);
+  font-size: clamp(.78rem, 2vw, 1.25rem);
   text-align: center;
   line-height: 1.25;
   text-shadow: 0 0 12px currentColor;
   white-space: normal;
-}
-
-#live-vs-panel .live-vs-seat,
-#live-vs-panel .live-vs-win-count,
-#live-vs-panel .live-vs-ready-state,
-#live-vs-panel .live-vs-fighter small {
-  max-width: 100%;
-  font-size: clamp(.38rem, .9vw, .6rem) !important;
-  text-align: center;
 }
 
 #live-vs-panel .live-vs-bolt {
@@ -811,12 +871,24 @@
 
   #live-vs-panel .live-vs-settings-open {
     grid-template-columns: 52px minmax(0, 1fr) auto;
-    min-height: 66px;
+    min-height: 72px;
   }
 
   #live-vs-panel .live-vs-settings-icon {
     width: 48px;
     height: 48px;
+  }
+
+  #live-vs-panel .live-vs-settings-summary { gap: 6px; }
+
+  #live-vs-panel .live-vs-settings-chip {
+    width: 38px;
+    height: 34px;
+  }
+
+  #live-vs-panel .live-vs-settings-chip .live-vs-rule-icon {
+    width: 32px;
+    height: 32px;
   }
 
   #live-vs-panel .live-vs-format-fieldset,
@@ -886,11 +958,11 @@
     gap: 1px;
   }
 
-  #live-vs-panel .live-vs-fighter strong { font-size: clamp(.66rem, 3vw, .82rem); }
-  #live-vs-panel .live-vs-seat { font-size: .38rem !important; }
-  #live-vs-panel .live-vs-win-count { font-size: .44rem !important; }
-  #live-vs-panel .live-vs-ready-state { font-size: .4rem !important; }
-  #live-vs-panel .live-vs-fighter small { font-size: .36rem !important; }
+  #live-vs-panel .live-vs-fighter strong { font-size: clamp(.82rem, 3.8vw, 1rem); }
+
+  #live-vs-panel .live-vs-score-meta {
+    font-size: clamp(.34rem, 1.65vw, .44rem);
+  }
 
   #live-vs-panel .live-vs-lobby-status {
     grid-template-columns: 1fr;

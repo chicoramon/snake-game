@@ -30,6 +30,8 @@ test('Live Vs lobby and controller are present in the modular app', () => {
     'live-vs-share',
     'live-vs-leave',
     'live-vs-session-score',
+    'live-vs-player-one-meta',
+    'live-vs-player-two-meta',
     'live-vs-player-one-score',
     'live-vs-player-two-score',
     'live-vs-last-round',
@@ -77,7 +79,8 @@ test('Live Vs lobby and controller are present in the modular app', () => {
   assert.match(controller, /cloneThemeArtwork/);
   assert.match(controller, /getElementById\(`ti-\$\{id\}`\)/);
   assert.match(controller, /theme-random-btn \.theme-icon/);
-  assert.match(controller, /player\?\.ready \? 'READY'/);
+  assert.match(controller, /player\.ready \? 'READY' : 'SELECTING STAGE'/);
+  assert.match(controller, /renderPlayerScoreMeta/);
   assert.match(controller, /const GAMEPLAY_COUNTDOWN_MS = 3000/);
   assert.match(controller, /startMs - GAMEPLAY_COUNTDOWN_MS/);
   assert.match(controller, /boardLaunchMs - ROULETTE_RESULT_HOLD_MS/);
