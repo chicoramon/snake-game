@@ -228,9 +228,6 @@
         <p id="live-vs-room-status">Waiting for rival…</p>
         <div id="live-vs-rule-strip" class="live-vs-rule-strip" aria-label="Battle room rules"></div>
       </div>
-      <div class="live-vs-command-deck">
-        <button id="live-vs-ready" class="primary" type="button" disabled>Ready</button>
-      </div>
 
       <section id="live-vs-series-result" class="live-vs-series-result" hidden aria-live="assertive">
         <span class="live-vs-label">Series Complete</span>
@@ -260,6 +257,9 @@
           <p id="live-vs-stage-lock-status">Select a stage or take your chances with Random.</p>
         </div>
       </section>
+      <div class="live-vs-command-deck">
+        <button id="live-vs-ready" class="primary waiting" type="button" disabled>Waiting for Rival</button>
+      </div>
 
       <section id="live-vs-stage-reveal" class="live-vs-stage-reveal" hidden aria-live="assertive">
         <span class="live-vs-label">Stage Roulette</span>

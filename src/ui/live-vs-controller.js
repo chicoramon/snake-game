@@ -211,17 +211,20 @@ export function createLiveVsController({
 
   function renderPlayer(element, player, fallback) {
     const departed = player?.connectionState === 'forfeit';
+    const label = player ? playerLabel(player) : fallback;
     element.classList.toggle('empty', !player);
     element.classList.toggle('ready', !!player?.ready);
     element.classList.toggle('departed', departed);
+    element.classList.toggle('long-name', label.length > 14);
+    element.classList.toggle('very-long-name', label.length > 20);
     element.classList.toggle('winner', !!player && !!room?.lastRound?.winnerPlayerId
       && room.lastRound.winnerPlayerId === player.playerId);
-    element.innerHTML = `<strong>${player ? escapeHtml(playerLabel(player)) : fallback}</strong>`;
+    element.innerHTML = `<strong>${escapeHtml(label)}</strong>`;
   }
 
   function renderPlayerScoreMeta(element, player) {
     if (!element) return;
-    let state = 'SEARCHING';
+    let state = 'WAITING';
     if (player?.connectionState === 'forfeit') state = 'LEFT ARENA';
     else if (player) {
       if (room?.status === 'countdown') state = 'READY';
@@ -450,8 +453,15 @@ export function createLiveVsController({
     if (room.status === 'countdown') return 'Stage decision locked — battle commencing!';
     if (room.seriesWinnerPlayerId) return 'Series decided — the champion has claimed this battle room.';
     if (room.status === 'complete') return 'Round verified. Pick the next arena!';
-    if (connected < 2) return 'Arena open — send your rival the invite link.';
+    if (connected < 2) return 'Waiting for rival.';
     return 'Both fighters connected. Choose and lock your arena.';
+  }
+
+  function shouldShowRoomStatus(connected) {
+    return !!departedRival()
+      || ['cancelled', 'expired', 'verifying', 'countdown'].includes(room?.status)
+      || waitingForResult
+      || !!room?.seriesWinnerPlayerId;
   }
 
   function renderRoom() {
@@ -472,11 +482,14 @@ export function createLiveVsController({
       ? `${room.draws} ${Number(room.draws) === 1 ? 'DRAW' : 'DRAWS'}`
       : 'NO DRAWS';
     if (ruleStrip) {
+      const formatBadge = room.matchFormat === 'continuous'
+        ? '∞'
+        : format.replace('BEST OF ', 'BO');
       ruleStrip.innerHTML = [
-        `<span><i class="live-vs-rule-icon trophy" aria-hidden="true"></i><b>${escapeHtml(format)}</b></span>`,
-        `<span><i class="live-vs-rule-icon speed" aria-hidden="true"></i><b>×${Number(room.speedMultiplier) || 1}</b></span>`,
-        `<span><i class="live-vs-rule-icon keyboard" aria-hidden="true"></i><b>${room.allowKeyboard === false ? 'OFF' : 'ON'}</b></span>`,
-        `<span><i class="live-vs-rule-icon ghost" aria-hidden="true"></i><b>${room.rivalGhostEnabled === false ? 'OFF' : 'ON'}</b></span>`
+        `<span class="live-vs-rule-badge" aria-label="${escapeHtml(format)}"><i class="live-vs-rule-icon trophy" aria-hidden="true"></i><b>${escapeHtml(formatBadge)}</b></span>`,
+        `<span class="live-vs-rule-badge" aria-label="Speed ×${Number(room.speedMultiplier) || 1}"><i class="live-vs-rule-icon speed" aria-hidden="true"></i><b>×${Number(room.speedMultiplier) || 1}</b></span>`,
+        `<span class="live-vs-rule-badge${room.allowKeyboard === false ? ' off' : ''}" aria-label="Keyboard ${room.allowKeyboard === false ? 'disabled' : 'enabled'}"><i class="live-vs-rule-icon keyboard" aria-hidden="true"></i><b>${room.allowKeyboard === false ? 'OFF' : 'ON'}</b></span>`,
+        `<span class="live-vs-rule-badge${room.rivalGhostEnabled === false ? ' off' : ''}" aria-label="Rival ghost ${room.rivalGhostEnabled === false ? 'disabled' : 'enabled'}"><i class="live-vs-rule-icon ghost" aria-hidden="true"></i><b>${room.rivalGhostEnabled === false ? 'OFF' : 'ON'}</b></span>`
       ].join('');
     }
     const champion = room.players?.find(player => player.playerId === room.seriesWinnerPlayerId);
@@ -484,11 +497,14 @@ export function createLiveVsController({
     if (seriesWinner && room.seriesWinnerPlayerId) {
       seriesWinner.textContent = `${playerLabel(champion).toUpperCase()} WINS THE SERIES`;
     }
-    themeName.textContent = ['countdown', 'running', 'verifying'].includes(room.status)
-      ? `${themeLabel(room.theme).toUpperCase()} ARENA`
-      : 'STAGE SELECT';
+    if (themeName) {
+      themeName.textContent = ['countdown', 'running', 'verifying'].includes(room.status)
+        ? `${themeLabel(room.theme).toUpperCase()} ARENA`
+        : 'STAGE SELECT';
+    }
     const connected = room.players?.filter(player => player.connectionState !== 'forfeit').length || 0;
     roomStatus.textContent = statusText(connected);
+    roomStatus.hidden = !shouldShowRoomStatus(connected);
     const hostPlayer = playerAtSeat(1);
     const guestPlayer = playerAtSeat(2);
     renderPlayer(playerOne, hostPlayer, 'PLAYER 1');
@@ -509,9 +525,12 @@ export function createLiveVsController({
       || (!mine?.ready && !localStageChoice && !mine?.themeChoice);
     readyButton.textContent = room.seriesWinnerPlayerId
       ? 'Series Complete'
+      : (connected < 2
+      ? 'Waiting for Rival'
       : (mine?.ready
       ? 'Cancel Ready'
-      : `Ready — Round ${nextRound}`);
+      : `Ready — Round ${nextRound}`));
+    readyButton.classList.toggle('waiting', connected < 2 && !roomClosed);
     readyButton.classList.toggle('armed', !!mine?.ready);
     closeButton.textContent = roomClosed ? 'Return to Main Menu' : 'Leave Battle Room';
     if (departedRival()) {
@@ -585,7 +604,7 @@ export function createLiveVsController({
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           setMessage('Battle link interrupted — reconnecting…', true);
         } else if (status === 'SUBSCRIBED') {
-          setMessage('Battle link online');
+          setMessage();
         }
       }
     });

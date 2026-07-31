@@ -413,12 +413,20 @@
 
 #live-vs-panel .live-vs-room-actions { display: flex; gap: 7px; }
 #live-vs-panel #live-vs-leave {
-  min-height: 40px;
-  padding: 8px 12px;
-  border-color: rgba(255,255,255,.28);
-  color: #d5e0e5;
-  background: #11141b;
-  font-size: .6rem;
+  min-height: 32px;
+  padding: 6px 8px;
+  border-color: transparent;
+  color: #8d9aa1;
+  background: transparent;
+  font-size: .52rem;
+  box-shadow: none;
+}
+
+#live-vs-panel #live-vs-leave:hover,
+#live-vs-panel #live-vs-leave:focus-visible {
+  border-color: rgba(255,255,255,.22);
+  color: #fff;
+  background: rgba(255,255,255,.04);
 }
 
 #live-vs-panel .live-vs-lobby-arena {
@@ -566,14 +574,36 @@
 #live-vs-panel .live-vs-fighter strong {
   display: grid;
   place-items: center;
-  max-width: 100%;
-  overflow: hidden;
+  width: 92%;
+  max-width: 92%;
   color: #fff;
-  font-size: clamp(.78rem, 2vw, 1.25rem);
+  font-family: var(--pixel-font);
+  font-size: clamp(.78rem, 2.25vw, 1.35rem);
+  font-weight: 800;
   text-align: center;
-  line-height: 1.25;
+  line-height: 1.32;
+  letter-spacing: .025em;
   text-shadow: 0 0 12px currentColor;
+  text-wrap: balance;
   white-space: normal;
+}
+
+#live-vs-panel .live-vs-fighter:first-child strong {
+  color: #f4fdff;
+  text-shadow: 0 0 4px #00151d, 0 0 13px var(--vs-cyan);
+}
+
+#live-vs-panel .live-vs-fighter:last-child strong {
+  color: #fff5fa;
+  text-shadow: 0 0 4px #1a000b, 0 0 13px var(--vs-pink);
+}
+
+#live-vs-panel .live-vs-fighter.long-name strong {
+  font-size: clamp(.68rem, 1.85vw, 1.08rem);
+}
+
+#live-vs-panel .live-vs-fighter.very-long-name strong {
+  font-size: clamp(.6rem, 1.55vw, .94rem);
 }
 
 #live-vs-panel .live-vs-bolt {
@@ -590,9 +620,9 @@
 
 #live-vs-panel .live-vs-lobby-status {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) auto;
+  grid-template-columns: 1fr;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
   margin-top: 6px;
 }
 
@@ -610,28 +640,49 @@
 
 #live-vs-panel .live-vs-rule-strip {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
-  gap: 7px;
+  gap: 13px;
   margin: 0;
-  padding: 0;
+  padding: 2px 0 3px;
 }
 
-#live-vs-panel .live-vs-rule-strip > span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  min-width: 0;
-  padding: 4px 8px 4px 4px;
-  border: 1px solid rgba(255,255,255,.15);
-  background: rgba(1,4,10,.82);
+#live-vs-panel .live-vs-rule-badge {
+  position: relative;
+  display: grid;
+  width: 40px;
+  height: 35px;
+  place-items: center;
+  background: radial-gradient(circle, rgba(37,220,255,.09), transparent 68%);
   color: #dffaff;
-  font-size: .56rem;
 }
 
 #live-vs-panel .live-vs-rule-strip .live-vs-rule-icon {
-  width: 27px;
-  height: 27px;
+  width: 34px;
+  height: 34px;
+}
+
+#live-vs-panel .live-vs-rule-badge b {
+  position: absolute;
+  right: -5px;
+  bottom: -2px;
+  min-width: 19px;
+  padding: 3px 4px;
+  color: #071014;
+  background: var(--vs-gold);
+  font-size: .43rem;
+  line-height: 1;
+  text-align: center;
+}
+
+#live-vs-panel .live-vs-rule-badge.off {
+  opacity: .4;
+  filter: grayscale(1);
+}
+
+#live-vs-panel .live-vs-rule-badge.off b {
+  color: #fff;
+  background: #42494d;
 }
 
 #live-vs-panel .live-vs-stage-select,
@@ -750,6 +801,16 @@
   box-shadow: 0 0 24px rgba(37,220,255,.22), inset 0 -4px rgba(0,0,0,.25);
 }
 
+#live-vs-panel #live-vs-ready.waiting:disabled {
+  opacity: 1;
+  border-color: rgba(37,220,255,.28);
+  color: #82a5b4;
+  background:
+    repeating-linear-gradient(135deg, rgba(37,220,255,.035) 0 6px, transparent 6px 12px),
+    #071019;
+  box-shadow: inset 0 0 18px rgba(37,220,255,.05);
+}
+
 #live-vs-panel .live-vs-history {
   margin-top: 12px;
 }
@@ -768,16 +829,11 @@
 }
 
 #live-vs-panel .live-vs-arena-spec {
-  justify-content: center;
-  gap: 7px;
-  margin-top: 12px;
-  border: 0;
+  display: none;
 }
 
 #live-vs-panel .live-vs-ghost-note {
-  max-width: 620px;
-  margin: 8px auto 0;
-  font-size: .6rem;
+  display: none;
 }
 
 #live-vs-panel #live-vs-message {
@@ -785,6 +841,8 @@
   margin: 9px 0 4px;
   font-size: .66rem;
 }
+
+#live-vs-panel #live-vs-message:empty { display: none; }
 
 #live-vs-panel #live-vs-close {
   display: block;
@@ -932,11 +990,16 @@
     font-size: .86rem;
   }
 
-  #live-vs-panel #live-vs-share,
-  #live-vs-panel #live-vs-leave {
+  #live-vs-panel #live-vs-share {
     min-height: 36px;
     padding: 6px 9px;
     font-size: .54rem;
+  }
+
+  #live-vs-panel #live-vs-leave {
+    min-height: 30px;
+    padding: 5px 6px;
+    font-size: .46rem;
   }
 
   #live-vs-panel .live-vs-session-strip {
@@ -958,7 +1021,9 @@
     gap: 1px;
   }
 
-  #live-vs-panel .live-vs-fighter strong { font-size: clamp(.82rem, 3.8vw, 1rem); }
+  #live-vs-panel .live-vs-fighter strong { font-size: clamp(.78rem, 3.8vw, 1.08rem); }
+  #live-vs-panel .live-vs-fighter.long-name strong { font-size: clamp(.64rem, 3.15vw, .9rem); }
+  #live-vs-panel .live-vs-fighter.very-long-name strong { font-size: clamp(.57rem, 2.7vw, .78rem); }
 
   #live-vs-panel .live-vs-score-meta {
     font-size: clamp(.34rem, 1.65vw, .44rem);
@@ -972,16 +1037,11 @@
 
   #live-vs-panel #live-vs-room-status { font-size: .54rem; text-align: center; }
 
-  #live-vs-panel .live-vs-rule-strip { flex-wrap: nowrap; gap: 4px; }
-  #live-vs-panel .live-vs-rule-strip > span {
-    flex: 1 1 0;
-    justify-content: center;
-    padding: 3px 6px 3px 3px;
-    font-size: .49rem;
-  }
+  #live-vs-panel .live-vs-rule-strip { gap: 12px; padding: 1px 0 3px; }
+  #live-vs-panel .live-vs-rule-badge { width: 38px; height: 33px; }
   #live-vs-panel .live-vs-rule-strip .live-vs-rule-icon {
-    width: 22px;
-    height: 22px;
+    width: 32px;
+    height: 32px;
   }
 
   #live-vs-panel .live-vs-stage-select,
