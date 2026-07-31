@@ -12,7 +12,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon-16x16-CrE4Gukf.png">
 <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32x32-9LEdGOyX.png">
 <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon-5fm-98x8.png">
-<link rel="manifest" href="./assets/manifest-BkglArjv.webmanifest">
+<link rel="manifest" id="app-manifest" href="./manifest.webmanifest">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Snake Game">
@@ -34,8 +34,8 @@
 <title>Snake Game</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="./snake-core.js"></script>
-  <script type="module" crossorigin src="./assets/index-Cl6Z8sRd.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-Bs4guMD-.css">
+  <script type="module" crossorigin src="./assets/index-Cm1cMD1F.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-BXfoeNvE.css">
 </head>
 <body>
 
@@ -50,6 +50,14 @@
 
 <canvas id="game" role="img" aria-label="Snake game board"></canvas>
 <div id="countdownDisplay" aria-live="assertive"></div>
+<div id="live-vs-spectator-bar" hidden aria-live="polite">
+  <div>
+    <span>SPECTATING</span>
+    <strong id="live-vs-spectator-name">RIVAL</strong>
+  </div>
+  <span id="live-vs-spectator-signal" data-state="syncing">SYNCING</span>
+  <button id="live-vs-stop-spectating" type="button">Return to Lobby</button>
+</div>
 
 <div id="record-celebration" aria-hidden="true">
   <canvas id="record-fireworks"></canvas>
@@ -72,6 +80,10 @@
   </div>
   <div id="dailyChallengeInfo" hidden></div>
   <button id="startBtn">Play</button>
+  <button id="vs-live-btn" type="button" title="Challenge another player to a live race">
+    <svg width="16" height="16" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true"><rect x="0" y="2" width="2" height="6"/><rect x="2" y="4" width="2" height="4"/><rect x="4" y="6" width="2" height="2"/><rect x="6" y="4" width="2" height="4"/><rect x="8" y="2" width="2" height="6"/></svg>
+    Vs Casual
+  </button>
   <div id="namePrompt">
     <span class="np-label">Enter your initials</span>
     <span id="scoreMethodLabel"></span>
@@ -106,6 +118,180 @@
     <div id="whats-new-current"></div>
     <div id="whats-new-releases"></div>
     <button id="whats-new-close" type="button">Got It</button>
+  </div>
+</div>
+
+<div id="live-vs-panel" role="dialog" aria-modal="true" aria-labelledby="live-vs-heading" aria-hidden="true">
+  <div class="live-vs-card">
+    <header class="live-vs-marquee">
+      <span class="live-vs-live-dot" aria-hidden="true"></span>
+      <span class="menu-kicker">Realtime Battle Network</span>
+      <h2 id="live-vs-heading">Vs Casual</h2>
+      <p class="live-vs-tagline">Choose your arena. Race the same 60 seconds. Claim the set.</p>
+    </header>
+
+    <div id="live-vs-setup">
+      <div class="live-vs-setup-art" aria-hidden="true">
+        <img src="./assets/vs-battle-crest-DR2j8AP6.webp" alt="">
+        <span>BUILD THE BATTLE</span>
+      </div>
+      <button id="live-vs-settings-open" class="live-vs-settings-open" type="button" aria-haspopup="dialog" aria-controls="live-vs-room-settings">
+        <img class="live-vs-settings-icon" src="./assets/vs-room-settings-BjNIwOuW.png" alt="" aria-hidden="true">
+        <span><b>Room Settings</b><small id="live-vs-settings-summary">Continuous • ×1 • Keyboard • Ghost</small></span>
+        <em>OPEN</em>
+      </button>
+      <section id="live-vs-room-settings" class="live-vs-room-settings" role="dialog" aria-modal="true" aria-labelledby="live-vs-room-settings-title" hidden>
+        <div class="live-vs-settings-heading">
+          <span><span class="live-vs-label">Battle Cartridge</span><strong id="live-vs-room-settings-title">ROOM SETTINGS</strong></span>
+          <button id="live-vs-settings-close" type="button" aria-label="Close room settings">Done</button>
+        </div>
+        <fieldset class="live-vs-format-fieldset">
+          <legend>Choose the set</legend>
+          <div class="live-vs-setting-options" id="live-vs-format-options">
+            <button type="button" data-value="continuous" class="selected" aria-pressed="true">Continuous</button>
+            <button type="button" data-value="best_of_3" aria-pressed="false">Best of 3</button>
+            <button type="button" data-value="best_of_5" aria-pressed="false">Best of 5</button>
+            <button type="button" data-value="best_of_7" aria-pressed="false">Best of 7</button>
+          </div>
+        </fieldset>
+        <fieldset class="live-vs-speed-fieldset">
+          <legend>Battle speed</legend>
+          <div class="live-vs-setting-options compact" id="live-vs-speed-options">
+            <button type="button" data-value="1" class="selected" aria-pressed="true">×1</button>
+            <button type="button" data-value="2" aria-pressed="false">×2</button>
+            <button type="button" data-value="4" aria-pressed="false">×4</button>
+          </div>
+        </fieldset>
+        <div class="live-vs-switch-row" aria-label="Optional battle rules">
+          <label class="live-vs-rule-card">
+            <span class="live-vs-rule-icon keyboard" aria-hidden="true"></span>
+            <span class="live-vs-rule-copy"><b>Keyboard</b></span>
+            <input id="live-vs-allow-keyboard" type="checkbox" checked>
+            <span class="live-vs-rule-state" aria-hidden="true">ON</span>
+          </label>
+          <label class="live-vs-rule-card">
+            <span class="live-vs-rule-icon ghost" aria-hidden="true"></span>
+            <span class="live-vs-rule-copy"><b>Rival Ghost</b></span>
+            <input id="live-vs-rival-ghost" type="checkbox" checked>
+            <span class="live-vs-rule-state" aria-hidden="true">ON</span>
+          </label>
+        </div>
+      </section>
+      <button id="live-vs-create" class="primary" type="button"><span>Create Battle Room</span><small>OPEN A NEW ARENA</small></button>
+      <div class="live-vs-divider"><span>OR JOIN A RIVAL</span></div>
+      <div class="live-vs-code-entry">
+        <label for="live-vs-code">Invite Code</label>
+        <input id="live-vs-code" type="text" maxlength="6" inputmode="text" autocomplete="off" placeholder="ABC123">
+        <button id="live-vs-join" type="button">Join</button>
+      </div>
+    </div>
+
+    <div id="live-vs-lobby" hidden>
+      <div class="live-vs-room-bar">
+        <div>
+          <span class="live-vs-label">Battle Room</span>
+          <strong id="live-vs-room-code">------</strong>
+        </div>
+        <div class="live-vs-room-actions">
+          <button id="live-vs-share" type="button" aria-label="Share a joinable room link">Invite</button>
+          <button id="live-vs-leave" type="button">Leave</button>
+        </div>
+      </div>
+
+      <div class="live-vs-lobby-arena">
+        <div class="live-vs-session-strip">
+          <span id="live-vs-round-number">ROUND 1</span>
+          <span id="live-vs-draw-count">NO DRAWS</span>
+        </div>
+        <div id="live-vs-session-score" class="live-vs-arena-score" aria-label="Match score">
+          <strong id="live-vs-player-one-score">0</strong>
+          <i aria-hidden="true"></i>
+          <strong id="live-vs-player-two-score">0</strong>
+        </div>
+        <div class="live-vs-fighters">
+          <div id="live-vs-player-one" class="live-vs-fighter empty"></div>
+          <div class="live-vs-bolt" aria-hidden="true"><img src="./assets/vs-battle-crest-DR2j8AP6.webp" alt=""></div>
+          <div id="live-vs-player-two" class="live-vs-fighter empty"></div>
+        </div>
+      </div>
+      <div class="live-vs-lobby-status">
+        <p id="live-vs-room-status">Waiting for rival…</p>
+        <div id="live-vs-rule-strip" class="live-vs-rule-strip" aria-label="Battle room rules"></div>
+      </div>
+      <div class="live-vs-command-deck">
+        <button id="live-vs-ready" class="primary" type="button" disabled>Ready</button>
+      </div>
+
+      <section id="live-vs-series-result" class="live-vs-series-result" hidden aria-live="assertive">
+        <span class="live-vs-label">Series Complete</span>
+        <strong id="live-vs-series-winner">CHAMPION CROWNED</strong>
+        <p>The set is decided. Leave this arena to create a new series.</p>
+      </section>
+
+      <section id="live-vs-waiting" class="live-vs-waiting-board" hidden aria-live="polite">
+        <span class="live-vs-label">Run Complete</span>
+        <strong><span id="live-vs-waiting-score">0</span> PTS LOCKED</strong>
+        <div class="live-vs-waiting-pulse" aria-hidden="true"><i></i><i></i><i></i></div>
+        <p id="live-vs-waiting-status">Score secured • rival still fighting</p>
+        <button id="live-vs-spectate" type="button">Spectate Rival</button>
+      </section>
+      <section id="live-vs-stage-select" class="live-vs-stage-select">
+        <button id="live-vs-stage-open" class="live-vs-stage-open" type="button" aria-haspopup="dialog" aria-controls="live-vs-stage-picker">
+          <span id="live-vs-current-stage-art" class="live-vs-current-stage-art" aria-hidden="true"></span>
+          <span><small>Your Arena</small><strong id="live-vs-current-stage-name">Choose Stage</strong></span>
+          <em>CHANGE</em>
+        </button>
+        <div id="live-vs-stage-picker" class="live-vs-stage-picker" role="dialog" aria-modal="true" aria-labelledby="live-vs-stage-picker-title" hidden>
+          <div class="live-vs-stage-heading">
+            <span><span class="live-vs-label">Stage Select</span><strong id="live-vs-stage-picker-title">CHOOSE YOUR ARENA</strong></span>
+            <button id="live-vs-stage-close" type="button" aria-label="Close stage selection">Close</button>
+          </div>
+          <div id="live-vs-stage-grid" class="live-vs-stage-grid"></div>
+          <p id="live-vs-stage-lock-status">Select a stage or take your chances with Random.</p>
+        </div>
+      </section>
+
+      <section id="live-vs-stage-reveal" class="live-vs-stage-reveal" hidden aria-live="assertive">
+        <span class="live-vs-label">Stage Roulette</span>
+        <div class="live-vs-stage-duel">
+          <div id="live-vs-host-stage" class="live-vs-stage-card"><span>1P PICK</span><strong>---</strong></div>
+          <b>VS</b>
+          <div id="live-vs-guest-stage" class="live-vs-stage-card"><span>2P PICK</span><strong>---</strong></div>
+        </div>
+        <div id="live-vs-roulette-stage" class="live-vs-roulette-stage">SYNCING…</div>
+        <p id="live-vs-roulette-status">Both selections locked</p>
+      </section>
+
+      <section id="live-vs-last-round" class="live-vs-result-board" hidden aria-live="polite">
+        <span class="live-vs-label">Last Battle</span>
+        <strong id="live-vs-result-title">Result Verified</strong>
+        <div class="live-vs-result-scores">
+          <div><span id="live-vs-host-result-name">1P</span><b id="live-vs-host-result-score">0</b><small id="live-vs-host-result-time">--</small></div>
+          <em>FINAL</em>
+          <div><span id="live-vs-guest-result-name">2P</span><b id="live-vs-guest-result-score">0</b><small id="live-vs-guest-result-time">--</small></div>
+        </div>
+      </section>
+
+      <details id="live-vs-history-wrap" class="live-vs-history" hidden>
+        <summary>
+          <span class="live-vs-label">Battle Archive</span>
+          <strong id="live-vs-history-count">0 EARLIER ROUNDS</strong>
+          <i>OPEN</i>
+        </summary>
+        <p>Latest archived rounds from this battle room.</p>
+        <div id="live-vs-history-list"></div>
+      </details>
+
+      <div class="live-vs-arena-spec">
+        <span id="live-vs-theme-name">DEFAULT ARENA</span>
+        <span>60 SEC</span>
+        <span>SYNCED SEED</span>
+      </div>
+      <p class="live-vs-ghost-note">Your rival appears as a faint ghost on the board. Ghosts never collide or affect gameplay.</p>
+    </div>
+
+    <p id="live-vs-message" aria-live="polite"></p>
+    <button id="live-vs-close" type="button">Leave Battle Room</button>
   </div>
 </div>
 
@@ -353,6 +539,7 @@
     <div class="theme-btn" data-theme="lego"><div class="theme-icon" id="ti-lego"></div><span class="theme-name">LEGO</span></div>
     <div class="theme-btn" data-theme="simpsons"><div class="theme-icon" id="ti-simpsons"></div><span class="theme-name">The Simpsons</span></div>
     <div class="theme-btn" data-theme="got"><div class="theme-icon" id="ti-got"></div><span class="theme-name">Game of Thrones</span></div>
+    <div class="theme-btn golden-secret-theme" id="golden-theme-btn" data-theme="golden" hidden><div class="theme-icon" id="ti-golden"></div><span class="theme-name">Golden</span></div>
   </div>
   <button id="options-back">Back</button>
 </div>

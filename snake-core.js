@@ -152,7 +152,12 @@
       x: state.snake[0].x + direction.x,
       y: state.snake[0].y + direction.y
     };
-    const hitWall = head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows;
+    const wrapWalls = options && options.wrapWalls === true;
+    if (wrapWalls) {
+      head.x = (head.x + cols) % cols;
+      head.y = (head.y + rows) % rows;
+    }
+    const hitWall = !wrapWalls && (head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows);
     const hitSelf = state.snake.some(segment => segment.x === head.x && segment.y === head.y);
 
     if (hitWall || hitSelf) {
@@ -171,8 +176,14 @@
     const score = Math.max(0, Math.trunc(state.score || 0)) + (ate ? 1 : 0);
     const baseInterval = Number.isFinite(options.baseInterval) ? options.baseInterval : 110;
     const minInterval = Number.isFinite(options.minInterval) ? options.minInterval : 55;
+    const speedMultiplier = [1, 2, 4].includes(Number(options.speedMultiplier))
+      ? Number(options.speedMultiplier)
+      : 1;
     const speed = ate
-      ? Math.max(minInterval, baseInterval - score * 2)
+      ? Math.max(
+          Math.round(minInterval / speedMultiplier),
+          Math.round((baseInterval - score * 2) / speedMultiplier)
+        )
       : state.speed;
     const foodPlacement = options.foodPlacement === 'free-cells'
       ? placeFoodFromFreeCells
@@ -247,7 +258,7 @@
     const rows = replay.board?.rows;
     assertBoard(cols, rows);
     const random = createSeededRandom(replay.seed);
-    const foodPlacement = replay.mode === 'daily' || options.foodPlacement === 'free-cells'
+    const foodPlacement = replay.mode === 'daily' || replay.mode === 'versus' || options.foodPlacement === 'free-cells'
       ? placeFoodFromFreeCells
       : placeFood;
     let state = {
@@ -255,7 +266,10 @@
       direction: { ...DEFAULT_DIRECTION },
       food: null,
       score: 0,
-      speed: Number.isFinite(options.baseInterval) ? options.baseInterval : 110,
+      speed: Math.max(1, Math.round(
+        (Number.isFinite(options.baseInterval) ? options.baseInterval : 110)
+        / ([1, 2, 4].includes(Number(options.speedMultiplier)) ? Number(options.speedMultiplier) : 1)
+      )),
       alive: true,
       event: 'start'
     };
@@ -275,7 +289,8 @@
         rows,
         baseInterval: options.baseInterval,
         minInterval: options.minInterval,
-        foodPlacement: replay.mode === 'daily' ? 'free-cells' : options.foodPlacement
+        speedMultiplier: options.speedMultiplier,
+        foodPlacement: replay.mode === 'daily' || replay.mode === 'versus' ? 'free-cells' : options.foodPlacement
       }, random);
       ticksSimulated++;
     }
