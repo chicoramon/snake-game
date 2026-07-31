@@ -176,8 +176,14 @@
     const score = Math.max(0, Math.trunc(state.score || 0)) + (ate ? 1 : 0);
     const baseInterval = Number.isFinite(options.baseInterval) ? options.baseInterval : 110;
     const minInterval = Number.isFinite(options.minInterval) ? options.minInterval : 55;
+    const speedMultiplier = [1, 2, 4].includes(Number(options.speedMultiplier))
+      ? Number(options.speedMultiplier)
+      : 1;
     const speed = ate
-      ? Math.max(minInterval, baseInterval - score * 2)
+      ? Math.max(
+          Math.round(minInterval / speedMultiplier),
+          Math.round((baseInterval - score * 2) / speedMultiplier)
+        )
       : state.speed;
     const foodPlacement = options.foodPlacement === 'free-cells'
       ? placeFoodFromFreeCells
@@ -260,7 +266,10 @@
       direction: { ...DEFAULT_DIRECTION },
       food: null,
       score: 0,
-      speed: Number.isFinite(options.baseInterval) ? options.baseInterval : 110,
+      speed: Math.max(1, Math.round(
+        (Number.isFinite(options.baseInterval) ? options.baseInterval : 110)
+        / ([1, 2, 4].includes(Number(options.speedMultiplier)) ? Number(options.speedMultiplier) : 1)
+      )),
       alive: true,
       event: 'start'
     };
@@ -280,6 +289,7 @@
         rows,
         baseInterval: options.baseInterval,
         minInterval: options.minInterval,
+        speedMultiplier: options.speedMultiplier,
         foodPlacement: replay.mode === 'daily' || replay.mode === 'versus' ? 'free-cells' : options.foodPlacement
       }, random);
       ticksSimulated++;

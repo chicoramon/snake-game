@@ -34,8 +34,8 @@
 <title>Snake Game</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="./snake-core.js"></script>
-  <script type="module" crossorigin src="./assets/index-VQC8tQMh.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-B6sxszD2.css">
+  <script type="module" crossorigin src="./assets/index-nw2rwSaS.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-DgLXiziP.css">
 </head>
 <body>
 
@@ -134,6 +134,34 @@
       <div class="live-vs-setup-art" aria-hidden="true">
         <span>1P</span><b>VS</b><span>2P</span>
       </div>
+      <section class="live-vs-room-settings" aria-labelledby="live-vs-room-settings-title">
+        <div class="live-vs-settings-heading">
+          <span class="live-vs-label" id="live-vs-room-settings-title">Room Rules</span>
+          <strong>BUILD YOUR BATTLE</strong>
+        </div>
+        <fieldset>
+          <legend>Match</legend>
+          <div class="live-vs-setting-options" id="live-vs-format-options">
+            <button type="button" data-value="continuous" class="selected" aria-pressed="true">Continuous</button>
+            <button type="button" data-value="best_of_3" aria-pressed="false">Best of 3</button>
+            <button type="button" data-value="best_of_5" aria-pressed="false">Best of 5</button>
+            <button type="button" data-value="best_of_7" aria-pressed="false">Best of 7</button>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Game Speed</legend>
+          <div class="live-vs-setting-options compact" id="live-vs-speed-options">
+            <button type="button" data-value="1" class="selected" aria-pressed="true">×1</button>
+            <button type="button" data-value="2" aria-pressed="false">×2</button>
+            <button type="button" data-value="4" aria-pressed="false">×4</button>
+          </div>
+          <p class="live-vs-setting-help">Multiplies the full speed curve, from the opening move to maximum pace.</p>
+        </fieldset>
+        <div class="live-vs-switch-row">
+          <label><span><b>Allow Keyboard</b><small>Keyboard input works during battle</small></span><input id="live-vs-allow-keyboard" type="checkbox" checked></label>
+          <label><span><b>Rival Ghost</b><small>Show the rival’s live snake on your board</small></span><input id="live-vs-rival-ghost" type="checkbox" checked></label>
+        </div>
+      </section>
       <button id="live-vs-create" class="primary" type="button">Create Battle Room</button>
       <div class="live-vs-divider"><span>OR</span></div>
       <label for="live-vs-code">Enter an invite code</label>
@@ -157,6 +185,12 @@
         <strong id="live-vs-session-score">0 — 0</strong>
         <span id="live-vs-draw-count">NO DRAWS</span>
       </div>
+      <div id="live-vs-rule-strip" class="live-vs-rule-strip" aria-label="Battle room rules"></div>
+      <section id="live-vs-series-result" class="live-vs-series-result" hidden aria-live="assertive">
+        <span class="live-vs-label">Series Complete</span>
+        <strong id="live-vs-series-winner">CHAMPION CROWNED</strong>
+        <p>The set is decided. Leave this arena to create a new series.</p>
+      </section>
 
       <p id="live-vs-room-status">Waiting for rival…</p>
       <section id="live-vs-waiting" class="live-vs-waiting-board" hidden aria-live="polite">
