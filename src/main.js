@@ -15,6 +15,8 @@ import { createSupabaseClient } from './services/supabase-client.js';
 import { createPlayerAuthService } from './player/player-auth-service.js';
 import { createPlayerProfileService } from './player/player-profile-service.js';
 import { normalizePlayerPreferences, PLAYER_PREFERENCES_VERSION } from './player/player-preferences.js';
+import { classifyCollision, createCareerRunTracker } from './stats/career-run-tracker.js';
+import { createCareerStatsService } from './stats/career-stats-service.js';
 import { createThemePicker } from './ui/theme-picker.js';
 import { createDailyRulesDialog } from './ui/daily-rules-dialog.js';
 import { createWhatsNewDialog } from './ui/whats-new-dialog.js';
@@ -383,6 +385,7 @@ let gameplayRandom = SnakeCore.createNativeRandom();
 let runSeed = null;
 let runTick = 0;
 let runReplay = null;
+const careerRunTracker = createCareerRunTracker();
 let recordTargets = Object.create(null);
 let recordTargetScore = null;
 let recordTargetFinalFoodMs = null;
@@ -846,7 +849,7 @@ function stopVersusSpectating({ showWaiting = true } = {}) {
 liveVsStopSpectating.addEventListener('click', () => stopVersusSpectating());
 
 function registerControlMethod(method) {
-  if (!alive || countdownActive) return;
+  if (!alive || countdownActive) return;
   if (!runControlMethod) {
     runControlMethod = method;
     activateRecordTarget(method);
@@ -855,7 +858,8 @@ function registerControlMethod(method) {
     runUsesMixedControls = true;
     if (runGameMode !== 'daily') disableRecordChase();
   }
-}
+  careerRunTracker.recordControlMethod(method, { mixed: runUsesMixedControls });
+}
 
 function getCosmeticRandomUnit() {
   if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
@@ -1215,6 +1219,7 @@ function gameTick() {
   const appliedDirection = SnakeCore.acceptDirection(dir, nextDir);
   if (!SnakeCore.directionsEqual(dir, appliedDirection)) {
     SnakeCore.recordDirection(runReplay, runTick, appliedDirection);
+    careerRunTracker.recordTurn();
   }
   dir = appliedDirection;
   runTick++;
@@ -1232,6 +1237,13 @@ function gameTick() {
   }, gameplayRandom);
 
   if (nextState.event === 'collision') {
+    careerRunTracker.recordCollision(classifyCollision({
+      snake,
+      direction: appliedDirection,
+      cols: COLS,
+      rows: ROWS,
+      wrapWalls: GOLDEN_BACKDOOR
+    }));
     dir = nextState.direction;
     return die();
   }
@@ -1242,6 +1254,7 @@ function gameTick() {
   score = nextState.score;
   speed = nextState.speed;
   alive = nextState.alive;
+  careerRunTracker.recordMove({ snakeLength: snake.length });
 
   if (nextState.event === 'eat') {
     if (runGameMode === 'daily') dailyLastFoodElapsedMs = dailyTickElapsedMs;
@@ -1424,12 +1437,32 @@ function showRunResult(reason) {
   if (!isDaily) maybeCelebrateRecordAtGameOver();
 }
 
+function finalizeCareerRun(reason) {
+  if (GOLDEN_BACKDOOR) return null;
+  const run = careerRunTracker.finish({
+    score,
+    snakeLength: snake?.length,
+    reason,
+    controlMethod: runControlMethod || controlMode,
+    mixedControls: runUsesMixedControls
+  });
+  if (run) {
+    careerStatsService.recordRun({ user: currentUser, profile: playerProfile, run })
+      .then(result => {
+        if (result?.error) console.warn('Career run queued for retry:', result.error);
+      })
+      .catch(error => console.warn('Career run could not be recorded:', error));
+  }
+  return run;
+}
+
 function finishRun(reason) {
   runLifecycle.finish({
     isActive: () => alive,
     markFinished: () => {
       alive = false;
       SnakeCore.finalizeReplay(runReplay, { tick: runTick, score, reason });
+      finalizeCareerRun(reason);
       if ((runGameMode !== 'daily' && runGameMode !== 'versus') || !runReplay) return;
       try {
         const replayCheck = SnakeCore.simulateReplay(runReplay, {
@@ -1505,7 +1538,8 @@ const liveGameSession = createLiveGameSession({
     canvasRenderer.capturePreviousSnake(snake);
     gameTick();
   },
-  onFrame: () => {
+  onFrame: ({ dt, state }) => {
+    if (state.alive && !state.paused && !state.countdownActive) careerRunTracker.addActiveTime(dt);
     if (runGameMode === 'versus' && activeVsRoom?.id && alive && !countdownActive) {
       liveVsService.broadcastGhost({
         matchId: activeVsRoom.id,
@@ -1644,6 +1678,14 @@ async function startGame(options = {}) {
       bestLabel.textContent = runGameMode === 'versus' ? 'RIVAL' : 'BEST';
       bestEl.textContent = best;
       prepareGameplayRun(versusRoom?.seed ?? challenge?.seed ?? null);
+      if (!GOLDEN_BACKDOOR) {
+        careerRunTracker.begin({
+          runId: currentRunId,
+          mode: runGameMode,
+          theme: currentTheme,
+          controlMethod: controlMode
+        });
+      }
     },
     reset: () => reset(true),
     afterReset: () => {
@@ -1744,6 +1786,7 @@ function pauseForInactivity(event) {
 function invalidateDailyRun() {
   if (!alive || runGameMode !== 'daily') return;
   alive = false;
+  finalizeCareerRun('interrupted');
   paused = false;
   countdownActive = false;
   countdownDisplay.classList.remove('visible');
@@ -1940,6 +1983,7 @@ if (!GOLDEN_BACKDOOR) {
 const playerProfileService = createPlayerProfileService({ getClient: () => sb });
 const playerAuthService = createPlayerAuthService({ getClient: () => sb });
 const leaderboardService = createLeaderboardService({ getClient: () => sb });
+const careerStatsService = createCareerStatsService({ getClient: () => sb });
 
 const dailyRunService = createDailyRunService({
   getClient: () => sb,
@@ -2909,6 +2953,7 @@ window.addEventListener('online', () => {
   retryPendingScores();
   retryPendingDailyAttempt();
   savePlayerPreferences();
+  careerStatsService.flush({ user: currentUser, profile: playerProfile });
 });
 
 /* Legacy player-panel handlers retained only as historical context during the extraction.
@@ -3087,6 +3132,7 @@ playerIdentityController = createPlayerIdentityController({
     await reconcilePlayerPreferences();
     retryPendingScores();
     retryPendingDailyAttempt();
+    careerStatsService.flush({ user: currentUser, profile: playerProfile });
     if (gameMode === 'daily') refreshDailyChallenge({ force: true });
     await continuePendingLiveVsInvite();
   },

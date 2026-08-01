@@ -1,0 +1,13 @@
+{
+  "name": "snake-arcade-announcer-generator",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node index.mjs",
+    "test": "node --test validator.test.mjs"
+  },
+  "dependencies": {
+    "@google/genai": "^1.27.0"
+  }
+}

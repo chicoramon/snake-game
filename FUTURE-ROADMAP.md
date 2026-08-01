@@ -66,6 +66,25 @@ Implemented locally on 2026-07-23 as a permanent **WHAT'S NEW** main-menu bullet
 - Completion is stored locally so the automatic tour appears only once per device; `?onboarding=1` forces it open for QA.
 - The leaderboard theme filter was removed to free space. Theme information remains visible on each non-Daily leaderboard score.
 
+## Arcade Career Stats & Autonomous Announcer — Foundation Implemented (2026-08-01)
+
+The first backend-safe implementation slice is complete locally:
+
+- Track idempotent per-run career events: foods, active play time, successful movement, accepted turns, longest snake, run mode, theme, control method, finish reason, and collision type.
+- Aggregate lifetime stats in Supabase without trusting browser-supplied lifetime totals.
+- Queue a completed run locally when its submission fails and retry it after connectivity or player identity returns.
+- Generate playful commentary locally from composable message families, with deterministic selection and repetition avoidance; the game remains entertaining even when AI generation is unavailable.
+- Store versioned announcer packs and per-player impression history in Supabase.
+- Generate fresh content automatically with a private scheduled Gemini/Vertex AI Cloud Run Job, guarded by deterministic validation and a second structured quality review.
+- Keep Gemini and the Supabase service role completely outside the static GitHub Pages client.
+
+Remaining product passes:
+
+- Add the retro player Stats screen and surface the first set of career records and playful comparisons.
+- Load published remote announcer packs with a bundled-content fallback and record impressions.
+- Enrich career records from authoritative Daily Run and Vs verification where those server-owned facts are available.
+- Deploy and schedule the generator using `GOOGLE-CLOUD-ANNOUNCER-SETUP.md`, then tune cadence and quality gates from observed results.
+
 ## Junior Mode
 
 Planned as an inviting, clearly separate mode for children and first-time players. It must preserve the fixed board dimensions and should never weaken or contaminate the existing competitive leaderboards.
