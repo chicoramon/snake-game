@@ -13,6 +13,16 @@ const FORBIDDEN = [
   /\b(?:suicide|self[- ]harm|sexual|porn|racist|religion|politic|election|president)\b/i,
   /\b(?:idiot|stupid|loser|fat|ugly|hate)\b/i
 ];
+const GENERIC_ACHIEVEMENT_COPY = [
+  /\bgreat job\b/i,
+  /\bkeep it up\b/i,
+  /\bwell done\b/i,
+  /\bway to go\b/i,
+  /\bcongratulations\b/i,
+  /\b(?:truly |real |true )?(?:snake )?legend\b/i,
+  /\b(?:very |really |truly )?impressive(?: work| score| achievement)?[!.]?$/i,
+  /\bamazing (?:job|work|score)\b/i
+];
 
 export const GENERATED_LINES_SCHEMA = {
   type: 'object',
@@ -70,7 +80,7 @@ function placeholders(template) {
   return [...String(template).matchAll(/\{([a-z0-9_]+)\}/gi)].map(match => match[1].toLowerCase());
 }
 
-export function validateGeneratedLines(input, { existingKeys = [] } = {}) {
+export function validateGeneratedLines(input, { existingKeys = [], allowedCategories = null } = {}) {
   const errors = [];
   const accepted = [];
   const seen = new Set(existingKeys);
@@ -90,9 +100,18 @@ export function validateGeneratedLines(input, { existingKeys = [] } = {}) {
     if (!KEY_PATTERN.test(line.messageKey) || seen.has(line.messageKey)) lineErrors.push('invalid or duplicate message key');
     if (!FAMILY_PATTERN.test(line.familyKey)) lineErrors.push('invalid family key');
     if (!CATEGORIES.has(line.category)) lineErrors.push('invalid category');
+    if (allowedCategories && !allowedCategories.includes(line.category)) lineErrors.push('category outside requested batch');
     if (line.template.length < 8 || line.template.length > 240) lineErrors.push('invalid template length');
     if (FORBIDDEN.some(pattern => pattern.test(line.template))) lineErrors.push('blocked vocabulary');
-    if (placeholders(line.template).some(name => !PLACEHOLDERS.has(name))) lineErrors.push('unsupported placeholder');
+    const templatePlaceholders = placeholders(line.template);
+    if (templatePlaceholders.some(name => !PLACEHOLDERS.has(name))) lineErrors.push('unsupported placeholder');
+    if (GENERIC_ACHIEVEMENT_COPY.some(pattern => pattern.test(line.template))) lineErrors.push('generic achievement copy');
+    const explicitNewPlayerState = line.conditions?.metric === 'total_runs'
+      && ['eq', 'lte'].includes(line.conditions?.operator)
+      && Number(line.conditions?.threshold) <= 1;
+    if (!templatePlaceholders.some(name => PLACEHOLDERS.has(name)) && !explicitNewPlayerState) {
+      lineErrors.push('template is not visibly grounded in player data');
+    }
     if (!METRICS.has(line.conditions?.metric) || !OPERATORS.has(line.conditions?.operator) || !Number.isFinite(Number(line.conditions?.threshold)) || Number(line.conditions.threshold) < 0) lineErrors.push('invalid conditions');
     if (!Number.isFinite(line.weight) || line.weight < 0.1 || line.weight > 10) lineErrors.push('invalid weight');
     if (!Number.isInteger(line.cooldownDays) || line.cooldownDays < 1 || line.cooldownDays > 365) lineErrors.push('invalid cooldown');

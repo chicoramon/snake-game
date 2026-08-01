@@ -15,6 +15,12 @@ const reviewModel = process.env.GEMINI_REVIEW_MODEL || model;
 const supabaseUrl = required('SNAKE_SUPABASE_URL').replace(/\/$/, '');
 const serviceRole = required('SNAKE_SUPABASE_SERVICE_ROLE_KEY');
 const minimumPublishable = Math.max(20, Number(process.env.MIN_PUBLISHABLE_LINES) || 24);
+const GENERATION_BATCHES = Object.freeze([
+  ['career', 'runs', 'theme'],
+  ['food', 'time', 'distance'],
+  ['deaths', 'controls'],
+  ['daily', 'versus']
+]);
 
 const ai = new GoogleGenAI({ vertexai: true, project, location });
 const headers = {
@@ -61,28 +67,47 @@ async function generateJson({ selectedModel, prompt, schema, temperature, label 
   }
 }
 
-async function generateLineBatch(existingKeys) {
+async function generateLineBatch({ existingKeys, categories, batchIndex }) {
   let lastError;
-  for (const targetCount of [40, 32]) {
+  for (const targetCount of [12, 10]) {
     try {
       return await generateJson({
         selectedModel: model,
-        prompt: buildGenerationPrompt({ existingKeys, targetCount }),
+        prompt: buildGenerationPrompt({ existingKeys, targetCount, categories }),
         schema: GENERATED_LINES_SCHEMA,
-        temperature: 1.1,
-        label: `line-generation-${targetCount}`
+        temperature: 1.2,
+        label: `line-generation-${batchIndex + 1}-${targetCount}`
       });
     } catch (error) {
       lastError = error;
-      console.warn(`Line generation for ${targetCount} candidates failed:`, error);
+      console.warn(`Line generation batch ${batchIndex + 1} for ${targetCount} candidates failed:`, error);
     }
   }
   throw lastError;
 }
 
+async function generateAllBatches(existingKeys) {
+  const accepted = [];
+  const rejected = [];
+  for (const [batchIndex, categories] of GENERATION_BATCHES.entries()) {
+    const reservedKeys = [...existingKeys, ...accepted.map(line => line.messageKey)];
+    const generated = await generateLineBatch({ existingKeys: reservedKeys, categories, batchIndex });
+    const gated = validateGeneratedLines(generated, {
+      existingKeys: reservedKeys,
+      allowedCategories: categories
+    });
+    accepted.push(...gated.accepted);
+    rejected.push(...gated.errors.map(error => ({ ...error, batch: batchIndex + 1, categories })));
+    if (gated.accepted.length < 6) {
+      throw new Error(`Generation batch ${batchIndex + 1} produced only ${gated.accepted.length} structurally valid lines. Existing published content remains active.`);
+    }
+  }
+  return { lines: accepted, generationRejected: rejected };
+}
+
 async function main() {
   const existingKeys = await existingMessageKeys();
-  const generated = await generateLineBatch(existingKeys);
+  const generated = await generateAllBatches(existingKeys);
   const deterministic = validateGeneratedLines(generated, { existingKeys });
   const review = await generateJson({
     selectedModel: reviewModel,
@@ -108,6 +133,7 @@ async function main() {
       status: 'draft',
       quality_report: {
         generated: generated.lines?.length || 0,
+        generationRejected: generated.generationRejected || [],
         deterministicAccepted: deterministic.accepted.length,
         deterministicRejected: deterministic.errors,
         modelRejected: review.rejections || [],
