@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validateGeneratedLines } from './validator.mjs';
+import { GENERATED_LINES_SCHEMA, validateGeneratedLines } from './validator.mjs';
 
 const valid = (overrides = {}) => ({
   messageKey: 'food:buffet:001',
@@ -41,4 +41,9 @@ test('deterministic gate caps a joke family so one motif cannot dominate a pack'
   assert.equal(result.accepted.length, 5);
   assert.equal(result.errors.length, 2);
   assert.match(result.errors[0].reasons.join(' '), /too many lines/i);
+});
+
+test('Gemini serving schema stays structural while deterministic code owns complex constraints', () => {
+  const schema = JSON.stringify(GENERATED_LINES_SCHEMA);
+  assert.doesNotMatch(schema, /"(?:enum|minItems|maxItems|minimum|maximum|anyOf)"/);
 });

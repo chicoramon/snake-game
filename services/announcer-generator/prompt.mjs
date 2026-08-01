@@ -9,6 +9,8 @@ The lines appear on a player's private Arcade Career screen. Cover food eaten, a
 
 Templates may use only these placeholders: {total_food}, {active_ms}, {total_runs}, {total_deaths}, {wall_deaths}, {self_deaths}, {distance_cells}, {total_turns}, {longest_snake}, {daily_runs}, {daily_wins}, {vs_rounds}, {vs_wins}, {display_name}, {initials}, {favorite_theme}, {favorite_control}.
 
+For every line, use a unique lowercase messageKey, a lowercase familyKey, and one category from: career, food, time, runs, deaths, distance, controls, daily, versus, theme. Conditions must contain one metric from: total_food, active_ms, total_runs, total_deaths, wall_deaths, self_deaths, distance_cells, total_turns, longest_snake, daily_runs, daily_wins, vs_rounds, vs_wins; one operator from: gte, lte, gt, lt, eq; and a non-negative numeric threshold. Weight must be 0.1 through 10, and cooldownDays must be an integer from 1 through 365.
+
 Each joke family represents one underlying punchline. Create multiple categories and no more than five lines in any family. Keep each template between 20 and 180 characters. Existing message keys that must not be reused: ${existingKeys.slice(-500).join(', ') || '(none)'}.`;
 }
 

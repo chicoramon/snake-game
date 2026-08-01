@@ -21,8 +21,6 @@ export const GENERATED_LINES_SCHEMA = {
   properties: {
     lines: {
       type: 'array',
-      minItems: 30,
-      maxItems: 60,
       items: {
         type: 'object',
         additionalProperties: false,
@@ -30,21 +28,20 @@ export const GENERATED_LINES_SCHEMA = {
         properties: {
           messageKey: { type: 'string' },
           familyKey: { type: 'string' },
-          category: { type: 'string', enum: [...CATEGORIES] },
+          category: { type: 'string' },
           template: { type: 'string' },
           conditions: {
             type: 'object',
             additionalProperties: false,
             required: ['metric', 'operator', 'threshold'],
             properties: {
-              metric: { type: 'string', enum: [...METRICS] },
-              operator: { type: 'string', enum: [...OPERATORS] },
-              threshold: { type: 'number', minimum: 0 }
+              metric: { type: 'string' },
+              operator: { type: 'string' },
+              threshold: { type: 'number' }
             }
           },
-          weight: { type: 'number', minimum: 0.1, maximum: 10 },
-          cooldownDays: { type: 'integer', minimum: 1, maximum: 365 },
-          maxImpressions: { anyOf: [{ type: 'integer', minimum: 1, maximum: 20 }, { type: 'null' }] }
+          weight: { type: 'number' },
+          cooldownDays: { type: 'integer' }
         }
       }
     }
