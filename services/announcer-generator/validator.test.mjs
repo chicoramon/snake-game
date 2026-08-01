@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { GENERATED_LINES_SCHEMA, validateGeneratedLines } from './validator.mjs';
+
+const generatorSource = readFileSync(new URL('./index.mjs', import.meta.url), 'utf8');
 
 const valid = (overrides = {}) => ({
   messageKey: 'food:buffet:001',
@@ -46,4 +49,11 @@ test('deterministic gate caps a joke family so one motif cannot dominate a pack'
 test('Gemini serving schema stays structural while deterministic code owns complex constraints', () => {
   const schema = JSON.stringify(GENERATED_LINES_SCHEMA);
   assert.doesNotMatch(schema, /"(?:enum|minItems|maxItems|minimum|maximum|anyOf)"/);
+});
+
+test('generator prevents thinking truncation, reports usage, and retries a smaller batch', () => {
+  assert.match(generatorSource, /thinkingConfig:\s*\{\s*thinkingBudget:\s*0\s*\}/);
+  assert.match(generatorSource, /finishReason[\s\S]*?finishReason !== 'STOP'/);
+  assert.match(generatorSource, /event:\s*'gemini-usage'/);
+  assert.match(generatorSource, /for \(const targetCount of \[40, 32\]\)/);
 });

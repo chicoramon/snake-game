@@ -36,7 +36,7 @@ async function existingMessageKeys() {
   return rows.map(row => row.message_key);
 }
 
-async function generateJson({ selectedModel, prompt, schema, temperature }) {
+async function generateJson({ selectedModel, prompt, schema, temperature, label }) {
   const response = await ai.models.generateContent({
     model: selectedModel,
     contents: prompt,
@@ -44,27 +44,52 @@ async function generateJson({ selectedModel, prompt, schema, temperature }) {
       responseMimeType: 'application/json',
       responseJsonSchema: schema,
       temperature,
-      maxOutputTokens: 12000
+      maxOutputTokens: 16384,
+      thinkingConfig: { thinkingBudget: 0 }
     }
   });
+  const finishReason = response.candidates?.[0]?.finishReason || null;
+  console.log(JSON.stringify({ event: 'gemini-usage', label, finishReason, usage: response.usageMetadata || null }));
   if (!response.text) throw new Error('Gemini returned no text');
-  return JSON.parse(response.text);
+  if (finishReason && finishReason !== 'STOP') {
+    throw new Error(`${label || 'Gemini'} generation ended with ${finishReason}`);
+  }
+  try {
+    return JSON.parse(response.text);
+  } catch (error) {
+    throw new Error(`${label || 'Gemini'} returned incomplete or invalid JSON`, { cause: error });
+  }
+}
+
+async function generateLineBatch(existingKeys) {
+  let lastError;
+  for (const targetCount of [40, 32]) {
+    try {
+      return await generateJson({
+        selectedModel: model,
+        prompt: buildGenerationPrompt({ existingKeys, targetCount }),
+        schema: GENERATED_LINES_SCHEMA,
+        temperature: 1.1,
+        label: `line-generation-${targetCount}`
+      });
+    } catch (error) {
+      lastError = error;
+      console.warn(`Line generation for ${targetCount} candidates failed:`, error);
+    }
+  }
+  throw lastError;
 }
 
 async function main() {
   const existingKeys = await existingMessageKeys();
-  const generated = await generateJson({
-    selectedModel: model,
-    prompt: buildGenerationPrompt({ existingKeys }),
-    schema: GENERATED_LINES_SCHEMA,
-    temperature: 1.1
-  });
+  const generated = await generateLineBatch(existingKeys);
   const deterministic = validateGeneratedLines(generated, { existingKeys });
   const review = await generateJson({
     selectedModel: reviewModel,
     prompt: buildReviewPrompt(deterministic.accepted),
     schema: REVIEW_SCHEMA,
-    temperature: 0.1
+    temperature: 0.1,
+    label: 'quality-review'
   });
   const acceptedKeys = new Set(review.acceptedKeys || []);
   const approved = deterministic.accepted.filter(line => acceptedKeys.has(line.messageKey));
