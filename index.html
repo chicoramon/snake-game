@@ -34,8 +34,8 @@
 <title>Snake Game</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="./snake-core.js"></script>
-  <script type="module" crossorigin src="./assets/index-CCdL6C6D.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-CPzfa1rI.css">
+  <script type="module" crossorigin src="./assets/index-BcptemwY.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-l4ED09ub.css">
 </head>
 <body>
 
@@ -587,6 +587,12 @@
     </div>
     <div id="player-identity-status" aria-live="polite">Connecting...</div>
 
+    <button id="player-career-btn" class="player-career-launch" type="button">
+      <svg viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path d="M2 1h12v2H2V1zm0 4h3v8H2V5zm5 3h2v5H7V8zm4-3h3v8h-3V5zM1 14h14v1H1v-1z"/></svg>
+      <span><strong>Arcade Career</strong><small>Stats + live dispatch</small></span>
+      <b aria-hidden="true">›</b>
+    </button>
+
     <div id="player-profile-setup">
       <label class="player-field-label" for="player-initials-input">Arcade initials</label>
       <input id="player-initials-input" type="text" maxlength="3" placeholder="___" autocomplete="off" />
@@ -625,6 +631,50 @@
     <p id="player-message" aria-live="polite"></p>
     <button id="player-back" type="button">Back</button>
   </div>
+</div>
+
+<div id="career-stats-panel" role="dialog" aria-modal="true" aria-labelledby="career-stats-heading" aria-hidden="true">
+  <section class="career-terminal">
+    <header class="career-header">
+      <div class="career-snake-mark" aria-hidden="true">
+        <svg viewBox="0 0 18 18" shape-rendering="crispEdges"><path d="M2 2h8v3H5v3h8v3H8v2h7v3H5v-3H2v-3h8V8H2V2zm11 0h3v3h-3V2z"/><rect x="14" y="3" width="1" height="1" class="career-eye"/></svg>
+      </div>
+      <div><span class="menu-kicker">Project Neon Fang</span><h2 id="career-stats-heading">Arcade Career</h2></div>
+      <span id="career-stats-source">LIVE LEDGER</span>
+    </header>
+
+    <div class="career-player-strip"><span>PILOT</span><strong id="career-stats-player">LOADING...</strong></div>
+    <div id="career-stats-status" role="status">READING THE ARCADE LEDGER...</div>
+
+    <div id="career-stats-content" hidden>
+      <section class="career-transmission" aria-labelledby="career-announcer-source">
+        <div class="career-transmission-head"><i aria-hidden="true"></i><span id="career-announcer-source">ARCADE ANNOUNCER</span><i aria-hidden="true"></i></div>
+        <blockquote id="career-announcer-text">TUNING THE CABINET RADIO...</blockquote>
+      </section>
+
+      <div class="career-stat-grid" aria-label="Career highlights">
+        <article><span>FOOD HAUL</span><strong id="career-food-value">0</strong><small>BITES ACQUIRED</small></article>
+        <article><span>ACTIVE DUTY</span><strong id="career-time-value">0 MIN</strong><small>PLAY TIME</small></article>
+        <article><span>RUNS</span><strong id="career-runs-value">0</strong><small>LAUNCHES</small></article>
+        <article><span>DISTANCE</span><strong id="career-distance-value">0</strong><small>GRID CELLS</small></article>
+      </div>
+
+      <section class="career-record-card">
+        <h3>Cabinet Records</h3>
+        <div class="career-record-row"><span>LONGEST SNAKE</span><strong id="career-longest-value">3</strong></div>
+        <div class="career-record-row"><span>ACCEPTED TURNS</span><strong id="career-turns-value">0</strong></div>
+        <div class="career-record-row danger"><span>COLLISIONS</span><strong id="career-deaths-value">0</strong></div>
+        <div class="career-collision-split"><span>WALL <b id="career-walls-value">0</b></span><span>SELF <b id="career-self-value">0</b></span></div>
+      </section>
+
+      <section class="career-loadout">
+        <div><span>FAVORITE WORLD</span><strong id="career-theme-value">UNCHARTED</strong></div>
+        <div><span>FAVORITE INPUT</span><strong id="career-control-value">UNCHARTED</strong></div>
+      </section>
+      <p id="career-tracking-since">THE LEDGER HAS JUST OPENED</p>
+    </div>
+    <button id="career-stats-back" type="button">Back to Player</button>
+  </section>
 </div>
 
 <div id="public-player-card-panel" role="dialog" aria-modal="true" aria-labelledby="public-player-card-name" aria-hidden="true">
