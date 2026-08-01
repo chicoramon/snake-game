@@ -17,11 +17,13 @@ import { createPlayerProfileService } from './player/player-profile-service.js';
 import { normalizePlayerPreferences, PLAYER_PREFERENCES_VERSION } from './player/player-preferences.js';
 import { classifyCollision, createCareerRunTracker } from './stats/career-run-tracker.js';
 import { createCareerStatsService } from './stats/career-stats-service.js';
+import { createAnnouncerService } from './stats/announcer-service.js';
 import { createThemePicker } from './ui/theme-picker.js';
 import { createDailyRulesDialog } from './ui/daily-rules-dialog.js';
 import { createWhatsNewDialog } from './ui/whats-new-dialog.js';
 import { createOnboardingDialog } from './ui/onboarding-dialog.js';
 import { createPlayerPanel } from './ui/player-panel.js';
+import { createCareerStatsPanel } from './ui/career-stats-panel.js';
 import { createPlayerIdentityController } from './player/player-identity-controller.js';
 import { createLeaderboardController } from './ui/leaderboard-controller.js';
 import { createLiveVsController } from './ui/live-vs-controller.js';
@@ -1984,6 +1986,7 @@ const playerProfileService = createPlayerProfileService({ getClient: () => sb })
 const playerAuthService = createPlayerAuthService({ getClient: () => sb });
 const leaderboardService = createLeaderboardService({ getClient: () => sb });
 const careerStatsService = createCareerStatsService({ getClient: () => sb });
+const announcerService = createAnnouncerService({ getClient: () => sb });
 
 const dailyRunService = createDailyRunService({
   getClient: () => sb,
@@ -3208,6 +3211,14 @@ playerPanelView = createPlayerPanel({
   onVerifyOtp: handleVerifyPlayerOtp
 });
 playerPanelView.bind();
+const careerStatsView = createCareerStatsPanel({
+  careerStatsService,
+  announcerService,
+  getIdentity: () => ({ user: currentUser, profile: playerProfile }),
+  themeName: id => THEMES[id]?.name || id || 'UNCHARTED',
+  controlName: id => CONTROL_LABELS[id] || String(id || 'UNCHARTED').toUpperCase()
+});
+careerStatsView.bind();
 // Keep the menu button independently wired so a blocked auth SDK can never
 // prevent a player from opening the local identity panel.
 playerBtn.addEventListener('click', () => openPlayerPanel());

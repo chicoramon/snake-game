@@ -66,7 +66,7 @@ Implemented locally on 2026-07-23 as a permanent **WHAT'S NEW** main-menu bullet
 - Completion is stored locally so the automatic tour appears only once per device; `?onboarding=1` forces it open for QA.
 - The leaderboard theme filter was removed to free space. Theme information remains visible on each non-Daily leaderboard score.
 
-## Arcade Career Stats & Autonomous Announcer — Foundation Implemented (2026-08-01)
+## Arcade Career Stats & Autonomous Announcer — Player Experience Implemented (2026-08-02)
 
 The first backend-safe implementation slice is complete locally:
 
@@ -77,13 +77,15 @@ The first backend-safe implementation slice is complete locally:
 - Store versioned announcer packs and per-player impression history in Supabase.
 - Generate fresh content automatically with a private scheduled Gemini/Vertex AI Cloud Run Job, guarded by deterministic validation and a second structured quality review.
 - Keep Gemini and the Supabase service role completely outside the static GitHub Pages client.
+- Present the lifetime ledger as a dedicated retro **Arcade Career** cabinet screen inside Player options, with food, active play time, runs, distance, records, collisions, and favorite loadout.
+- Load eligible lines from the published Gemini catalog, honor metric conditions, weights, family cooldowns, and impression caps, then record what each player was shown.
+- Fall back to the bundled announcer when the live catalog is unavailable and use a player-scoped cached ledger when the network is temporarily offline.
+- Published the first autonomous 40-line Gemini pack successfully through the Cloud Run generator.
 
 Remaining product passes:
 
-- Add the retro player Stats screen and surface the first set of career records and playful comparisons.
-- Load published remote announcer packs with a bundled-content fallback and record impressions.
 - Enrich career records from authoritative Daily Run and Vs verification where those server-owned facts are available.
-- Deploy and schedule the generator using `GOOGLE-CLOUD-ANNOUNCER-SETUP.md`, then tune cadence and quality gates from observed results.
+- Observe the scheduled generator over several cycles, then tune cadence, category balance, and quality gates from real catalog and impression data.
 
 ## Junior Mode
 

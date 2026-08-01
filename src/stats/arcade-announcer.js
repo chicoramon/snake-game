@@ -117,7 +117,17 @@ export function normalizeCareerStats(stats = {}) {
     wallDeaths: number(stats.wallDeaths ?? stats.wall_deaths),
     selfDeaths: number(stats.selfDeaths ?? stats.self_deaths),
     distanceCells: number(stats.distanceCells ?? stats.distance_cells),
-    totalTurns: number(stats.totalTurns ?? stats.total_turns)
+    totalTurns: number(stats.totalTurns ?? stats.total_turns),
+    longestSnake: number(stats.longestSnake ?? stats.longest_snake),
+    timedFinishes: number(stats.timedFinishes ?? stats.timed_finishes),
+    interruptedRuns: number(stats.interruptedRuns ?? stats.interrupted_runs),
+    dailyRuns: number(stats.dailyRuns ?? stats.daily_runs),
+    dailyWins: number(stats.dailyWins ?? stats.daily_wins),
+    vsRounds: number(stats.vsRounds ?? stats.vs_rounds),
+    vsWins: number(stats.vsWins ?? stats.vs_wins),
+    favoriteTheme: String(stats.favoriteTheme ?? stats.favorite_theme ?? ''),
+    favoriteControl: String(stats.favoriteControl ?? stats.favorite_control ?? ''),
+    trackingSince: stats.trackingSince ?? stats.tracking_since ?? null
   };
 }
 
@@ -130,7 +140,8 @@ function formatDecimal(value) {
 }
 
 function formatDuration(ms) {
-  const minutes = Math.max(1, Math.round(number(ms) / 60000));
+  if (number(ms) < 60000) return 'less than a minute';
+  const minutes = Math.round(number(ms) / 60000);
   if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'}`;
   const hours = Math.round((minutes / 60) * 10) / 10;
   return `${hours} hour${hours === 1 ? '' : 's'}`;
@@ -145,8 +156,94 @@ function hashSeed(value) {
   return hash >>> 0;
 }
 
+const METRIC_KEYS = Object.freeze({
+  total_food: 'totalFood', active_ms: 'activeMs', total_runs: 'totalRuns',
+  total_deaths: 'totalDeaths', wall_deaths: 'wallDeaths', self_deaths: 'selfDeaths',
+  distance_cells: 'distanceCells', total_turns: 'totalTurns', longest_snake: 'longestSnake',
+  daily_runs: 'dailyRuns', daily_wins: 'dailyWins', vs_rounds: 'vsRounds', vs_wins: 'vsWins'
+});
+
+const OPERATORS = Object.freeze({
+  gte: (value, threshold) => value >= threshold,
+  lte: (value, threshold) => value <= threshold,
+  gt: (value, threshold) => value > threshold,
+  lt: (value, threshold) => value < threshold,
+  eq: (value, threshold) => value === threshold
+});
+
 function choose(list, seed, salt) {
   return list[hashSeed(`${seed}:${salt}`) % list.length];
+}
+
+function formatTemplateValue(key, stats, identity) {
+  if (key === 'display_name') return identity.displayName || identity.initials || 'Player';
+  if (key === 'initials') return identity.initials || '???';
+  if (key === 'favorite_theme') return identity.favoriteTheme || stats.favoriteTheme || 'the arcade';
+  if (key === 'favorite_control') return identity.favoriteControl || stats.favoriteControl || 'mystery controls';
+  if (key === 'active_ms') return formatDuration(stats.activeMs);
+  const metric = METRIC_KEYS[key];
+  return metric ? formatNumber(stats[metric]) : '';
+}
+
+export function renderAnnouncerTemplate(template, rawStats = {}, identity = {}) {
+  const stats = normalizeCareerStats(rawStats);
+  return String(template || '').replace(/\{([a-z0-9_]+)\}/gi, (_match, key) => (
+    formatTemplateValue(String(key).toLowerCase(), stats, identity)
+  ));
+}
+
+export function isAnnouncerConditionMet(condition, rawStats = {}) {
+  const metric = METRIC_KEYS[condition?.metric];
+  const compare = OPERATORS[condition?.operator];
+  const threshold = Number(condition?.threshold);
+  // Daily/Vs fields are intentionally absent until their authoritative server
+  // aggregation is added. Do not turn missing facts into a misleading zero.
+  if (!metric || !compare || !Number.isFinite(threshold)) return false;
+  const rawValue = rawStats[metric] ?? rawStats[condition.metric];
+  if (rawValue == null || !Number.isFinite(Number(rawValue))) return false;
+  return compare(Number(rawValue), threshold);
+}
+
+function weightedChoice(candidates, seed) {
+  const total = candidates.reduce((sum, item) => sum + Math.max(0.1, Number(item.weight) || 1), 0);
+  let cursor = (hashSeed(`${seed}:remote-candidate`) / 0x100000000) * total;
+  for (const item of candidates) {
+    cursor -= Math.max(0.1, Number(item.weight) || 1);
+    if (cursor < 0) return item;
+  }
+  return candidates.at(-1);
+}
+
+export function selectCatalogAnnouncerLine({
+  catalog = [], stats = {}, history = [], identity = {}, seed = 'snake', now = Date.now()
+} = {}) {
+  const historyByMessage = new Map((history || []).map(item => [item.messageKey || item.message_key, item]));
+  const recentFamilyTimes = new Map();
+  for (const item of history || []) {
+    const family = item.familyKey || item.family_key;
+    const shownAt = new Date(item.lastShownAt || item.last_shown_at || 0).getTime();
+    if (family && shownAt) recentFamilyTimes.set(family, Math.max(shownAt, recentFamilyTimes.get(family) || 0));
+  }
+  const eligible = (catalog || []).filter(line => {
+    if (!line?.messageKey || !line?.familyKey || !line?.template) return false;
+    if (!isAnnouncerConditionMet(line.conditions, stats)) return false;
+    const itemHistory = historyByMessage.get(line.messageKey);
+    const maxImpressions = Number(line.maxImpressions);
+    if (Number.isFinite(maxImpressions) && maxImpressions > 0 && Number(itemHistory?.impressions || 0) >= maxImpressions) return false;
+    const lastFamilyUse = recentFamilyTimes.get(line.familyKey);
+    const cooldownMs = Math.max(1, Number(line.cooldownDays) || 30) * DAY_MS;
+    return !lastFamilyUse || now - lastFamilyUse >= cooldownMs;
+  });
+  const selected = weightedChoice(eligible, seed);
+  if (!selected) return null;
+  return {
+    messageKey: selected.messageKey,
+    familyKey: selected.familyKey,
+    category: selected.category || 'career',
+    cooldownDays: Math.max(1, Number(selected.cooldownDays) || 30),
+    text: renderAnnouncerTemplate(selected.template, stats, identity),
+    source: 'live'
+  };
 }
 
 function recentFamilies(history, now) {

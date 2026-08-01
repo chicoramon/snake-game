@@ -15,5 +15,6 @@ export function readAppSource() {
     readFileSync(new URL('../src/ui/daily-rules-dialog.js', import.meta.url), 'utf8'),
     readFileSync(new URL('../src/ui/whats-new-dialog.js', import.meta.url), 'utf8'),
     readFileSync(new URL('../src/ui/player-panel.js', import.meta.url), 'utf8'),
+    readFileSync(new URL('../src/ui/career-stats-panel.js', import.meta.url), 'utf8'),
   ].join('\n');
 }
