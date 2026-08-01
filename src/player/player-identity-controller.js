@@ -58,6 +58,8 @@ export function createPlayerIdentityController({
       playerDisplayNameInput.value = playerProfile.display_name || '';
     }
     playerAccountSetup.style.display = permanent ? 'none' : 'block';
+    playerSaveEmail.hidden = !playerProfile;
+    playerSaveEmail.closest('.player-actions')?.classList.toggle('single-action', !playerProfile);
     renderDisplayNameInvitation();
   }
 

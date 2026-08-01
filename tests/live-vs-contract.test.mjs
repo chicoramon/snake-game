@@ -52,6 +52,8 @@ test('Live Vs lobby and controller are present in the modular app', () => {
     'live-vs-host-stage',
     'live-vs-guest-stage',
     'live-vs-roulette-stage',
+    'player-vs-invite-gate',
+    'player-vs-invite-code',
   ]) {
     assert.match(html, new RegExp(`id=["']${id}["']`));
   }
@@ -60,10 +62,12 @@ test('Live Vs lobby and controller are present in the modular app', () => {
   assert.match(main, /submitVersusResult/);
   assert.match(main, /liveVsUi\.returnToLobby/);
   assert.match(main, /const URL_PARAMS = new URLSearchParams\(window\.location\.search\)/);
-  assert.match(main, /const invitedLiveVsCode = URL_PARAMS\.get\('vs'\)/);
+  assert.match(main, /normalizeRoomCode\(URL_PARAMS\.get\('vs'\)\)/);
+  assert.match(main, /const invitedLiveVsCode = isValidRoomCode\(requestedLiveVsCode\)/);
   assert.match(main, /if \(!invitedLiveVsCode && !GOLDEN_BACKDOOR\) whatsNewView\.scheduleInitialOpen\(\)/);
   assert.match(main, /if \(!invitedLiveVsCode && !GOLDEN_BACKDOOR\) onboardingView\.scheduleInitialOpen\(\)/);
-  assert.match(main, /Promise\.resolve\(startPlayerIdentity\(\)\)[\s\S]*?\.then\(waitForPlayerIdentity\)[\s\S]*?liveVsUi\.openInvite\(invitedLiveVsCode\)/);
+  assert.match(main, /Promise\.resolve\(startPlayerIdentity\(\)\)[\s\S]*?\.then\(waitForPlayerIdentity\)[\s\S]*?continuePendingLiveVsInvite\(\)/);
+  assert.match(main, /async function continuePendingLiveVsInvite\(\)[\s\S]*?if \(!playerProfile\)[\s\S]*?openPlayerPanel\(\)[\s\S]*?liveVsUi\.openInvite\(code\)/);
   assert.doesNotMatch(main, /playerIdentityPromise\s*[\r\n]+\s*\.catch\(\(\) => \{\}\)\s*[\r\n]+\s*\.then\(\(\) => liveVsUi\.openInvite/);
   assert.match(controller, /searchParams\.set\('vs', code\)/);
   assert.match(controller, /navigator\.share\(\{\s*title:\s*'Snake Vs Casual',\s*text,\s*url\s*\}\)/);

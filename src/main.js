@@ -4,7 +4,7 @@ import { createControlManager } from './controls/control-manager.js';
 import { LIVE_VS_LATENCY_DEBUG } from './config/debug.js';
 import { createDailyRunService, outranksDailyLeader } from './daily/daily-run-service.js';
 import { createLeaderboardService } from './leaderboard/leaderboard-service.js';
-import { createLiveVsService } from './versus/live-vs-service.js';
+import { createLiveVsService, isValidRoomCode, normalizeRoomCode } from './versus/live-vs-service.js';
 import { scaleLiveVsInterval } from './versus/live-vs-rules.js';
 import {
   decodeSpectatorSnapshot,
@@ -81,6 +81,8 @@ const displayNameInviteId = document.getElementById('display-name-invite-id');
 const displayNameInviteAdd = document.getElementById('display-name-invite-add');
 const displayNameInviteLater = document.getElementById('display-name-invite-later');
 const playerPanel = document.getElementById('player-panel');
+const playerVsInviteGate = document.getElementById('player-vs-invite-gate');
+const playerVsInviteCode = document.getElementById('player-vs-invite-code');
 const playerIdentityStatus = document.getElementById('player-identity-status');
 const playerProfileSetup = document.getElementById('player-profile-setup');
 const playerInitialsInput = document.getElementById('player-initials-input');
@@ -206,7 +208,10 @@ const WHATS_NEW_RELEASES = Object.freeze([
   }
 ]);
 const FORCE_WHATS_NEW = URL_PARAMS.has('whatsnew');
-const invitedLiveVsCode = URL_PARAMS.get('vs');
+const requestedLiveVsCode = normalizeRoomCode(URL_PARAMS.get('vs'));
+const invitedLiveVsCode = isValidRoomCode(requestedLiveVsCode) ? requestedLiveVsCode : null;
+let pendingLiveVsInviteCode = invitedLiveVsCode;
+let liveVsInviteJoinPending = false;
 const DISPLAY_NAME_INVITE_KEY = 'snake_display_name_invite_v1';
 const DISPLAY_NAME_INVITE_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
 const DISPLAY_NAME_INVITE_MAX_DISMISSALS = 2;
@@ -3083,6 +3088,7 @@ playerIdentityController = createPlayerIdentityController({
     retryPendingScores();
     retryPendingDailyAttempt();
     if (gameMode === 'daily') refreshDailyChallenge({ force: true });
+    await continuePendingLiveVsInvite();
   },
   onPreferencesChanged: schedulePlayerPreferenceSave,
   renderDisplayNameInvitation,
@@ -3104,13 +3110,45 @@ async function waitForPlayerIdentity() {
 }
 function savePlayerInitials(value) { return playerIdentityController.saveInitials(value); }
 function savePlayerDisplayName(value) { return playerIdentityController.saveDisplayName(value); }
-function openPlayerPanel(options) { return playerIdentityController.openPanel(options); }
+function renderPendingLiveVsIdentityGate() {
+  const visible = !!pendingLiveVsInviteCode && !playerProfile;
+  playerVsInviteGate.hidden = !visible;
+  if (visible) playerVsInviteCode.textContent = pendingLiveVsInviteCode;
+}
+function openPlayerPanel(options) {
+  const result = playerIdentityController.openPanel(options);
+  renderPendingLiveVsIdentityGate();
+  if (!playerVsInviteGate.hidden) {
+    setPlayerMessage('Your invite is reserved — finish your Player ID to join automatically.');
+  }
+  return result;
+}
 function closePlayerPanel() { return playerIdentityController.closePanel(); }
 function handleSavePlayerInitials(value) { return playerIdentityController.handleSaveInitials(value); }
 function handleSavePlayerDisplayName(value) { return playerIdentityController.handleSaveDisplayName(value); }
 function handleAutoSubmitChanged(enabled) { return playerIdentityController.handleAutoSubmitChanged(enabled); }
 function beginEmailCode(action) { return playerIdentityController.beginEmailCode(action); }
 function handleVerifyPlayerOtp(token) { return playerIdentityController.verifyOtp(token); }
+
+async function continuePendingLiveVsInvite() {
+  if (!pendingLiveVsInviteCode) return false;
+  if (!playerProfile) {
+    openPlayerPanel();
+    return false;
+  }
+  if (liveVsInviteJoinPending) return false;
+
+  liveVsInviteJoinPending = true;
+  const code = pendingLiveVsInviteCode;
+  pendingLiveVsInviteCode = null;
+  playerVsInviteGate.hidden = true;
+  playerIdentityController.closePanel();
+  try {
+    return await liveVsUi.openInvite(code);
+  } finally {
+    liveVsInviteJoinPending = false;
+  }
+}
 
 playerPanelView = createPlayerPanel({
   cleanInitials,
@@ -3805,7 +3843,7 @@ setTimeout(() => {
   Promise.resolve(startPlayerIdentity())
     .then(waitForPlayerIdentity)
     .then(() => {
-      if (invitedLiveVsCode) return liveVsUi.openInvite(invitedLiveVsCode);
+      if (invitedLiveVsCode) return continuePendingLiveVsInvite();
       return undefined;
     })
     .catch(error => console.warn('Player identity or Live Vs invite startup failed:', error));

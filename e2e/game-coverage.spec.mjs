@@ -16,11 +16,14 @@ async function openMenu(page, { blockSupabase = false, query = '' } = {}) {
   }
 }
 
-test('Vs invite links suppress automatic announcement and onboarding panels', async ({ page }) => {
+test('Vs invite links gate unidentified guests while suppressing unrelated panels', async ({ page }) => {
   await page.goto('./?vs=ABC123');
-  await page.waitForTimeout(700);
   await expect(page.locator('#whats-new-panel')).not.toHaveClass(/visible/);
   await expect(page.locator('#onboarding-panel')).not.toHaveClass(/visible/);
+  await expect(page.locator('#player-panel')).toHaveClass(/visible/, { timeout: 12_000 });
+  await expect(page.locator('#player-vs-invite-gate')).toBeVisible();
+  await expect(page.locator('#player-vs-invite-code')).toHaveText('ABC123');
+  await expect(page.locator('#player-vs-invite-gate')).toContainText(/initials|restore/i);
 });
 
 test('new players can replay the arcade tour and select a control', async ({ page }) => {
