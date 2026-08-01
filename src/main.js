@@ -14,6 +14,7 @@ import {
 import { createSupabaseClient } from './services/supabase-client.js';
 import { createPlayerAuthService } from './player/player-auth-service.js';
 import { createPlayerProfileService } from './player/player-profile-service.js';
+import { normalizePlayerPreferences, PLAYER_PREFERENCES_VERSION } from './player/player-preferences.js';
 import { createThemePicker } from './ui/theme-picker.js';
 import { createDailyRulesDialog } from './ui/daily-rules-dialog.js';
 import { createWhatsNewDialog } from './ui/whats-new-dialog.js';
@@ -910,6 +911,7 @@ function selectRandomThemeMode() {
   }
   updateThemeSelectionUI();
   renderMenuThemeMarquee('random');
+  queuePlayerPreferenceSave();
 }
 
 function applyTheme(id, { updateSelection = true } = {}) {
@@ -940,6 +942,7 @@ function applyTheme(id, { updateSelection = true } = {}) {
   updateThemeSelectionUI();
   renderMenuThemeMarquee(id);
   overlayTitle.textContent = id === 'got' ? 'DRAGON' : (id === 'golden' ? 'GOLDEN SNAKE' : 'SNAKE');
+  if (updateSelection) queuePlayerPreferenceSave();
 }
 
 // Initialize theme
@@ -1115,6 +1118,7 @@ function applyGameMode(mode) {
   dailyChallengeInfo.hidden = mode !== 'daily';
   if (challenge) renderDailyChallengeInfo();
   themePicker?.syncModeSelection(mode);
+  queuePlayerPreferenceSave();
 }
 applyGameMode(gameMode);
 
@@ -1806,6 +1810,7 @@ const controls = createControlManager({
   controlsResetBtn: document.getElementById('controls-reset-btn'),
   initialMode: controlMode,
   onModeChange: mode => { controlMode = mode; },
+  onLayoutChange: queuePlayerPreferenceSave,
   registerControlMethod,
   setDir,
   turnClockwise,
@@ -1837,12 +1842,14 @@ backgroundMusicBtn.addEventListener('click', () => {
   MenuAudio.setMuted(backgroundMusicMuted);
   if (!backgroundMusicMuted) MenuAudio.unlock();
   renderMusicButton(backgroundMusicBtn, 'BG', backgroundMusicMuted);
+  queuePlayerPreferenceSave();
 });
 muteBtn.addEventListener('click', () => {
   gameMusicMuted = AudioEngine.toggleMute();
   localStorage.setItem(GAME_MUSIC_MUTED_KEY, String(gameMusicMuted));
   renderMusicButton(muteBtn, 'GAME', gameMusicMuted);
-});
+  queuePlayerPreferenceSave();
+});
 
 renderMusicButton(backgroundMusicBtn, 'BG', backgroundMusicMuted);
 renderMusicButton(muteBtn, 'GAME', gameMusicMuted);
@@ -2306,6 +2313,101 @@ const PENDING_SCORES_KEY = 'snake_pending_scores';
 const PENDING_DAILY_ATTEMPT_KEY = 'snake_pending_daily_attempt';
 let autoSubmitEnabled = localStorage.getItem(AUTO_SUBMIT_KEY) !== 'false';
 autoSubmitToggle.checked = autoSubmitEnabled;
+
+let applyingPlayerPreferences = false;
+let playerPreferenceSaveTimer = null;
+let lastPlayerPreferenceSnapshot = '';
+
+function queuePlayerPreferenceSave() {
+  queueMicrotask(() => schedulePlayerPreferenceSave());
+}
+
+function currentPlayerPreferences() {
+  return normalizePlayerPreferences({
+    version: PLAYER_PREFERENCES_VERSION,
+    themeSelection,
+    activeTheme: currentTheme,
+    gameMode,
+    controlMode: controls.getMode(),
+    backgroundMusicMuted,
+    gameMusicMuted,
+    autoSubmit: autoSubmitEnabled,
+    controlLayout: controls.getLayout()
+  }, { themeIds: Object.keys(THEMES) });
+}
+
+function schedulePlayerPreferenceSave() {
+  if (applyingPlayerPreferences || GOLDEN_BACKDOOR || !currentUser || !playerProfile) return;
+  clearTimeout(playerPreferenceSaveTimer);
+  playerPreferenceSaveTimer = setTimeout(() => savePlayerPreferences(), 700);
+}
+
+async function savePlayerPreferences({ force = false } = {}) {
+  if (applyingPlayerPreferences || GOLDEN_BACKDOOR || !currentUser || !playerProfile) return false;
+  const user = currentUser;
+  const preferences = currentPlayerPreferences();
+  if (!preferences) return false;
+  const snapshot = JSON.stringify(preferences);
+  if (!force && snapshot === lastPlayerPreferenceSnapshot) return true;
+  try {
+    const saved = await playerProfileService.savePreferences(user, preferences);
+    if (currentUser?.id !== user.id) return false;
+    playerProfile = { ...playerProfile, preferences: saved || preferences };
+    lastPlayerPreferenceSnapshot = snapshot;
+    return true;
+  } catch (error) {
+    console.warn('Player preferences could not be saved:', error);
+    return false;
+  }
+}
+
+function applyPlayerPreferences(preferences) {
+  applyingPlayerPreferences = true;
+  try {
+    if (preferences.themeSelection === 'random') {
+      applyTheme(preferences.activeTheme, { updateSelection: false });
+      selectRandomThemeMode();
+    } else {
+      applyTheme(preferences.themeSelection);
+    }
+    applyGameMode(preferences.gameMode);
+    controls.applyLayout(preferences.controlLayout);
+    controls.applyMode(preferences.controlMode);
+
+    backgroundMusicMuted = preferences.backgroundMusicMuted;
+    gameMusicMuted = preferences.gameMusicMuted;
+    autoSubmitEnabled = preferences.autoSubmit;
+    localStorage.setItem(BG_MUSIC_MUTED_KEY, String(backgroundMusicMuted));
+    localStorage.setItem(GAME_MUSIC_MUTED_KEY, String(gameMusicMuted));
+    localStorage.setItem(AUTO_SUBMIT_KEY, String(autoSubmitEnabled));
+    MenuAudio.setMuted(backgroundMusicMuted);
+    AudioEngine.setMuted(gameMusicMuted);
+    autoSubmitToggle.checked = autoSubmitEnabled;
+    renderMusicButton(backgroundMusicBtn, 'BG', backgroundMusicMuted);
+    renderMusicButton(muteBtn, 'GAME', gameMusicMuted);
+  } finally {
+    applyingPlayerPreferences = false;
+  }
+}
+
+async function reconcilePlayerPreferences({ preferencesChanged = false } = {}) {
+  if (preferencesChanged) {
+    schedulePlayerPreferenceSave();
+    return;
+  }
+  if (!currentUser || !playerProfile || GOLDEN_BACKDOOR) return;
+  const saved = normalizePlayerPreferences(playerProfile.preferences, {
+    themeIds: Object.keys(THEMES)
+  });
+  if (!saved) {
+    await savePlayerPreferences({ force: true });
+    return;
+  }
+  clearTimeout(playerPreferenceSaveTimer);
+  applyPlayerPreferences(saved);
+  lastPlayerPreferenceSnapshot = JSON.stringify(saved);
+  if (gameMode === 'daily') refreshDailyChallenge({ force: true });
+}
 
 function createRunId() {
   if (crypto.randomUUID) return crypto.randomUUID();
@@ -2801,6 +2903,7 @@ submitScoreBtn.addEventListener('click', submitScore);
 window.addEventListener('online', () => {
   retryPendingScores();
   retryPendingDailyAttempt();
+  savePlayerPreferences();
 });
 
 /* Legacy player-panel handlers retained only as historical context during the extraction.
@@ -2975,11 +3078,13 @@ playerIdentityController = createPlayerIdentityController({
   cleanDisplayName,
   escHtml,
   isSchemaError,
-  onIdentitySettled: () => {
+  onIdentitySettled: async () => {
+    await reconcilePlayerPreferences();
     retryPendingScores();
     retryPendingDailyAttempt();
     if (gameMode === 'daily') refreshDailyChallenge({ force: true });
   },
+  onPreferencesChanged: schedulePlayerPreferenceSave,
   renderDisplayNameInvitation,
   completeDisplayNameInvitation,
   snoozeDisplayNameInvitation

@@ -10,6 +10,7 @@ export function createPlayerIdentityController({
   escHtml,
   isSchemaError,
   onIdentitySettled = () => {},
+  onPreferencesChanged = () => {},
   renderDisplayNameInvitation = () => {},
   completeDisplayNameInvitation = () => {},
   snoozeDisplayNameInvitation = () => {}
@@ -85,7 +86,7 @@ export function createPlayerIdentityController({
     setState({ playerIdentityRevision: revision, currentUser: user });
     await loadProfile(user, revision);
     if (revision !== getState().playerIdentityRevision || getState().currentUser?.id !== user?.id) return;
-    onIdentitySettled();
+    await onIdentitySettled();
   }
 
   async function init() {
@@ -143,6 +144,7 @@ export function createPlayerIdentityController({
     const profile = { ...(playerProfile || {}), ...(saved || {}) };
     setState({ playerProfile: profile });
     render();
+    await onIdentitySettled();
     return profile;
   }
 
@@ -184,7 +186,6 @@ export function createPlayerIdentityController({
       await saveInitials(value);
       playerInitialsInput.value = '';
       setPlayerMessage(`Player ${playerDisplayName()} created`);
-      onIdentitySettled();
     } catch (error) {
       setPlayerMessage(isSchemaError(error) ? 'Leaderboard database update required' : (error.message || 'Could not save initials'), true);
     } finally {
@@ -209,6 +210,7 @@ export function createPlayerIdentityController({
   function handleAutoSubmitChanged(enabled) {
     setState({ autoSubmitEnabled: enabled });
     localStorage.setItem('snake_auto_submit', String(enabled));
+    onPreferencesChanged();
     setPlayerMessage(enabled ? 'Personal bests will submit automatically' : 'You will choose when to submit each score');
   }
 

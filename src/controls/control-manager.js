@@ -20,6 +20,7 @@ export function createControlManager({
   isPaused,
   isOverlayHidden,
   isKeyboardAllowed = () => true,
+  onLayoutChange = () => {},
 }) {
   let controlMode = initialMode;
 
@@ -140,6 +141,7 @@ function applyControlMode(mode) {
   controlMode = mode;
   onModeChange(mode);
   localStorage.setItem('snake_control_mode', mode);
+  onLayoutChange();
   if (mode === 'turn') {
     dpad.style.display = 'none';
     turnControls.style.display = 'flex';
@@ -370,6 +372,7 @@ function stopControlsEdit() {
     if (ox !== 0 || oy !== 0) saveTurnBtnPos(id, { x: ox, y: oy });
   });
   applyControlMode(controlMode);
+  onLayoutChange();
 }
 
 controlsBtn.addEventListener('click', openControlsSettings);
@@ -388,8 +391,9 @@ controlsResetBtn.addEventListener('click', () => {
     TURN_BTNS.forEach(id => resetTurnBtnPos(id));
   } else {
     DPAD_BTNS.forEach(dir => resetBtnPos(dir));
-  }
-});
+  }
+  onLayoutChange();
+});
 
 function onBtnDragStart(e) {
   const parent = e.currentTarget.closest('#dpad, #turn-controls');
@@ -451,7 +455,40 @@ document.addEventListener('mousemove', onBtnDragMove);
 document.addEventListener('mouseup', onBtnDragEnd);
 
 
+  function getLayout() {
+    const dpadLayout = {};
+    const turnLayout = {};
+    DPAD_BTNS.forEach(id => {
+      const btn = dpad.querySelector('.btn.' + id);
+      const x = btn?._offsetX || 0;
+      const y = btn?._offsetY || 0;
+      if (x !== 0 || y !== 0) dpadLayout[id] = { x, y };
+    });
+    TURN_BTNS.forEach(id => {
+      const btn = turnControls.querySelector(`.turn-btn[data-turn="${id}"]`);
+      const x = btn?._offsetX || 0;
+      const y = btn?._offsetY || 0;
+      if (x !== 0 || y !== 0) turnLayout[id] = { x, y };
+    });
+    return { dpad: dpadLayout, turn: turnLayout };
+  }
 
+  function applyLayout(layout = {}) {
+    DPAD_BTNS.forEach(id => resetBtnPos(id));
+    TURN_BTNS.forEach(id => resetTurnBtnPos(id));
+    DPAD_BTNS.forEach(id => {
+      const position = layout.dpad?.[id];
+      if (!position) return;
+      applyBtnPos(id, position);
+      saveBtnPos(id, position);
+    });
+    TURN_BTNS.forEach(id => {
+      const position = layout.turn?.[id];
+      if (!position) return;
+      applyTurnBtnPos(id, position);
+      saveTurnBtnPos(id, position);
+    });
+  }
 
-  return { getMode: () => controlMode, applyMode: applyControlMode };
+  return { getMode: () => controlMode, applyMode: applyControlMode, getLayout, applyLayout };
 }
