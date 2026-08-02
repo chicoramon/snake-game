@@ -2,6 +2,8 @@
 
 The arcade announcer is a private batch job. Gemini never runs in the browser, and no Google or Supabase secret is included in the GitHub Pages build.
 
+For the complete generation, publication, game-consumption, update, and troubleshooting lifecycle, see [`ARCADE-ANNOUNCER-GENERATOR.md`](./ARCADE-ANNOUNCER-GENERATOR.md).
+
 ## What is needed from the Google Cloud account
 
 Provide or choose:

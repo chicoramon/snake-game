@@ -148,6 +148,33 @@ let playerIdentityController = null;
 // Do not include bugs, fixes, caching, builds, deployments, or backend details.
 const WHATS_NEW_RELEASES = Object.freeze([
   {
+    id: '2026-08-02-arcade-career-vs-evolved',
+    version: 'Update 2026.08.02',
+    title: 'Your Arcade Legacy',
+    sections: [
+      {
+        title: 'Arcade Career',
+        items: [
+          'Track lifetime food, runs, distance, survival time, deaths, and your favorite ways to play.',
+          'Tune into witty Arcade Announcer transmissions shaped by the story your own stats tell.'
+        ]
+      },
+      {
+        title: 'Vs Casual Evolves',
+        items: [
+          'If your run ends first, return to the room and spectate your rival’s full battle to the finish.',
+          'Create continuous battles or best-of series, then choose the speed and whether keyboards are allowed.'
+        ]
+      },
+      {
+        title: 'Your Setup Travels',
+        items: [
+          'Restore a saved player to bring back themes, controls, sound choices, and customized button layouts.'
+        ]
+      }
+    ]
+  },
+  {
     id: '2026-07-30-vs-mode-main-menu',
     version: 'Update 2026.07.30',
     title: 'Two Major Upgrades',
