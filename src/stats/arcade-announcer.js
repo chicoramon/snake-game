@@ -187,7 +187,14 @@ function formatTemplateValue(key, stats, identity) {
 
 export function renderAnnouncerTemplate(template, rawStats = {}, identity = {}) {
   const stats = normalizeCareerStats(rawStats);
-  return String(template || '').replace(/\{([a-z0-9_]+)\}/gi, (_match, key) => (
+  // active_ms renders as a complete, human-readable duration (for example,
+  // "5 minutes"). Strip a mistakenly generated unit suffix so an already
+  // published line cannot produce "5 minutes milliseconds" in the client.
+  const normalizedTemplate = String(template || '').replace(
+    /\{active_ms\}\s*(?:ms|milliseconds?|seconds?|minutes?|hours?)\b/gi,
+    '{active_ms}'
+  );
+  return normalizedTemplate.replace(/\{([a-z0-9_]+)\}/gi, (_match, key) => (
     formatTemplateValue(String(key).toLowerCase(), stats, identity)
   ));
 }

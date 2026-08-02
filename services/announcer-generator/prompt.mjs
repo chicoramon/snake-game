@@ -1,4 +1,4 @@
-export const PROMPT_VERSION = 'arcade-announcer-v2-neon-fang';
+export const PROMPT_VERSION = 'arcade-announcer-v3-neon-fang';
 
 const GOLD_STANDARD = `
 GOLD-STANDARD VOICE EXAMPLES — study the comic mechanism, never copy the wording:
@@ -58,6 +58,10 @@ Templates may use only these placeholders: {total_food}, {active_ms}, {total_run
 {wall_deaths}, {self_deaths}, {distance_cells}, {total_turns}, {longest_snake}, {daily_runs},
 {daily_wins}, {vs_rounds}, {vs_wins}, {display_name}, {initials}, {favorite_theme}, {favorite_control}.
 
+PLACEHOLDER FORMAT CONTRACT
+{active_ms} is rendered by the game as a complete human-readable phrase such as "5 minutes" or
+"1.5 hours". Never add ms, milliseconds, seconds, minutes, hours, or another time unit after it.
+
 For every line, use a unique lowercase messageKey, a lowercase familyKey, and one requested category.
 Conditions must contain one metric from: total_food, active_ms, total_runs, total_deaths, wall_deaths,
 self_deaths, distance_cells, total_turns, longest_snake, daily_runs, daily_wins, vs_rounds, vs_wins;
@@ -80,6 +84,8 @@ Judge each Arcade Announcer template independently. A line is accepted only if e
 - ORIGINALITY >= 4/5: it is not a near-duplicate, cliché, generic achievement copy, or a paraphrase of
   another candidate.
 - CLARITY >= 4/5: concise, grammatical, and understandable without external context.
+- PLACEHOLDER FORMAT: {active_ms} already includes its human-readable time unit; reject any template
+  that adds ms, milliseconds, seconds, minutes, hours, or another unit after it.
 - SAFETY: all-ages, playful rather than cruel, and free of profanity, identity attacks, politics,
   religion, sexual material, personal data, and instructions to visit external sources.
 

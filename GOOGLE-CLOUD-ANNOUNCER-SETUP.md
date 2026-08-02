@@ -77,7 +77,7 @@ gcloud run jobs execute snake-announcer-generator \
 
 The job creates a draft content pack, validates every line deterministically, asks Gemini for a second structured review, and only then marks the pack published. A failed generation never replaces the currently published material.
 
-The v2 generator builds four category-focused batches before that review. Its quality gate rejects safe-but-generic achievement copy and requires strong scores for comedic craft, the Project Neon Fang narrator voice, originality, clarity, data fidelity, and safety. An undersized or weak batch never replaces the current pack. Because generation now uses several Gemini calls plus a final editorial review, a manual execution can reasonably take a few minutes.
+The v3 generator builds four category-focused batches before that review. Its quality gate rejects safe-but-generic achievement copy, enforces placeholder-format contracts, and requires strong scores for comedic craft, the Project Neon Fang narrator voice, originality, clarity, data fidelity, and safety. An undersized or weak batch never replaces the current pack. Because generation now uses several Gemini calls plus a final editorial review, a manual execution can reasonably take a few minutes.
 
 ## Schedule without manual content work
 

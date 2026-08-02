@@ -23,6 +23,7 @@ const GENERIC_ACHIEVEMENT_COPY = [
   /\b(?:very |really |truly )?impressive(?: work| score| achievement)?[!.]?$/i,
   /\bamazing (?:job|work|score)\b/i
 ];
+const ACTIVE_TIME_UNIT_SUFFIX = /\{active_ms\}\s*(?:ms|milliseconds?|seconds?|minutes?|hours?)\b/i;
 
 export const GENERATED_LINES_SCHEMA = {
   type: 'object',
@@ -105,6 +106,7 @@ export function validateGeneratedLines(input, { existingKeys = [], allowedCatego
     if (FORBIDDEN.some(pattern => pattern.test(line.template))) lineErrors.push('blocked vocabulary');
     const templatePlaceholders = placeholders(line.template);
     if (templatePlaceholders.some(name => !PLACEHOLDERS.has(name))) lineErrors.push('unsupported placeholder');
+    if (ACTIVE_TIME_UNIT_SUFFIX.test(line.template)) lineErrors.push('active_ms already includes a human-readable time unit');
     if (GENERIC_ACHIEVEMENT_COPY.some(pattern => pattern.test(line.template))) lineErrors.push('generic achievement copy');
     const explicitNewPlayerState = line.conditions?.metric === 'total_runs'
       && ['eq', 'lte'].includes(line.conditions?.operator)

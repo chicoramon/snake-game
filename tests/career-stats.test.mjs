@@ -181,6 +181,10 @@ test('published announcer lines honor conditions, cooldowns, impression caps, an
   });
   assert.equal(capped, null);
   assert.equal(renderAnnouncerTemplate('{favorite_theme}: {total_runs}', stats, { favoriteTheme: 'Game of Thrones' }), 'Game of Thrones: 80');
+  assert.equal(
+    renderAnnouncerTemplate('The cabinet was subjected to your will for {active_ms} milliseconds.', { active_ms: 300_000 }),
+    'The cabinet was subjected to your will for 5 minutes.'
+  );
 });
 
 test('career view model keeps the primary records compact and game-readable', () => {

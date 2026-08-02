@@ -44,6 +44,16 @@ test('deterministic gate rejects bland achievement copy and off-brief categories
   assert.match(result.errors[1].reasons.join(' '), /outside requested batch/i);
 });
 
+test('deterministic gate rejects a time unit appended to the humanized active_ms placeholder', () => {
+  const result = validateGeneratedLines({ lines: [valid({
+    messageKey: 'time:double-unit:001', familyKey: 'time-duty', category: 'time',
+    template: 'The cabinet was subjected to your will for {active_ms} milliseconds.',
+    conditions: { metric: 'active_ms', operator: 'gte', threshold: 300000 }
+  })] });
+  assert.equal(result.accepted.length, 0);
+  assert.match(result.errors[0].reasons.join(' '), /already includes a human-readable time unit/i);
+});
+
 test('ungrounded copy is rejected except for an explicit new-player state', () => {
   const result = validateGeneratedLines({ lines: [
     valid({ messageKey: 'food:ungrounded:001', template: 'The buffet has entered protective custody.' }),
@@ -76,14 +86,15 @@ test('Gemini serving schema stays structural while deterministic code owns compl
   assert.doesNotMatch(schema, /"(?:enum|minItems|maxItems|minimum|maximum|anyOf)"/);
 });
 
-test('v2 prompt establishes the sharper Neon Fang comedy contract', () => {
+test('v3 prompt establishes the sharper Neon Fang comedy and placeholder contract', () => {
   const generation = buildGenerationPrompt({ categories: ['deaths', 'controls'], targetCount: 12 });
   const review = buildReviewPrompt([valid()]);
-  assert.equal(PROMPT_VERSION, 'arcade-announcer-v2-neon-fang');
+  assert.equal(PROMPT_VERSION, 'arcade-announcer-v3-neon-fang');
   assert.match(generation, /deadpan arcade sports commentator/i);
   assert.match(generation, /north wall sends its regards/i);
   assert.match(generation, /safe-but-boring|generic mobile game's/i);
   assert.match(generation, /only these categories.*deaths, controls/i);
+  assert.match(generation, /active_ms.*complete human-readable phrase/is);
   assert.doesNotMatch(generation, /four[- ]year[- ]old/i);
   assert.match(review, /comedic craft >= 4\/5/i);
   assert.match(review, /Reject safe-but-boring lines/i);
