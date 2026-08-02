@@ -1,5 +1,6 @@
 import { drawFoodSprite as drawFoodSpriteAsset } from './food-sprite.js';
 import { interpolateRivalGhost } from '../versus/live-vs-spectator.js';
+import { jetTrailIntensity } from '../game/speed-effects.js';
 
 // Canvas rendering and visual effects are intentionally isolated from the
 // game rules. The module receives a read-only game-state snapshot and exposes
@@ -21,6 +22,8 @@ export function createCanvasRenderer({
   let foodScaleTarget = 1;
   let dragonFireBurst = 0;
   let fighterImpactBurst = 0;
+  let sonicBoomLife = 0;
+  let sonicBoomOrigin = null;
   let screenShake = 0;
   let shakeX = 0;
   let shakeY = 0;
@@ -93,6 +96,164 @@ export function createCanvasRenderer({
       ctx.arc(particle.x, particle.y, particle.size * alpha, 0, Math.PI * 2);
       ctx.fill();
     }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawJetTrail(theme, speedProgress, sonicBoomed, snake, direction, interpolation, interpolateSnake) {
+    const rawIntensity = jetTrailIntensity(speedProgress);
+    // The climb to Mach is intentionally dramatic. Once the boom has fired,
+    // retain a compact supersonic exhaust without distracting from gameplay.
+    const intensity = sonicBoomed ? Math.min(rawIntensity, 0.34) : rawIntensity;
+    if (intensity <= 0 || !snake?.length) return false;
+
+    const tailIndex = snake.length - 1;
+    const tail = snake[tailIndex];
+    const bodyNeighbor = snake[Math.max(0, tailIndex - 1)];
+    const candidatePrevious = interpolateSnake && prevSnake?.[tailIndex]
+      ? prevSnake[tailIndex]
+      : tail;
+    const crossedWrappedEdge = Math.abs(candidatePrevious.x - tail.x) > 1
+      || Math.abs(candidatePrevious.y - tail.y) > 1;
+    const previous = crossedWrappedEdge ? tail : candidatePrevious;
+    const tailX = lerp(previous.x, tail.x, interpolation) * cellSize + cellSize / 2;
+    const tailY = lerp(previous.y, tail.y, interpolation) * cellSize + cellSize / 2;
+
+    let outwardX = tail.x - bodyNeighbor.x;
+    let outwardY = tail.y - bodyNeighbor.y;
+    if (outwardX > 1) outwardX = -1;
+    else if (outwardX < -1) outwardX = 1;
+    if (outwardY > 1) outwardY = -1;
+    else if (outwardY < -1) outwardY = 1;
+    if (outwardX === 0 && outwardY === 0) {
+      outwardX = -(direction?.x || 1);
+      outwardY = -(direction?.y || 0);
+    }
+
+    const pulse = (Math.sin(foodPulse * 4.8) + 1) / 2;
+    const plumeLength = 12 + intensity * 42 + pulse * (2 + intensity * 3);
+    const vaporLength = plumeLength + 8 + intensity * 18;
+    const nozzleOffset = 3.4;
+    const contrailColor = theme.trail || theme.accent || '#ffffff';
+
+    ctx.save();
+    ctx.translate(tailX, tailY);
+    ctx.rotate(Math.atan2(outwardY, outwardX));
+
+    // The vapor wake grows around the exhaust instead of tracing previously
+    // occupied cells. Its stepped polygons retain the game's pixel identity.
+    if (intensity > 0.22) {
+      const vaporAlpha = 0.12 + intensity * 0.28;
+      ctx.globalAlpha = vaporAlpha;
+      ctx.fillStyle = contrailColor;
+      for (const side of [-1, 1]) {
+        const nearY = side * (6 + intensity * 2);
+        const farY = side * (13 + intensity * 8);
+        ctx.beginPath();
+        ctx.moveTo(7, nearY);
+        ctx.lineTo(vaporLength * 0.48, side * (9 + intensity * 5));
+        ctx.lineTo(vaporLength, farY);
+        ctx.lineTo(vaporLength * 0.72, side * (10 + intensity * 6));
+        ctx.lineTo(15, side * (5 + intensity * 2));
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    if (intensity > 0.55) {
+      ctx.globalAlpha = 0.28 + intensity * 0.35;
+      ctx.fillStyle = '#ffffff';
+      const streakPhase = Math.round(foodPulse * 5) % 3;
+      const streaks = [
+        { x: 17 + streakPhase * 3, y: -15, width: 12 + intensity * 14 },
+        { x: 30 - streakPhase * 2, y: 16, width: 8 + intensity * 11 },
+        { x: 48 + streakPhase, y: -23, width: 5 + intensity * 8 }
+      ];
+      for (const streak of streaks) {
+        ctx.fillRect(streak.x, streak.y, streak.width, 2 + intensity);
+        ctx.fillRect(streak.x + streak.width - 3, streak.y + (streak.y < 0 ? 2 : -2), 3, 2);
+      }
+    }
+
+    ctx.shadowColor = '#ff7a1a';
+    ctx.shadowBlur = 5 + intensity * 12;
+    for (const side of [-1, 1]) {
+      const centerY = side * nozzleOffset;
+      const flicker = side > 0 ? pulse * 3 : (1 - pulse) * 3;
+      const jetLength = plumeLength - flicker;
+
+      ctx.globalAlpha = 0.92;
+      ctx.fillStyle = '#1b1d24';
+      ctx.fillRect(5, centerY - 3.5, 8, 7);
+
+      ctx.fillStyle = '#ff5a16';
+      ctx.beginPath();
+      ctx.moveTo(11, centerY - 4);
+      ctx.lineTo(jetLength * 0.48, centerY - 5 - intensity * 2);
+      ctx.lineTo(jetLength, centerY + side * 2);
+      ctx.lineTo(jetLength * 0.6, centerY + 4 + intensity * 2);
+      ctx.lineTo(11, centerY + 4);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#ffae3d';
+      ctx.beginPath();
+      ctx.moveTo(10, centerY - 2.6);
+      ctx.lineTo(jetLength * 0.55, centerY - 3);
+      ctx.lineTo(jetLength * 0.82, centerY + side);
+      ctx.lineTo(jetLength * 0.52, centerY + 3);
+      ctx.lineTo(10, centerY + 2.6);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#fff6bd';
+      ctx.beginPath();
+      ctx.moveTo(10, centerY - 1.4);
+      ctx.lineTo(jetLength * (0.48 + intensity * 0.12), centerY - 1.5);
+      ctx.lineTo(jetLength * (0.64 + pulse * 0.05), centerY);
+      ctx.lineTo(jetLength * (0.48 + intensity * 0.12), centerY + 1.5);
+      ctx.lineTo(10, centerY + 1.4);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // A few detached hot pixels make the plume feel turbulent at full burn.
+    if (intensity > 0.72) {
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 0.55 + intensity * 0.3;
+      ctx.fillStyle = pulse > 0.5 ? '#ff7a1a' : '#ffd36a';
+      ctx.fillRect(plumeLength + 4, -4, 3, 3);
+      ctx.fillRect(plumeLength * 0.82, 10, 2, 2);
+      ctx.fillRect(plumeLength + 10, 5, 2, 2);
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+    return true;
+  }
+
+  function drawSonicBoom(theme) {
+    if (sonicBoomLife <= 0 || !sonicBoomOrigin) return;
+    const progress = 1 - sonicBoomLife / 0.72;
+    const radius = 12 + progress * 150;
+    const sides = 12;
+    ctx.save();
+    ctx.translate(sonicBoomOrigin.x, sonicBoomOrigin.y);
+    ctx.strokeStyle = progress < 0.45 ? '#ffffff' : (theme.accent || theme.trail);
+    ctx.shadowColor = theme.accent || theme.trail;
+    ctx.shadowBlur = 12;
+    ctx.lineWidth = progress < 0.35 ? 4 : 2;
+    ctx.globalAlpha = Math.max(0, sonicBoomLife / 0.72) * 0.72;
+    for (const offset of [0, -10]) {
+      ctx.beginPath();
+      for (let side = 0; side <= sides; side++) {
+        const angle = side / sides * Math.PI * 2;
+        const x = Math.cos(angle) * Math.max(1, radius + offset);
+        const y = Math.sin(angle) * Math.max(1, radius + offset);
+        if (side === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
     ctx.globalAlpha = 1;
   }
 
@@ -349,7 +510,7 @@ export function createCanvasRenderer({
   }
 
   function draw(interpolation) {
-    const { snake, direction, food, theme, themeId, alive, paused, rivalGhost } = getGameState();
+    const { snake, direction, food, theme, themeId, alive, paused, rivalGhost, speedProgress = 0, sonicBoomed = false, highSpeedEffectsEnabled = true } = getGameState();
     if (!snake?.length || !food || !theme) return;
     ctx.fillStyle = theme.bg; ctx.fillRect(0, 0, canvasWidth, canvasHeight);
     ctx.strokeStyle = theme.grid; ctx.lineWidth = 0.5;
@@ -361,10 +522,13 @@ export function createCanvasRenderer({
 
     const interpolateSnake = prevSnake && prevSnake.length === snake.length && interpolation < 1;
     const t = interpolateSnake ? Math.min(interpolation, 1) : 1;
-    for (const trail of trailPoints) {
+    const jetTrailDrawn = highSpeedEffectsEnabled
+      ? drawJetTrail(theme, speedProgress, sonicBoomed, snake, direction, t, interpolateSnake)
+      : false;
+    if (!jetTrailDrawn) for (const trail of trailPoints) {
       const alpha = trail.alpha * 0.6;
       if (alpha < 0.02) continue;
-      ctx.globalAlpha = alpha; ctx.fillStyle = theme.trail; ctx.beginPath(); ctx.arc(trail.x, trail.y, cellSize / 2 - 3, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = alpha; ctx.fillStyle = theme.trail; ctx.beginPath(); ctx.arc(trail.headX, trail.headY, cellSize / 2 - 3, 0, Math.PI * 2); ctx.fill();
     }
     ctx.globalAlpha = 1;
 
@@ -452,6 +616,7 @@ export function createCanvasRenderer({
     ctx.shadowColor = theme.food; ctx.shadowBlur = 8 + Math.sin(foodPulse) * 4; ctx.fillStyle = theme.food; ctx.beginPath(); ctx.arc(food.x * cellSize + cellSize / 2, food.y * cellSize + cellSize / 2, (cellSize / 2 - 2) * foodScale, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
     drawFoodSprite(food.x * cellSize + cellSize / 2, food.y * cellSize + cellSize / 2, foodScale, themeId);
     drawParticles(); drawDeathSegments();
+    if (highSpeedEffectsEnabled) drawSonicBoom(theme);
     if (deathFlash > 0) { ctx.fillStyle = theme.deathFlash + deathFlash + ')'; ctx.fillRect(0, 0, canvasWidth, canvasHeight); deathFlash -= 0.04; }
     if (paused && alive) { ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.fillRect(0, 0, canvasWidth, canvasHeight); ctx.fillStyle = theme.accent; ctx.font = 'bold 32px -apple-system, SF Pro Display'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('PAUSED', canvasWidth / 2, canvasHeight / 2); }
   }
@@ -459,14 +624,19 @@ export function createCanvasRenderer({
   function resetEffects() {
     prevSnake = null; particles.length = 0; deathSegments = []; tombstones = []; trailPoints = [];
     lastRivalTombstoneSequence = -1;
-    deathFlash = 0; foodScale = 1; foodScaleTarget = 1; dragonFireBurst = 0; fighterImpactBurst = 0; screenShake = 0; shakeX = 0; shakeY = 0;
+    deathFlash = 0; foodScale = 1; foodScaleTarget = 1; dragonFireBurst = 0; fighterImpactBurst = 0; sonicBoomLife = 0; sonicBoomOrigin = null; screenShake = 0; shakeX = 0; shakeY = 0;
   }
 
   function capturePreviousSnake(snake) { prevSnake = snake.map(segment => ({ ...segment })); }
   function recordMove(snake) {
     const head = snake[0];
-    if (!head) return;
-    trailPoints.unshift({ x: head.x * cellSize + cellSize / 2, y: head.y * cellSize + cellSize / 2, alpha: 1 });
+    const tail = snake[snake.length - 1];
+    if (!head || !tail) return;
+    trailPoints.unshift({
+      headX: head.x * cellSize + cellSize / 2,
+      headY: head.y * cellSize + cellSize / 2,
+      alpha: 1
+    });
     if (trailPoints.length > maxTrail) trailPoints.pop();
     for (const trail of trailPoints) trail.alpha *= 0.7;
   }
@@ -495,12 +665,23 @@ export function createCanvasRenderer({
     lastRivalTombstoneSequence = normalizedSequence;
     spawnTombstone(snake[0], '#ff5a8b');
   }
+  function triggerSonicBoom({ snake }) {
+    const head = snake?.[0];
+    if (!head) return;
+    sonicBoomOrigin = {
+      x: head.x * cellSize + cellSize / 2,
+      y: head.y * cellSize + cellSize / 2
+    };
+    sonicBoomLife = 0.72;
+    screenShake = Math.max(screenShake, 8);
+  }
   function update(dt) {
     updateParticles(dt); updateDeathSegments(dt); updateTombstones(dt);
+    if (sonicBoomLife > 0) sonicBoomLife = Math.max(0, sonicBoomLife - dt / 1000);
     if (screenShake > 0) { shakeX = (Math.random() - 0.5) * screenShake * 1.2; shakeY = (Math.random() - 0.5) * screenShake * 1.2; screenShake *= 0.85; if (screenShake < 0.5) { screenShake = 0; shakeX = 0; shakeY = 0; } }
   }
   function drawFrame(interpolation) { if (screenShake > 0) { ctx.save(); ctx.translate(shakeX, shakeY); } draw(interpolation); if (screenShake > 0) ctx.restore(); }
-  function hasActiveEffects() { return deathFlash > 0 || deathSegments.length > 0 || particles.length > 0 || tombstones.length > 0; }
+  function hasActiveEffects() { return deathFlash > 0 || sonicBoomLife > 0 || deathSegments.length > 0 || particles.length > 0 || tombstones.length > 0; }
   function updateFps(element) { fpsFrames++; const now = performance.now(); if (now - fpsLast >= 500) { element.textContent = `${Math.round(fpsFrames / ((now - fpsLast) / 1000))} FPS`; fpsFrames = 0; fpsLast = now; } }
 
   return {
@@ -510,6 +691,7 @@ export function createCanvasRenderer({
     triggerFoodEat,
     triggerCollision,
     triggerRivalTombstone,
+    triggerSonicBoom,
     update,
     draw: drawFrame,
     hasActiveEffects,

@@ -1083,6 +1083,17 @@
     letter-spacing: 0.04em;
     text-align: left;
   }
+  .player-toggle + .player-toggle { margin-top: 0; border-top: 0; }
+  .player-toggle span { min-width: 0; }
+  .player-toggle small {
+    display: block;
+    margin-top: 5px;
+    color: var(--muted);
+    font-size: 0.58rem;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    line-height: 1.4;
+  }
   .player-toggle input { width: 20px; height: 20px; accent-color: var(--accent); }
   #player-message {
     min-height: 1.4em;

@@ -43,6 +43,7 @@ export function normalizePlayerPreferences(value, { themeIds = [] } = {}) {
     backgroundMusicMuted: value.backgroundMusicMuted === true,
     gameMusicMuted: value.gameMusicMuted === true,
     autoSubmit: value.autoSubmit !== false,
+    highSpeedEffects: value.highSpeedEffects !== false,
     controlLayout: {
       dpad: cleanButtonGroup(value.controlLayout?.dpad, DPAD_BUTTONS),
       turn: cleanButtonGroup(value.controlLayout?.turn, TURN_BUTTONS)

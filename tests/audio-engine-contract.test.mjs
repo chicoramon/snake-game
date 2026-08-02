@@ -12,8 +12,10 @@ test('audio engine is isolated behind explicit game-state and theme dependencies
   assert.match(mainSource, /createAudioEngine\(\{[\s\S]*?getCurrentTheme: \(\) => THEMES\[currentTheme\],[\s\S]*?isRunActive: \(\) => alive,[\s\S]*?isPaused: \(\) => paused/);
 });
 
-test('audio engine retains mobile recovery and record-feedback hooks', () => {
+test('audio engine retains mobile recovery, record feedback, and sonic-boom hooks', () => {
   assert.match(audioSource, /document\.addEventListener\('visibilitychange'/);
   assert.match(audioSource, /document\.addEventListener\('pointerdown', wakeFromGesture/);
   assert.match(audioSource, /setRecordHeartbeat, stopRecordHeartbeat, playRecordFanfare/);
+  assert.match(audioSource, /function playSonicBoom/);
+  assert.match(audioSource, /sfxDie, playSonicBoom, setMuted/);
 });

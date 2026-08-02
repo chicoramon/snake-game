@@ -17,6 +17,7 @@ test('player preferences preserve supported account choices and customized contr
     backgroundMusicMuted: true,
     gameMusicMuted: false,
     autoSubmit: false,
+    highSpeedEffects: false,
     controlLayout: {
       dpad: { up: { x: 12.4, y: -9.7 }, bogus: { x: 1, y: 2 } },
       turn: { cw: { x: 45, y: 60 } }
@@ -30,6 +31,7 @@ test('player preferences preserve supported account choices and customized contr
     backgroundMusicMuted: true,
     gameMusicMuted: false,
     autoSubmit: false,
+    highSpeedEffects: false,
     controlLayout: {
       dpad: { up: { x: 12, y: -10 } },
       turn: { cw: { x: 45, y: 60 } }
@@ -46,4 +48,5 @@ test('player preferences reject unknown versions and exclude the private golden 
   }, { themeIds });
   assert.equal(normalized.themeSelection, 'default');
   assert.equal(normalized.activeTheme, 'default');
+  assert.equal(normalized.highSpeedEffects, true);
 });

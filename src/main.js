@@ -30,6 +30,7 @@ import { createLiveVsController } from './ui/live-vs-controller.js';
 import { createGameController } from './game/game-controller.js';
 import { createRunLifecycle } from './game/run-lifecycle.js';
 import { createLiveGameSession } from './game/live-game-session.js';
+import { reachedSonicBoom, speedProgress as calculateSpeedProgress } from './game/speed-effects.js';
 import {
   SPRINT_DURATION_MS as MODE_SPRINT_DURATION_MS,
   formatTimedRunTime,
@@ -95,6 +96,7 @@ const playerDisplaySetup = document.getElementById('player-display-setup');
 const playerDisplayNameInput = document.getElementById('player-display-name-input');
 const playerDisplayNameSave = document.getElementById('player-display-name-save');
 const autoSubmitToggle = document.getElementById('auto-submit-toggle');
+const highSpeedEffectsToggle = document.getElementById('high-speed-effects-toggle');
 const playerAccountSetup = document.getElementById('player-account-setup');
 const playerEmailInput = document.getElementById('player-email-input');
 const playerSaveEmail = document.getElementById('player-save-email');
@@ -405,6 +407,9 @@ if (window.visualViewport) {
 
 // --- State ---
 let snake, dir, nextDir, food, score, best, speed, alive, paused;
+const HIGH_SPEED_EFFECTS_KEY = 'snake_high_speed_effects';
+let highSpeedEffectsEnabled = localStorage.getItem(HIGH_SPEED_EFFECTS_KEY) !== 'false';
+let sonicBoomTriggered = false;
 let runActivatedAt = 0;
 let runControlMethod = null;
 let runUsesMixedControls = false;
@@ -500,6 +505,14 @@ function activeMinInterval() {
 
 function activeSpeedMultiplier() {
   return runGameMode === 'versus' ? Number(activeVsRoom?.speedMultiplier) || 1 : 1;
+}
+
+function activeSpeedProgress(sourceSpeed = speed) {
+  return calculateSpeedProgress({
+    speed: sourceSpeed,
+    baseInterval: activeBaseInterval(),
+    minInterval: activeMinInterval()
+  });
 }
 const SPRINT_DURATION_MS = 60000;
 const SPRINT_COUNTDOWN_MS = 3000;
@@ -792,6 +805,11 @@ const canvasRenderer = createCanvasRenderer({
     themeId: currentTheme,
     alive: versusSpectatorActive ? versusSpectatorState?.alive !== false : alive,
     paused: versusSpectatorActive ? false : paused,
+    highSpeedEffectsEnabled,
+    sonicBoomed: versusSpectatorActive ? false : sonicBoomTriggered,
+    speedProgress: versusSpectatorActive
+      ? activeSpeedProgress(versusSpectatorState?.speed)
+      : activeSpeedProgress(),
     rivalGhost: versusSpectatorActive || activeVsRoom?.rivalGhostEnabled === false ? null : rivalGhost
   })
 });
@@ -1179,6 +1197,7 @@ function prepareGameplayRun(seed = null) {
 
 function reset(startingRun = false) {
   canvasRenderer.resetEffects();
+  sonicBoomTriggered = false;
   snake = SnakeCore.createInitialSnake(COLS, ROWS);
   dir = {x: 1, y: 0};
   nextDir = {x: 1, y: 0};
@@ -1291,10 +1310,15 @@ function gameTick() {
     scoreEl.textContent = score;
     updateRecordChase();
     haptic('eat');
-    AudioEngine.sfxEat();
+    AudioEngine.sfxEat();
     AudioEngine.updateTempo(snake.length);
     const T = THEMES[currentTheme];
     canvasRenderer.triggerFoodEat({ food: eatenFood, theme: T });
+    if (highSpeedEffectsEnabled && !sonicBoomTriggered && reachedSonicBoom(activeSpeedProgress())) {
+      sonicBoomTriggered = true;
+      canvasRenderer.triggerSonicBoom({ snake });
+      AudioEngine.playSonicBoom();
+    }
     if (runGameMode !== 'versus' && score > best) {
       best = score;
       bestScores[runGameMode] = best;
@@ -2392,6 +2416,7 @@ const PENDING_SCORES_KEY = 'snake_pending_scores';
 const PENDING_DAILY_ATTEMPT_KEY = 'snake_pending_daily_attempt';
 let autoSubmitEnabled = localStorage.getItem(AUTO_SUBMIT_KEY) !== 'false';
 autoSubmitToggle.checked = autoSubmitEnabled;
+highSpeedEffectsToggle.checked = highSpeedEffectsEnabled;
 
 let applyingPlayerPreferences = false;
 let playerPreferenceSaveTimer = null;
@@ -2411,6 +2436,7 @@ function currentPlayerPreferences() {
     backgroundMusicMuted,
     gameMusicMuted,
     autoSubmit: autoSubmitEnabled,
+    highSpeedEffects: highSpeedEffectsEnabled,
     controlLayout: controls.getLayout()
   }, { themeIds: Object.keys(THEMES) });
 }
@@ -2456,12 +2482,15 @@ function applyPlayerPreferences(preferences) {
     backgroundMusicMuted = preferences.backgroundMusicMuted;
     gameMusicMuted = preferences.gameMusicMuted;
     autoSubmitEnabled = preferences.autoSubmit;
+    highSpeedEffectsEnabled = preferences.highSpeedEffects;
     localStorage.setItem(BG_MUSIC_MUTED_KEY, String(backgroundMusicMuted));
     localStorage.setItem(GAME_MUSIC_MUTED_KEY, String(gameMusicMuted));
     localStorage.setItem(AUTO_SUBMIT_KEY, String(autoSubmitEnabled));
+    localStorage.setItem(HIGH_SPEED_EFFECTS_KEY, String(highSpeedEffectsEnabled));
     MenuAudio.setMuted(backgroundMusicMuted);
     AudioEngine.setMuted(gameMusicMuted);
     autoSubmitToggle.checked = autoSubmitEnabled;
+    highSpeedEffectsToggle.checked = highSpeedEffectsEnabled;
     renderMusicButton(backgroundMusicBtn, 'BG', backgroundMusicMuted);
     renderMusicButton(muteBtn, 'GAME', gameMusicMuted);
   } finally {
@@ -3203,6 +3232,11 @@ function closePlayerPanel() { return playerIdentityController.closePanel(); }
 function handleSavePlayerInitials(value) { return playerIdentityController.handleSaveInitials(value); }
 function handleSavePlayerDisplayName(value) { return playerIdentityController.handleSaveDisplayName(value); }
 function handleAutoSubmitChanged(enabled) { return playerIdentityController.handleAutoSubmitChanged(enabled); }
+function handleHighSpeedEffectsChanged(enabled) {
+  highSpeedEffectsEnabled = Boolean(enabled);
+  localStorage.setItem(HIGH_SPEED_EFFECTS_KEY, String(highSpeedEffectsEnabled));
+  queuePlayerPreferenceSave();
+}
 function beginEmailCode(action) { return playerIdentityController.beginEmailCode(action); }
 function handleVerifyPlayerOtp(token) { return playerIdentityController.verifyOtp(token); }
 
@@ -3234,6 +3268,7 @@ playerPanelView = createPlayerPanel({
   onSaveInitials: handleSavePlayerInitials,
   onSaveDisplayName: handleSavePlayerDisplayName,
   onAutoSubmitChanged: handleAutoSubmitChanged,
+  onHighSpeedEffectsChanged: handleHighSpeedEffectsChanged,
   onBeginEmailCode: beginEmailCode,
   onVerifyOtp: handleVerifyPlayerOtp
 });

@@ -8,6 +8,7 @@ export function createAudioEngine({ getCurrentTheme, isRunActive, isPaused, getS
   let wakePromise = null;
   let heartbeatTimer = null;
   let heartbeatProgress = null;
+  let sonicDuckTimer = null;
   let nativeThemeAudio = null;
   let nativeThemeAudioUrl = '';
   let nativeAudioFailedUrl = '';
@@ -708,6 +709,14 @@ export function createAudioEngine({ getCurrentTheme, isRunActive, isPaused, getS
     setMusicDuck(1);
   }
 
+  function restoreMixAfterSonicBoom() {
+    sonicDuckTimer = null;
+    setMusicDuck(heartbeatProgress === null ? 1 : 0.14);
+    if (heartbeatProgress !== null && isRunActive() && !isPaused() && !heartbeatTimer) {
+      playHeartbeatPulse();
+    }
+  }
+
   function playScheduledTone(freq, start, duration, type, volume) {
     if (!freq) return;
     const osc = actx.createOscillator();
@@ -755,6 +764,8 @@ export function createAudioEngine({ getCurrentTheme, isRunActive, isPaused, getS
 
   function stop() {
     running = false;
+    if (sonicDuckTimer) clearTimeout(sonicDuckTimer);
+    sonicDuckTimer = null;
     stopRecordHeartbeat();
     stopSeqTimer();
     stopNativeThemeAudio(true);
@@ -822,7 +833,7 @@ export function createAudioEngine({ getCurrentTheme, isRunActive, isPaused, getS
     }
   }
 
-  function sfxDie() {
+  function sfxDie() {
     init();
     const T = getCurrentTheme().sfxDie;
     const t = actx.currentTime;
@@ -852,10 +863,65 @@ export function createAudioEngine({ getCurrentTheme, isRunActive, isPaused, getS
         click.start(start); click.stop(start + duration + 0.01);
       });
     }
-  }
-
+  }
+
+  function playSonicBoom() {
+    init();
+    clearHeartbeatTimer();
+    if (sonicDuckTimer) clearTimeout(sonicDuckTimer);
+    setMusicDuck(0.055);
+    wake(true).then(awake => {
+      if (!awake || !actx || actx.state !== 'running') {
+        restoreMixAfterSonicBoom();
+        return;
+      }
+
+      const start = actx.currentTime + 0.025;
+      const duration = 0.42;
+      const buffer = actx.createBuffer(1, Math.ceil(actx.sampleRate * duration), actx.sampleRate);
+      const samples = buffer.getChannelData(0);
+      for (let index = 0; index < samples.length; index++) {
+        const decay = Math.pow(1 - index / samples.length, 2.4);
+        samples[index] = (Math.random() < 0.5 ? -1 : 1) * decay;
+      }
+      const noise = actx.createBufferSource();
+      const lowpass = actx.createBiquadFilter();
+      const noiseGain = actx.createGain();
+      noise.buffer = buffer;
+      lowpass.type = 'lowpass';
+      lowpass.frequency.setValueAtTime(2400, start);
+      lowpass.frequency.exponentialRampToValueAtTime(180, start + duration);
+      noiseGain.gain.setValueAtTime(0.52, start);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, start + duration);
+      noise.connect(lowpass); lowpass.connect(noiseGain); noiseGain.connect(sfxGain);
+      noise.start(start); noise.stop(start + duration);
+
+      const sub = actx.createOscillator();
+      const subGain = actx.createGain();
+      sub.type = 'triangle';
+      sub.frequency.setValueAtTime(150, start);
+      sub.frequency.exponentialRampToValueAtTime(38, start + 0.58);
+      subGain.gain.setValueAtTime(0.6, start);
+      subGain.gain.exponentialRampToValueAtTime(0.001, start + 0.62);
+      sub.connect(subGain); subGain.connect(sfxGain);
+      sub.start(start); sub.stop(start + 0.64);
+
+      const crack = actx.createOscillator();
+      const crackGain = actx.createGain();
+      crack.type = 'square';
+      crack.frequency.setValueAtTime(920, start);
+      crack.frequency.exponentialRampToValueAtTime(110, start + 0.115);
+      crackGain.gain.setValueAtTime(0.18, start);
+      crackGain.gain.exponentialRampToValueAtTime(0.001, start + 0.13);
+      crack.connect(crackGain); crackGain.connect(sfxGain);
+      crack.start(start); crack.stop(start + 0.14);
+
+      sonicDuckTimer = setTimeout(restoreMixAfterSonicBoom, 780);
+    });
+  }
+
   return {
-    start, stop, pause, resume, updateTempo, sfxEat, sfxDie, setMuted, toggleMute,
+    start, stop, pause, resume, updateTempo, sfxEat, sfxDie, playSonicBoom, setMuted, toggleMute,
     setRecordHeartbeat, stopRecordHeartbeat, playRecordFanfare,
     get muted() { return muted; }
   };

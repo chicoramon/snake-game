@@ -6,6 +6,7 @@ export function createPlayerPanel({
   onSaveInitials,
   onSaveDisplayName,
   onAutoSubmitChanged,
+  onHighSpeedEffectsChanged,
   onBeginEmailCode,
   onVerifyOtp
 } = {}) {
@@ -18,6 +19,7 @@ export function createPlayerPanel({
   const displayName = document.getElementById('player-display-name-input');
   const displayNameSave = document.getElementById('player-display-name-save');
   const autoSubmit = document.getElementById('auto-submit-toggle');
+  const highSpeedEffects = document.getElementById('high-speed-effects-toggle');
   const saveEmail = document.getElementById('player-save-email');
   const restoreEmail = document.getElementById('player-restore-email');
   const otp = document.getElementById('player-otp-input');
@@ -39,6 +41,7 @@ export function createPlayerPanel({
     displayName?.addEventListener('input', sanitizeDisplayName);
     displayNameSave?.addEventListener('click', () => onSaveDisplayName?.(displayName.value));
     autoSubmit?.addEventListener('change', () => onAutoSubmitChanged?.(autoSubmit.checked));
+    highSpeedEffects?.addEventListener('change', () => onHighSpeedEffectsChanged?.(highSpeedEffects.checked));
     saveEmail?.addEventListener('click', () => onBeginEmailCode?.('save'));
     restoreEmail?.addEventListener('click', () => onBeginEmailCode?.('restore'));
     otp?.addEventListener('input', () => { otp.value = otp.value.replace(/\D/g, '').slice(0, 8); });
