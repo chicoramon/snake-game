@@ -27,7 +27,7 @@ const PRECACHE_ASSETS = [
   "./assets/icons/icon-512-maskable.png",
   "./assets/icons/icon-512.png",
   "./assets/index-l4ED09ub.css",
-  "./assets/index-tZTHtDKE.js",
+  "./assets/index-mxEjU25X.js",
   "./assets/manifest-BkglArjv.webmanifest",
   "./assets/social/og-image.jpg",
   "./assets/vs-battle-crest-DR2j8AP6.webp",
