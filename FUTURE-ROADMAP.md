@@ -104,6 +104,11 @@ Recommended first version:
 
 Before implementation, finalize how much snake length is lost after a self-collision, whether score is preserved, and whether Junior eventually receives its own participation-focused leaderboard.
 
+## Custom Theme Builder
+
+- **Planned.** Add a player-facing Custom Theme Builder.
+- Product scope, creation tools, sharing rules, moderation, storage, and technical architecture will be defined in a future planning session.
+
 ## Modular Source and Reproducible Build
 
 Replace the maintained single-file application with modular source files and a reproducible production build. This must be an incremental, behavior-preserving migration rather than a rewrite: normal feature work should remain possible, and every completed phase should leave the game deployable.

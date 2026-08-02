@@ -376,12 +376,28 @@
 }
 
 .onboarding-control-selector button {
+  position: relative;
   display: grid;
   grid-template-rows: 26px auto auto;
   place-items: center;
   min-width: 0;
   min-height: 75px !important;
   padding: 7px 3px !important;
+}
+
+.onboarding-control-recommended {
+  position: absolute;
+  top: -1px;
+  right: 3px;
+  margin: 0 !important;
+  padding: 2px 3px;
+  background: var(--onboard-accent);
+  color: #010705 !important;
+  font-size: 0.34rem !important;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
 }
 
 .control-pixel-icon {

@@ -39,6 +39,8 @@ test('new players can replay the arcade tour and select a control', async ({ pag
   await page.locator('#how-to-play-btn').click();
   await expect(page.locator('#onboarding-panel')).toHaveClass(/visible/);
   await page.locator('#onboarding-next').click();
+  await expect(page.locator('[data-onboarding-control="tap"]')).toHaveAttribute('data-recommended', 'true');
+  await expect(page.locator('.onboarding-control-recommended')).toHaveText(/recommended/i);
   await page.locator('[data-onboarding-control="turn"]').click();
   await page.locator('[data-training-turn="left"]').click();
   await page.locator('[data-training-turn="right"]').click();
