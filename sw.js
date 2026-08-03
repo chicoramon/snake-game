@@ -13,12 +13,12 @@ const OFFLINE_PAGE = './';
 // production assets. Keeping the template free of a fixed file list prevents
 // a new build from serving an old JavaScript or CSS shell offline.
 const PRECACHE_ASSETS = [
-  "./assets/apple-touch-icon-5fm-98x8.png",
+  "./assets/apple-touch-icon-B3tbnppw.png",
   "./assets/audio/ken-stage-96.mp3",
   "./assets/audio/snake-arcade-intro-96.mp3",
-  "./assets/favicon-16x16-CrE4Gukf.png",
-  "./assets/favicon-32x32-9LEdGOyX.png",
-  "./assets/favicon-9kQTcohj.ico",
+  "./assets/favicon-16x16-CJgaKMgr.png",
+  "./assets/favicon-32x32-DWOHXNtw.png",
+  "./assets/favicon-B4UXSoOG.ico",
   "./assets/icons/apple-touch-icon.png",
   "./assets/icons/favicon-16x16.png",
   "./assets/icons/favicon-32x32.png",
@@ -26,8 +26,8 @@ const PRECACHE_ASSETS = [
   "./assets/icons/icon-192.png",
   "./assets/icons/icon-512-maskable.png",
   "./assets/icons/icon-512.png",
-  "./assets/index-C-WZ8-CI.css",
-  "./assets/index-dZVkqEMW.js",
+  "./assets/index-Bh88RnE1.js",
+  "./assets/index-fGxX9frT.css",
   "./assets/manifest-BkglArjv.webmanifest",
   "./assets/social/og-image.jpg",
   "./assets/vs-battle-crest-DR2j8AP6.webp",
