@@ -34,8 +34,8 @@
 <title>Snake Game</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="./snake-core.js"></script>
-  <script type="module" crossorigin src="./assets/index-B90uChvN.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-EBs1NR1m.css">
+  <script type="module" crossorigin src="./assets/index-dZVkqEMW.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-C-WZ8-CI.css">
 </head>
 <body>
 
@@ -85,13 +85,37 @@
   </div>
   <div id="dailyChallengeInfo" hidden></div>
   <button id="startBtn">Play</button>
-  <div id="namePrompt">
+  <section id="run-result-panel" hidden aria-labelledby="run-result-title">
+    <span id="run-result-kicker">Run Complete</span>
+    <div class="run-result-emblem" aria-hidden="true">
+      <svg viewBox="0 0 16 16" shape-rendering="crispEdges" fill="currentColor">
+        <rect x="4" y="1" width="8" height="2"/><rect x="2" y="3" width="12" height="7"/>
+        <rect x="4" y="10" width="2" height="3"/><rect x="10" y="10" width="2" height="3"/>
+        <rect x="6" y="12" width="4" height="3"/><rect x="4" y="5" width="3" height="3" fill="#020504"/>
+        <rect x="9" y="5" width="3" height="3" fill="#020504"/><rect x="7" y="8" width="2" height="2" fill="#020504"/>
+      </svg>
+    </div>
+    <h2 id="run-result-title">Game Over</h2>
+    <div class="run-result-score-card">
+      <span id="run-result-mode">Classic Run</span>
+      <strong id="run-result-score">0</strong>
+      <span id="run-result-score-label">Final Score</span>
+      <p id="run-result-detail"></p>
+    </div>
+
+  <div id="namePrompt">
     <span class="np-label">Enter your initials</span>
     <span id="scoreMethodLabel"></span>
     <input id="nameInput" type="text" maxlength="3" placeholder="___" autocomplete="off" />
     <button id="submitScoreBtn" disabled>Submit</button>
   </div>
-  <button id="shareBtn"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="vertical-align:middle;margin-right:4px"><path d="M8 1L5 5h2v5h2V5h2L8 1zM2 11v3h12v-3h-2v1H4v-1H2z"/></svg>Share Score</button>
+  <div class="run-result-actions">
+    <button id="run-result-replay" class="run-result-primary" type="button">Play Again</button>
+    <button id="shareBtn" type="button"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1L5 5h2v5h2V5h2L8 1zM2 11v3h12v-3h-2v1H4v-1H2z"/></svg>Share Score</button>
+    <button id="run-result-leaderboard" type="button"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 14h3V6H2v8zm4.5 0h3V2h-3v12zm4.5 0h3V9H11v5z"/></svg>Leaderboard</button>
+    <button id="run-result-menu" type="button">Main Menu</button>
+  </div>
+  </section>
 
   <section class="menu-section menu-competition" aria-label="Competition">
     <span class="menu-section-label">Competition</span>
