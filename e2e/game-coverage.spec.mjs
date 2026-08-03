@@ -68,6 +68,25 @@ async function startRun(page) {
   await expect(page.locator('#game')).toBeVisible();
 }
 
+test('game over uses a dedicated result screen and can return to the menu', async ({ page }) => {
+  await openMenu(page, { blockSupabase: true });
+  await startRun(page);
+  await expect(page.locator('#overlay')).toHaveClass(/run-result/, { timeout: 8_000 });
+  await expect(page.locator('#run-result-panel')).toBeVisible();
+  await expect(page.locator('#run-result-title')).toHaveText('Game Over');
+  await expect(page.locator('#run-result-score')).toHaveText('0');
+  await expect(page.locator('#overlayTitle')).toBeHidden();
+  await expect(page.locator('#overlay .menu-section').first()).toBeHidden();
+  await expect(page.locator('#run-result-replay')).toBeVisible();
+  await expect(page.locator('#run-result-menu')).toBeVisible();
+
+  await page.locator('#run-result-menu').click();
+  await expect(page.locator('#overlay')).not.toHaveClass(/run-result/);
+  await expect(page.locator('#run-result-panel')).toBeHidden();
+  await expect(page.locator('#startBtn')).toBeVisible();
+  await expect(page.locator('#overlay .menu-section').first()).toBeVisible();
+});
+
 test('Daily Run shows its rules before the first timed run', async ({ page }) => {
   await openMenu(page, { blockSupabase: true, query: '?dailyIntro=1' });
   await page.locator('.game-mode-btn[data-game-mode="daily"]').click();

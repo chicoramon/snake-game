@@ -55,7 +55,17 @@ const ctx = canvas.getContext('2d');
 if (URL_PARAMS.has('debug')) document.body.classList.add('debug');
 if (GOLDEN_BACKDOOR) document.body.classList.add('golden-secret');
 const overlay = document.getElementById('overlay');
-const startBtn = document.getElementById('startBtn');
+const startBtn = document.getElementById('startBtn');
+const runResultPanel = document.getElementById('run-result-panel');
+const runResultKicker = document.getElementById('run-result-kicker');
+const runResultTitle = document.getElementById('run-result-title');
+const runResultMode = document.getElementById('run-result-mode');
+const runResultScore = document.getElementById('run-result-score');
+const runResultScoreLabel = document.getElementById('run-result-score-label');
+const runResultDetail = document.getElementById('run-result-detail');
+const runResultReplay = document.getElementById('run-result-replay');
+const runResultLeaderboard = document.getElementById('run-result-leaderboard');
+const runResultMenu = document.getElementById('run-result-menu');
 const shareBtn = document.getElementById('shareBtn');
 const lbBtn = document.getElementById('lbBtn');
 const liveVsButton = document.getElementById('vs-live-btn');
@@ -1395,6 +1405,46 @@ async function submitVersusResult() {
   }
 }
 
+function clearRunResultState() {
+  overlay.classList.remove('run-result');
+  runResultPanel.hidden = true;
+  runResultPanel.removeAttribute('data-tone');
+  shareBtn.style.display = 'none';
+  namePrompt.style.display = 'none';
+}
+
+function showRunResultState({
+  kicker,
+  title,
+  mode,
+  scoreValue = score,
+  scoreLabel = 'Final Score',
+  detail = '',
+  tone = 'defeat',
+  showShare = true,
+  showLeaderboard = true,
+  showSubmission = true
+}) {
+  runResultKicker.textContent = kicker;
+  runResultTitle.textContent = title;
+  runResultMode.textContent = mode;
+  runResultScore.textContent = scoreValue;
+  runResultScoreLabel.textContent = scoreLabel;
+  runResultDetail.textContent = detail;
+  runResultPanel.dataset.tone = tone;
+  runResultPanel.hidden = false;
+  overlay.classList.add('run-result');
+  shareBtn.style.display = showShare ? 'flex' : 'none';
+  runResultLeaderboard.hidden = !showLeaderboard;
+  if (!showSubmission) namePrompt.style.display = 'none';
+  overlay.classList.remove('hidden');
+  overlay.setAttribute('aria-hidden', 'false');
+}
+
+function resultThemeLabel() {
+  return `${THEMES[currentTheme]?.name || 'Snake'} Theme`;
+}
+
 function showRunResult(reason) {
   MenuAudio.open();
   const isSprint = runGameMode === 'sprint';
@@ -1450,6 +1500,17 @@ function showRunResult(reason) {
     overlay.setAttribute('aria-hidden', 'false');
     recordResultVisible = false;
     hideRecordChase();
+    showRunResultState({
+      kicker: 'Signal Lost',
+      title: 'Run Interrupted',
+      mode: `Daily #${ensureDailyChallenge().number} • ${resultThemeLabel()}`,
+      scoreValue: score,
+      scoreLabel: 'Unranked Score',
+      detail: 'Focus was lost • this run cannot be ranked',
+      tone: 'warning',
+      showShare: false,
+      showSubmission: false
+    });
     return;
   }
   if (GOLDEN_BACKDOOR) {
@@ -1465,6 +1526,18 @@ function showRunResult(reason) {
     overlay.setAttribute('aria-hidden', 'false');
     recordResultVisible = false;
     hideRecordChase();
+    showRunResultState({
+      kicker: reason === 'collision' ? 'Golden Run Complete' : 'Golden Star',
+      title: reason === 'collision' ? 'Shine Again!' : 'Golden Star!',
+      mode: resultThemeLabel(),
+      scoreValue: score,
+      scoreLabel: 'Stars Collected',
+      detail: 'Keep shining!',
+      tone: 'golden',
+      showShare: false,
+      showLeaderboard: false,
+      showSubmission: false
+    });
     return;
   }
   overlayTitle.innerHTML = reason === 'time'
@@ -1482,6 +1555,22 @@ function showRunResult(reason) {
     ? (isDaily ? 'Mixed controls • Daily ranking checks all control methods together' : 'Mixed controls — this run is unranked')
     : `${modeHudLabel(runGameMode)} • ${CONTROL_LABELS[scoreMethod]}${isDaily ? (dailyAttempt?.ranked ? ` • ${dailyAttemptLabel(dailyAttempt.number)}` : ' • practice') : ' leaderboard'}`;
   scoreMethodLabel.classList.toggle('unranked', runUsesMixedControls && !isDaily);
+  const resultMode = isDaily
+    ? `Daily #${ensureDailyChallenge().number} • ${resultThemeLabel()}`
+    : `${modeHudLabel(runGameMode)} • ${resultThemeLabel()}`;
+  const resultDetail = isDaily
+    ? `Final food ${formatDailyFoodTime(dailyLastFoodElapsedMs)} • ${CONTROL_LABELS[scoreMethod]}`
+    : `${CONTROL_LABELS[scoreMethod]} controls • ${snake.length} segments`;
+  showRunResultState({
+    kicker: reason === 'time' ? (isDaily ? 'Daily Run Complete' : 'Time Expired') : 'Run Terminated',
+    title: reason === 'time' ? 'Time Up!' : 'Game Over',
+    mode: resultMode,
+    scoreValue: score,
+    scoreLabel: isDaily ? 'Daily Score' : 'Final Score',
+    detail: resultDetail,
+    tone: reason === 'time' ? 'complete' : 'defeat',
+    showShare: score > 0
+  });
   prepareRunSubmission();
   overlay.classList.remove('hidden');
   overlay.setAttribute('aria-hidden', 'false');
@@ -1693,6 +1782,7 @@ async function startGame(options = {}) {
       MenuAudio.close();
       stopRecordCelebration();
       recordResultVisible = false;
+      clearRunResultState();
       challenge ||= !versusRoom && gameMode === 'daily' ? ensureDailyChallenge() : null;
       if (versusRoom) {
         applyTheme(versusRoom.theme, { updateSelection: false });
@@ -3905,6 +3995,7 @@ async function returnFromVersusToMainMenu({ disconnect = true } = {}) {
   hudMode.removeAttribute('title');
   bestLabel.textContent = 'BEST';
   runGameMode = gameMode;
+  clearRunResultState();
   applyGameMode(gameMode);
   startBtn.textContent = 'Play';
   shareBtn.style.display = 'none';
@@ -3919,6 +4010,22 @@ async function returnFromVersusToMainMenu({ disconnect = true } = {}) {
     cleanUrl.searchParams.delete('vs');
     window.history.replaceState({}, '', cleanUrl);
   }
+}
+
+function returnRunResultToMainMenu() {
+  stopRecordCelebration();
+  recordResultVisible = false;
+  hideRecordChase();
+  clearRunResultState();
+  runGameMode = gameMode;
+  applyGameMode(gameMode);
+  startBtn.textContent = 'Play';
+  reset(false);
+  canvasRenderer.draw(1);
+  overlay.classList.remove('hidden');
+  overlay.setAttribute('aria-hidden', 'false');
+  MenuAudio.open();
+  startBtn.focus({ preventScroll: true });
 }
 
 async function leaveVersusResult() {
@@ -3936,6 +4043,10 @@ startBtn.addEventListener('click', () => {
   }
   startGame();
 });
+
+runResultReplay.addEventListener('click', () => startGame());
+runResultLeaderboard.addEventListener('click', () => lbBtn.click());
+runResultMenu.addEventListener('click', returnRunResultToMainMenu);
 
 shareBtn.addEventListener('click', async () => {
   const modeName = runGameMode === 'daily' ? `Daily #${ensureDailyChallenge().number}` : (runGameMode === 'sprint' ? 'Sprint 60' : 'Classic');
