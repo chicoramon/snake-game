@@ -5,3 +5,6 @@ test-results/
 playwright-report/
 blob-report/
 source-assets/
+
+# Keep private project notes and planning documents out of source control.
+*.md
