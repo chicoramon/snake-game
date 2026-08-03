@@ -1558,6 +1558,29 @@
     text-transform: uppercase;
     text-shadow: 0 0 18px var(--accent-glow);
   }
+  #overlay h2.menu-brand {
+    width: clamp(7rem, min(42vw, 18dvh), 10.75rem);
+    aspect-ratio: 1;
+    flex: 0 0 auto;
+    overflow: hidden;
+    margin: -8px auto 9px;
+    border: 1px solid rgba(255, 170, 42, 0.62);
+    border-radius: 2px;
+    background: #010216;
+    line-height: 0;
+    box-shadow:
+      0 0 0 3px rgba(0,0,0,0.86),
+      0 0 24px rgba(255, 137, 22, 0.34),
+      0 0 16px var(--accent-glow);
+    text-shadow: none;
+  }
+  #overlay h2.menu-brand .menu-brand-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    image-rendering: pixelated;
+  }
   #overlay .theme-label {
     color: var(--muted);
     font-family: var(--pixel-font);
@@ -3114,6 +3137,7 @@
   }
   @media (max-height: 700px) {
     #overlay .ov-content { margin: 18px 0; padding-top: 20px; padding-bottom: 20px; }
+    #overlay h2.menu-brand { margin-top: -7px; margin-bottom: 7px; }
     #overlay #mute-btn { margin-top: 11px; }
     #overlay #music-controls { margin-top: 11px; }
   }

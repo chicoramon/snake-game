@@ -54,6 +54,10 @@ test('player identity bootstraps without page errors when Supabase is available'
 test('menu choices expose themes, random, controls, and leaderboard', async ({ page }) => {
   await openGame(page);
   await expect(page.locator('#golden-theme-btn')).toBeHidden();
+  const brandLogo = page.locator('#overlayTitle .menu-brand-image');
+  await expect(brandLogo).toBeVisible();
+  await expect(brandLogo).toHaveAttribute('src', /assets\/icons\/icon-512\.png/);
+  expect(await brandLogo.evaluate(image => image.naturalWidth)).toBe(512);
 
   const backgroundMusicButton = page.locator('#bg-music-btn');
   const gameMusicButton = page.locator('#mute-btn');
@@ -77,6 +81,7 @@ test('menu choices expose themes, random, controls, and leaderboard', async ({ p
   await page.locator('#random-theme-btn').click();
   await expect(page.locator('#random-theme-btn')).toHaveClass(/selected/);
   await page.locator('#options-back').click();
+  await expect(page.locator('#overlayTitle .menu-brand-image')).toBeVisible();
 
   await page.locator('#controls-btn').click();
   await expect(page.locator('#controls-edit-overlay')).toHaveClass(/visible/);

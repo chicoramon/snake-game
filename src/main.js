@@ -131,6 +131,30 @@ const overlayTitle = document.getElementById('overlayTitle');
 const themeLabel = document.getElementById('themeLabel');
 const overlayMsg = document.getElementById('overlayMsg');
 const menuThemeArt = document.getElementById('menu-theme-art');
+
+function renderMenuBrandTitle() {
+  overlayTitle.classList.add('menu-brand');
+  overlayTitle.setAttribute('aria-label', 'Snake');
+  const existingImage = overlayTitle.querySelector('.menu-brand-image');
+  if (existingImage) {
+    if (!existingImage.getAttribute('src')) existingImage.src = './assets/icons/icon-512.png';
+    return;
+  }
+  const image = document.createElement('img');
+  image.className = 'menu-brand-image';
+  image.src = './assets/icons/icon-512.png';
+  image.alt = '';
+  image.width = 512;
+  image.height = 512;
+  overlayTitle.replaceChildren(image);
+}
+
+function renderOverlayTextTitle(content, { html = false } = {}) {
+  overlayTitle.classList.remove('menu-brand');
+  overlayTitle.removeAttribute('aria-label');
+  if (html) overlayTitle.innerHTML = content;
+  else overlayTitle.textContent = content;
+}
 const scoreEl = document.getElementById('score');
 const bestEl = document.getElementById('best');
 const bestLabel = document.querySelector('.hud-best .label');
@@ -1007,7 +1031,7 @@ function applyTheme(id, { updateSelection = true } = {}) {
   // Update selected state in the extracted picker view.
   updateThemeSelectionUI();
   renderMenuThemeMarquee(id);
-  overlayTitle.textContent = id === 'got' ? 'DRAGON' : (id === 'golden' ? 'GOLDEN SNAKE' : 'SNAKE');
+  renderMenuBrandTitle();
   if (updateSelection) queuePlayerPreferenceSave();
 }
 
@@ -1242,10 +1266,8 @@ function reset(startingRun = false) {
   pauseBtn.disabled = competitivePauseDisabled;
   pauseBtn.setAttribute('aria-label', competitivePauseDisabled ? `${modeHudLabel(runGameMode)} cannot be paused` : 'Pause game');
   pauseBtn.title = competitivePauseDisabled ? `${modeHudLabel(runGameMode)} cannot be paused` : 'Pause (P)';
-  // Keep the game identity primary; the selected theme has its own label.
-  overlayTitle.textContent = currentTheme === 'got'
-    ? 'DRAGON'
-    : (currentTheme === 'golden' ? 'GOLDEN SNAKE' : 'SNAKE');
+  // Keep the game identity primary; the selected theme has its own marquee.
+  renderMenuBrandTitle();
   renderMenuThemeMarquee(currentTheme);
   overlayMsg.textContent = 'Select mode • Press play';
   placeFood();
@@ -1489,7 +1511,7 @@ function showRunResult(reason) {
     return;
   }
   if (isDaily && reason === 'interrupted') {
-    overlayTitle.textContent = 'RUN INTERRUPTED';
+    renderOverlayTextTitle('RUN INTERRUPTED');
     overlayMsg.textContent = 'Daily Run ended because the game lost focus. Daily Runs cannot be paused.';
     startBtn.textContent = 'Try Again';
     shareBtn.style.display = 'none';
@@ -1514,7 +1536,7 @@ function showRunResult(reason) {
     return;
   }
   if (GOLDEN_BACKDOOR) {
-    overlayTitle.textContent = reason === 'collision' ? 'SHINE AGAIN!' : 'GOLDEN STAR!';
+    renderOverlayTextTitle(reason === 'collision' ? 'SHINE AGAIN!' : 'GOLDEN STAR!');
     overlayMsg.textContent = `Score: ${score} • Keep shining!`;
     startBtn.textContent = 'Play Again';
     shareBtn.style.display = 'none';
@@ -1540,9 +1562,9 @@ function showRunResult(reason) {
     });
     return;
   }
-  overlayTitle.innerHTML = reason === 'time'
-    ? 'TIME UP!'
-    : '<svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="#ff003c"><rect x="2" y="1" width="6" height="2"/><rect x="1" y="3" width="8" height="2"/><rect x="1" y="5" width="2" height="2"/><rect x="7" y="5" width="2" height="2"/><rect x="3" y="5" width="4" height="2" fill="rgba(0,0,0,0.3)"/><rect x="2" y="7" width="2" height="2"/><rect x="6" y="7" width="2" height="2"/><rect x="3" y="9" width="4" height="1"/></svg> Game Over';
+  renderOverlayTextTitle(reason === 'time'
+    ? 'TIME UP!'
+    : '<svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="#ff003c"><rect x="2" y="1" width="6" height="2"/><rect x="1" y="3" width="8" height="2"/><rect x="1" y="5" width="2" height="2"/><rect x="7" y="5" width="2" height="2"/><rect x="3" y="5" width="4" height="2" fill="rgba(0,0,0,0.3)"/><rect x="2" y="7" width="2" height="2"/><rect x="6" y="7" width="2" height="2"/><rect x="3" y="9" width="4" height="1"/></svg> Game Over', { html: reason !== 'time' });
   overlayMsg.textContent = isDaily
     ? `Daily Score: ${score} • Final food: ${formatDailyFoodTime(dailyLastFoodElapsedMs)}`
     : `${isSprint ? 'Sprint ' : ''}Score: ${score}`;
@@ -2059,7 +2081,7 @@ if (GOLDEN_BACKDOOR) {
   document.getElementById('how-to-play-btn')?.setAttribute('hidden', '');
   displayNameInvite.hidden = true;
   dailyChallengeInfo.hidden = true;
-  overlayTitle.textContent = 'GOLDEN SNAKE';
+  renderOverlayTextTitle('GOLDEN SNAKE');
   overlayMsg.textContent = 'A golden surprise awaits!';
   hudMode.textContent = 'GOLDEN';
 }
