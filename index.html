@@ -5,37 +5,37 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Snake">
+<meta name="apple-mobile-web-app-title" content="SnakeBit">
 <meta name="theme-color" content="#000000">
-<meta name="description" content="8-bit chiptune snake game with adaptive soundtrack">
-<link rel="icon" href="./assets/favicon-B4UXSoOG.ico" sizes="any">
-<link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon-16x16-CJgaKMgr.png">
-<link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32x32-DWOHXNtw.png">
-<link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon-B3tbnppw.png">
+<meta name="description" content="SnakeBit is a competitive retro-arcade snake game with adaptive soundtracks, Daily Run, and live Vs play.">
+<link rel="icon" href="./assets/favicon-BxcpYJbg.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon-16x16-rbhnWYZq.png">
+<link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32x32-BIpU_scZ.png">
+<link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon-Crw-dTYJ.png">
 <link rel="manifest" id="app-manifest" href="./manifest.webmanifest">
 
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Snake Game">
-<meta property="og:title" content="Snake Game — One More Game">
-<meta property="og:description" content="An 8-bit snake game with adaptive chiptune soundtracks, competitive leaderboards, and distinctive themes.">
+<meta property="og:site_name" content="SnakeBit">
+<meta property="og:title" content="SnakeBit — One. More. Game.">
+<meta property="og:description" content="A competitive retro-arcade snake game with adaptive soundtracks, Daily Run, live Vs play, and distinctive themes.">
 <meta property="og:url" content="https://chicoramon.github.io/snake-game/">
 <meta property="og:image" content="https://chicoramon.github.io/snake-game/assets/social/og-image.jpg">
 <meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Pixel-art Snake Game artwork with a green snake, red apple, and the words Your New Addiction — One More Game">
+<meta property="og:image:alt" content="SnakeBit logo featuring a green snake, red apple, and the words One. More. Game.">
 
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Snake Game — One More Game">
-<meta name="twitter:description" content="An 8-bit snake game with adaptive chiptune soundtracks and competitive leaderboards.">
+<meta name="twitter:title" content="SnakeBit — One. More. Game.">
+<meta name="twitter:description" content="A competitive retro-arcade snake game with adaptive soundtracks, Daily Run, and live Vs play.">
 <meta name="twitter:image" content="https://chicoramon.github.io/snake-game/assets/social/og-image.jpg">
-<meta name="twitter:image:alt" content="Pixel-art Snake Game artwork with a green snake and red apple">
+<meta name="twitter:image:alt" content="SnakeBit logo featuring a green snake and red apple">
 
-<title>Snake Game</title>
+<title>SnakeBit</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="./snake-core.js"></script>
-  <script type="module" crossorigin src="./assets/index-Bh88RnE1.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-fGxX9frT.css">
+  <script type="module" crossorigin src="./assets/index-B6Rxi3Zn.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-DAG4ujEE.css">
 </head>
 <body>
 
@@ -48,7 +48,7 @@
   <div id="record-chase" role="status" aria-live="polite"></div>
 </div>
 
-<canvas id="game" role="img" aria-label="Snake game board"></canvas>
+<canvas id="game" role="img" aria-label="SnakeBit game board"></canvas>
 <div id="countdownDisplay" aria-live="assertive"></div>
 <div id="live-vs-spectator-bar" hidden aria-live="polite">
   <div>
@@ -69,8 +69,8 @@
 
 <div id="overlay">
   <div class="ov-content">
-  <h2 id="overlayTitle" class="menu-brand" aria-label="Snake">
-    <img class="menu-brand-image" alt="" width="512" height="512" />
+  <h2 id="overlayTitle" class="menu-brand" aria-label="SnakeBit">
+    <img class="menu-brand-image" alt="" width="720" height="530" />
   </h2>
   <div id="menu-theme-marquee" aria-live="polite">
     <div id="menu-theme-art" aria-hidden="true"></div>
@@ -360,7 +360,7 @@
             <rect x="8" y="4" width="3" height="3" class="onboarding-eye"/>
             <rect x="29" y="12" width="3" height="3" class="onboarding-food"/>
           </svg>
-          <span>Snake Arcade</span>
+          <span>SnakeBit Arcade</span>
         </div>
         <div class="onboarding-level">
           <span id="onboarding-stage-label">Boot Sequence</span>
@@ -503,7 +503,7 @@
             <div><p class="onboarding-kicker">Protect Your Progress</p><h2>Keep Your Legacy</h2></div>
           </div>
           <div class="onboarding-player-pass">
-            <div class="player-pass-top"><span>Snake Arcade ID</span><i>Device Player</i></div>
+            <div class="player-pass-top"><span>SnakeBit Arcade ID</span><i>Device Player</i></div>
             <div class="player-pass-id"><strong>YOU</strong><span>·F4D9</span></div>
             <div class="player-pass-stats"><span>Scores<b>Saved</b></span><span>Identity<b>Local</b></span></div>
           </div>
@@ -674,7 +674,7 @@
       <div class="career-snake-mark" aria-hidden="true">
         <svg viewBox="0 0 18 18" shape-rendering="crispEdges"><path d="M2 2h8v3H5v3h8v3H8v2h7v3H5v-3H2v-3h8V8H2V2zm11 0h3v3h-3V2z"/><rect x="14" y="3" width="1" height="1" class="career-eye"/></svg>
       </div>
-      <div><span class="menu-kicker">Project Neon Fang</span><h2 id="career-stats-heading">Arcade Career</h2></div>
+      <div><span class="menu-kicker">SnakeBit</span><h2 id="career-stats-heading">Arcade Career</h2></div>
       <span id="career-stats-source">LIVE LEDGER</span>
     </header>
 
