@@ -1559,27 +1559,23 @@
     text-shadow: 0 0 18px var(--accent-glow);
   }
   #overlay h2.menu-brand {
-    width: clamp(7rem, min(42vw, 18dvh), 10.75rem);
-    aspect-ratio: 1;
+    width: clamp(11rem, min(68vw, 25dvh), 14.5rem);
+    aspect-ratio: 72 / 53;
     flex: 0 0 auto;
-    overflow: hidden;
+    overflow: visible;
     margin: -8px auto 9px;
-    border: 1px solid rgba(255, 170, 42, 0.62);
-    border-radius: 2px;
-    background: #010216;
     line-height: 0;
-    box-shadow:
-      0 0 0 3px rgba(0,0,0,0.86),
-      0 0 24px rgba(255, 137, 22, 0.34),
-      0 0 16px var(--accent-glow);
+    filter:
+      drop-shadow(0 0 15px rgba(255, 176, 38, 0.25))
+      drop-shadow(0 0 11px var(--accent-glow));
     text-shadow: none;
   }
   #overlay h2.menu-brand .menu-brand-image {
     display: block;
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    image-rendering: pixelated;
+    object-fit: contain;
+    image-rendering: auto;
   }
   #overlay .theme-label {
     color: var(--muted);

@@ -56,8 +56,8 @@ test('menu choices expose themes, random, controls, and leaderboard', async ({ p
   await expect(page.locator('#golden-theme-btn')).toBeHidden();
   const brandLogo = page.locator('#overlayTitle .menu-brand-image');
   await expect(brandLogo).toBeVisible();
-  await expect(brandLogo).toHaveAttribute('src', /assets\/icons\/icon-512\.png/);
-  expect(await brandLogo.evaluate(image => image.naturalWidth)).toBe(512);
+  await expect(brandLogo).toHaveAttribute('src', /assets\/branding\/snakebit-logo\.png/);
+  expect(await brandLogo.evaluate(image => image.naturalWidth)).toBe(720);
 
   const backgroundMusicButton = page.locator('#bg-music-btn');
   const gameMusicButton = page.locator('#mute-btn');

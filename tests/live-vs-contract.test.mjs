@@ -70,7 +70,7 @@ test('Live Vs lobby and controller are present in the modular app', () => {
   assert.match(main, /async function continuePendingLiveVsInvite\(\)[\s\S]*?if \(!playerProfile\)[\s\S]*?openPlayerPanel\(\)[\s\S]*?liveVsUi\.openInvite\(code\)/);
   assert.doesNotMatch(main, /playerIdentityPromise\s*[\r\n]+\s*\.catch\(\(\) => \{\}\)\s*[\r\n]+\s*\.then\(\(\) => liveVsUi\.openInvite/);
   assert.match(controller, /searchParams\.set\('vs', code\)/);
-  assert.match(controller, /navigator\.share\(\{\s*title:\s*'Snake Vs Casual',\s*text,\s*url\s*\}\)/);
+  assert.match(controller, /navigator\.share\(\{\s*title:\s*'SnakeBit Vs Casual',\s*text,\s*url\s*\}\)/);
   assert.match(controller, /returnToLobby/);
   assert.match(controller, /waitForRival/);
   assert.match(controller, /showWaitingRoom/);

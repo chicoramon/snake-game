@@ -711,10 +711,10 @@ export function createLiveVsController({
   async function shareRoom() {
     if (!room?.code) return;
     const url = inviteUrl(room.code);
-    const text = `Join my Snake Vs Casual battle room ${room.code}.`;
+    const text = `Join my SnakeBit Vs Casual battle room ${room.code}.`;
     try {
       if (navigator.share) {
-        await navigator.share({ title: 'Snake Vs Casual', text, url });
+        await navigator.share({ title: 'SnakeBit Vs Casual', text, url });
         setMessage('Invite ready to send');
       } else {
         await navigator.clipboard.writeText(url);

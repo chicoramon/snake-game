@@ -134,18 +134,20 @@ const menuThemeArt = document.getElementById('menu-theme-art');
 
 function renderMenuBrandTitle() {
   overlayTitle.classList.add('menu-brand');
-  overlayTitle.setAttribute('aria-label', 'Snake');
+  overlayTitle.setAttribute('aria-label', 'SnakeBit');
   const existingImage = overlayTitle.querySelector('.menu-brand-image');
   if (existingImage) {
-    if (!existingImage.getAttribute('src')) existingImage.src = './assets/icons/icon-512.png';
+    if (!existingImage.getAttribute('src')?.endsWith('/assets/branding/snakebit-logo.png')) {
+      existingImage.src = './assets/branding/snakebit-logo.png';
+    }
     return;
   }
   const image = document.createElement('img');
   image.className = 'menu-brand-image';
-  image.src = './assets/icons/icon-512.png';
+  image.src = './assets/branding/snakebit-logo.png';
   image.alt = '';
-  image.width = 512;
-  image.height = 512;
+  image.width = 720;
+  image.height = 530;
   overlayTitle.replaceChildren(image);
 }
 
@@ -4073,9 +4075,9 @@ runResultMenu.addEventListener('click', returnRunResultToMainMenu);
 shareBtn.addEventListener('click', async () => {
   const modeName = runGameMode === 'daily' ? `Daily #${ensureDailyChallenge().number}` : (runGameMode === 'sprint' ? 'Sprint 60' : 'Classic');
   const timing = runGameMode === 'daily' ? ` (final food ${formatDailyFoodTime(dailyLastFoodElapsedMs)})` : '';
-  const text = `I scored ${score}${timing} in Snake ${modeName}! Can you beat me?\nhttps://chicoramon.github.io/snake-game/`;
+  const text = `I scored ${score}${timing} in SnakeBit ${modeName}! Can you beat me?\nhttps://chicoramon.github.io/snake-game/`;
   if (navigator.share) {
-    try { await navigator.share({ title: 'Snake Score', text }); } catch {}
+    try { await navigator.share({ title: 'SnakeBit Score', text }); } catch {}
   } else {
     try {
       await navigator.clipboard.writeText(text);
