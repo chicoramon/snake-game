@@ -1,7 +1,7 @@
 {
-  "name": "Snake Game — 8-bit Chiptune",
-  "short_name": "Snake",
-  "description": "An 8-bit snake game with adaptive chiptune soundtracks, competitive leaderboards, and distinctive themes.",
+  "name": "SnakeBit — One. More. Game.",
+  "short_name": "SnakeBit",
+  "description": "A competitive retro-arcade snake game with adaptive soundtracks, Daily Run, live Vs play, and distinctive themes.",
   "id": "./",
   "start_url": "./",
   "scope": "./",
