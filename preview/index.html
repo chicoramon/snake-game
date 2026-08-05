@@ -34,8 +34,8 @@
 <title>SnakeBit</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="./snake-core.js"></script>
-  <script type="module" crossorigin src="./assets/index-BdbE25EH.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-CXyVjskO.css">
+  <script type="module" crossorigin src="./assets/index-Dh_WR2ln.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-Bz_MEbQ2.css">
 </head>
 <body>
 
@@ -72,7 +72,6 @@
     <header class="final-moments-heading">
       <span>SnakeBit Replay System</span>
       <strong>Final Moments</strong>
-      <em id="final-moments-flow" hidden></em>
     </header>
     <div class="final-moments-frame">
       <canvas id="final-moments-canvas" width="400" height="640" aria-label="Slow-motion replay of the run's final moments"></canvas>
@@ -109,7 +108,6 @@
   <button id="startBtn">Play</button>
   <section id="run-result-panel" hidden aria-labelledby="run-result-title">
     <span id="run-result-kicker">Run Complete</span>
-    <span id="run-result-flow" hidden></span>
     <div class="run-result-emblem" aria-hidden="true">
       <svg viewBox="0 0 16 16" shape-rendering="crispEdges" fill="currentColor">
         <rect x="4" y="1" width="8" height="2"/><rect x="2" y="3" width="12" height="7"/>
@@ -120,10 +118,13 @@
     </div>
     <h2 id="run-result-title">Game Over</h2>
     <div class="run-result-score-card">
+      <canvas id="run-result-moment-canvas" width="400" height="640" hidden aria-hidden="true"></canvas>
+      <span class="run-result-moment-shade" aria-hidden="true"></span>
       <span id="run-result-mode">Classic Run</span>
       <strong id="run-result-score">0</strong>
       <span id="run-result-score-label">Final Score</span>
       <p id="run-result-detail"></p>
+      <span id="run-result-moment-prompt" hidden><strong>Final Moments</strong><span>Tap to replay ▶</span></span>
     </div>
 
   <div id="namePrompt">
@@ -134,7 +135,6 @@
   </div>
   <div class="run-result-actions">
     <button id="run-result-replay" class="run-result-primary" type="button">Play Again</button>
-    <button id="run-result-watch" type="button" hidden>Watch Final Moments</button>
     <button id="shareBtn" type="button"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1L5 5h2v5h2V5h2L8 1zM2 11v3h12v-3h-2v1H4v-1H2z"/></svg>Share Score</button>
     <button id="run-result-leaderboard" type="button"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 14h3V6H2v8zm4.5 0h3V2h-3v12zm4.5 0h3V9H11v5z"/></svg>Leaderboard</button>
     <button id="run-result-menu" type="button">Main Menu</button>
