@@ -34,8 +34,8 @@
 <title>SnakeBit</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="./snake-core.js"></script>
-  <script type="module" crossorigin src="./assets/index-B6Rxi3Zn.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-DAG4ujEE.css">
+  <script type="module" crossorigin src="./assets/index-cYaYf9UC.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-CU6bbIRg.css">
 </head>
 <body>
 
@@ -66,6 +66,25 @@
     <span id="record-banner-copy">Leaderboard record</span>
   </div>
 </div>
+
+<section id="final-moments-overlay" hidden aria-label="Final Moments replay">
+  <div class="final-moments-shell">
+    <header class="final-moments-heading">
+      <span>SnakeBit Replay System</span>
+      <strong>Final Moments</strong>
+    </header>
+    <div class="final-moments-frame">
+      <canvas id="final-moments-canvas" width="400" height="640" aria-label="Slow-motion replay of the run's final moments"></canvas>
+    </div>
+    <p id="final-moments-status" role="status" aria-live="polite">Final moments acquired</p>
+    <div class="final-moments-actions">
+      <button id="final-moments-play-again" class="final-moments-primary" type="button">Play Again</button>
+      <button id="final-moments-watch-again" type="button" hidden><span class="final-moments-action-icon" aria-hidden="true"></span><span class="final-moments-action-label">Watch Again</span></button>
+      <button id="final-moments-share" type="button" hidden><span class="final-moments-action-icon" aria-hidden="true"></span><span class="final-moments-action-label">Share Replay</span></button>
+      <button id="final-moments-results" type="button">Results</button>
+    </div>
+  </div>
+</section>
 
 <div id="overlay">
   <div class="ov-content">
@@ -99,10 +118,13 @@
     </div>
     <h2 id="run-result-title">Game Over</h2>
     <div class="run-result-score-card">
+      <canvas id="run-result-moment-canvas" width="400" height="640" hidden aria-hidden="true"></canvas>
+      <span class="run-result-moment-shade" aria-hidden="true"></span>
       <span id="run-result-mode">Classic Run</span>
       <strong id="run-result-score">0</strong>
       <span id="run-result-score-label">Final Score</span>
       <p id="run-result-detail"></p>
+      <span id="run-result-moment-prompt" hidden><strong>Final Moments</strong><span>Watch Replay ▶</span></span>
     </div>
 
   <div id="namePrompt">
