@@ -20,7 +20,78 @@
     --muted: #9aa5a1;
 
     --pixel-font: ui-monospace, 'SFMono-Regular', 'Cascadia Mono', 'Roboto Mono', 'Courier New', monospace;
-  }
+}
+
+/* Final Moments is an isolated replay cabinet. It never resizes the live board. */
+#final-moments-overlay[hidden] { display: none !important; }
+#final-moments-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: max(env(safe-area-inset-top), 10px) 12px max(env(safe-area-inset-bottom), 10px);
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 42%, var(--accent-glow-mid), transparent 46%), rgba(0,0,0,0.96);
+  font-family: var(--pixel-font);
+}
+.final-moments-shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  width: min(94vw, 430px);
+  max-height: calc(100dvh - max(env(safe-area-inset-top), 10px) - max(env(safe-area-inset-bottom), 10px) - 20px);
+  padding: 12px;
+  border: 1px solid var(--accent-dim);
+  background: #010504;
+  box-shadow: 0 0 0 4px #000, 0 0 30px var(--accent-glow);
+}
+.final-moments-heading { position: relative; padding: 2px 4px 10px; text-align: center; text-transform: uppercase; }
+.final-moments-heading > span { display: block; color: var(--muted); font-size: 0.48rem; letter-spacing: 0.16em; }
+.final-moments-heading > strong { display: block; margin-top: 4px; color: var(--accent); font-size: clamp(0.95rem, 4vw, 1.25rem); letter-spacing: 0.16em; text-shadow: 0 0 14px var(--accent-glow); }
+.final-moments-frame { min-height: 0; display: grid; place-items: center; }
+#final-moments-canvas {
+  display: block;
+  width: auto;
+  height: min(66dvh, calc(100dvh - 205px));
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 5 / 8;
+  border: 2px solid var(--accent-dim);
+  image-rendering: pixelated;
+  box-shadow: 0 0 18px var(--accent-glow);
+}
+#final-moments-status { min-height: 1.35em; margin: 9px 0 7px; color: #fff; font-size: 0.58rem; line-height: 1.35; letter-spacing: 0.06em; text-align: center; text-transform: uppercase; }
+.final-moments-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.final-moments-actions button { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 42px; border: 1px solid var(--accent-dim); border-radius: 0; background: #03100c; color: var(--text); font-size: 0.62rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; }
+.final-moments-action-icon {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  background: var(--accent);
+  filter: drop-shadow(0 0 4px var(--accent));
+  -webkit-mask: center / contain no-repeat;
+  mask: center / contain no-repeat;
+}
+#final-moments-watch-again .final-moments-action-icon {
+  -webkit-mask-image: url('../../assets/icons/replay/replay-watch-again.svg');
+  mask-image: url('../../assets/icons/replay/replay-watch-again.svg');
+}
+#final-moments-share .final-moments-action-icon {
+  -webkit-mask-image: url('../../assets/icons/replay/replay-share.svg');
+  mask-image: url('../../assets/icons/replay/replay-share.svg');
+}
+.final-moments-actions button[hidden] { display: none !important; }
+.final-moments-actions .final-moments-primary { background: var(--accent); border-color: var(--accent); color: #010504; }
+#final-moments-play-again { grid-column: 1 / -1; min-height: 48px; }
+#final-moments-results { grid-column: 1 / -1; }
+@media (max-height: 700px) {
+  .final-moments-shell { padding: 8px; }
+  .final-moments-heading { padding-bottom: 6px; }
+  #final-moments-canvas { height: calc(100dvh - 180px); }
+  #final-moments-status { margin: 5px 0; }
+  .final-moments-actions button { min-height: 38px; }
+  #final-moments-play-again { min-height: 42px; }
+}
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
     background: #000;
@@ -3027,7 +3098,72 @@
       linear-gradient(90deg, transparent, var(--accent-glow-soft), transparent),
       rgba(0,0,0,0.5);
     box-shadow: inset 0 -3px 0 rgba(0,0,0,0.5), 0 0 18px var(--accent-glow-soft);
+    isolation: isolate;
+    overflow: hidden;
   }
+  .run-result-score-card.has-final-moments {
+    padding-bottom: 36px;
+    cursor: pointer;
+    background: #010504;
+    transition: border-color 120ms ease, box-shadow 120ms ease;
+  }
+  .run-result-score-card.has-final-moments:hover,
+  .run-result-score-card.has-final-moments:focus-visible {
+    border-color: var(--accent);
+    box-shadow: inset 0 -3px 0 rgba(0,0,0,0.5), 0 0 24px var(--accent-glow);
+    outline: none;
+  }
+  #run-result-moment-canvas {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+    outline: 0;
+    object-fit: cover;
+    opacity: 0.84;
+    filter: saturate(1.35) contrast(1.25) brightness(0.94);
+    image-rendering: pixelated;
+    box-shadow: none;
+  }
+  #run-result-moment-canvas[hidden] { display: none; }
+  .run-result-moment-shade {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, rgba(0,0,0,0.58), rgba(0,0,0,0.16) 50%, rgba(0,0,0,0.58)),
+      linear-gradient(0deg, rgba(0,0,0,0.9) 0 23%, transparent 50%, rgba(0,0,0,0.28));
+  }
+  .run-result-score-card:not(.has-final-moments) .run-result-moment-shade { display: none; }
+  #run-result-moment-prompt {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 27px;
+    padding: 5px 9px;
+    border-top: 1px solid var(--accent-dim);
+    background: rgba(0,0,0,0.84);
+    color: var(--text);
+    font-family: var(--pixel-font);
+    font-size: 0.48rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+  #run-result-moment-prompt[hidden] { display: none; }
+  #run-result-moment-prompt strong { color: var(--accent); font-size: 0.52rem; letter-spacing: 0.11em; }
+  .run-result-score-card[data-drama="record"] { --moment-signal: #ffd84a; border-color: rgba(255,216,74,0.72); }
+  .run-result-score-card[data-drama="near"] { --moment-signal: #ff4d67; border-color: rgba(255,77,103,0.72); }
+  .run-result-score-card[data-drama="sonic"] { --moment-signal: #dffcff; border-color: rgba(223,252,255,0.74); }
+  .run-result-score-card[data-drama] #run-result-moment-prompt strong { color: var(--moment-signal, var(--accent)); }
   .run-result-score-card::before,
   .run-result-score-card::after {
     content: '';
@@ -3035,6 +3171,7 @@
     width: 8px;
     height: 8px;
     border-color: var(--accent);
+    z-index: 2;
   }
   .run-result-score-card::before { top: -1px; left: -1px; border-top: 3px solid; border-left: 3px solid; }
   .run-result-score-card::after { right: -1px; bottom: -1px; border-right: 3px solid; border-bottom: 3px solid; }
@@ -3051,6 +3188,7 @@
     font-size: clamp(3.4rem, 17vw, 5rem);
     font-weight: 900;
     letter-spacing: -0.04em;
+    text-shadow: 3px 3px 0 #000, -2px -2px 0 rgba(0,0,0,0.72), 0 0 18px #000;
     line-height: 0.95;
     text-shadow: 4px 4px 0 #000, 0 0 22px var(--accent-glow);
   }
@@ -3116,6 +3254,15 @@
     font-size: 0.82rem;
     box-shadow: inset 0 -4px rgba(0,0,0,0.18), 0 0 20px var(--accent-glow);
   }
+  #overlay .run-result-actions .run-result-primary:hover,
+  #overlay .run-result-actions .run-result-primary:focus-visible {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #020504;
+    box-shadow: inset 0 -4px rgba(0,0,0,0.12), 0 0 28px var(--accent-glow);
+    filter: brightness(1.14);
+  }
+  #overlay .run-result-actions.single-secondary #run-result-leaderboard { grid-column: 1 / -1; }
   #overlay .run-result-actions #run-result-menu { grid-column: 1 / -1; }
   #overlay .run-result-actions button[hidden] { display: none !important; }
 

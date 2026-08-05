@@ -87,6 +87,47 @@ test('game over uses a dedicated result screen and can return to the menu', asyn
   await expect(page.locator('#overlay .menu-section').first()).toBeVisible();
 });
 
+test('Final Moments stays embedded in results until the player opens it', async ({ page }) => {
+  await openMenu(page, { blockSupabase: true });
+  await startRun(page);
+  await expect(page.locator('#run-result-panel')).toBeVisible({ timeout: 8_000 });
+  await expect(page.locator('#run-result-moment-canvas')).toBeVisible();
+  await expect(page.locator('#run-result-moment-prompt')).toContainText('Watch Replay');
+  await expect(page.locator('#run-result-replay')).toBeVisible();
+  const leaderboardBox = await page.locator('#run-result-leaderboard').boundingBox();
+  const menuBox = await page.locator('#run-result-menu').boundingBox();
+  expect(Math.abs(leaderboardBox.width - menuBox.width)).toBeLessThan(2);
+  const firstPostcardFrame = await page.locator('#run-result-moment-canvas').evaluate(canvas => canvas.toDataURL());
+  await page.waitForTimeout(350);
+  const nextPostcardFrame = await page.locator('#run-result-moment-canvas').evaluate(canvas => canvas.toDataURL());
+  expect(nextPostcardFrame).not.toBe(firstPostcardFrame);
+  await page.locator('.run-result-score-card').click();
+  await expect(page.locator('#final-moments-overlay')).toBeVisible();
+  await expect(page.locator('#final-moments-play-again')).toBeVisible();
+  const replayPlayBox = await page.locator('#final-moments-play-again').boundingBox();
+  const replayResultsBox = await page.locator('#final-moments-results').boundingBox();
+  expect(Math.abs(replayPlayBox.width - replayResultsBox.width)).toBeLessThan(2);
+  await page.evaluate(() => {
+    document.querySelector('#final-moments-watch-again').hidden = false;
+    document.querySelector('#final-moments-share').hidden = false;
+  });
+  const watchBox = await page.locator('#final-moments-watch-again').boundingBox();
+  const shareBox = await page.locator('#final-moments-share').boundingBox();
+  const completedResultsBox = await page.locator('#final-moments-results').boundingBox();
+  for (const selector of ['#final-moments-watch-again', '#final-moments-share']) {
+    const iconStyle = await page.locator(`${selector} .final-moments-action-icon`).evaluate(icon => {
+      const style = getComputedStyle(icon);
+      return { background: style.backgroundColor, mask: style.maskImage || style.webkitMaskImage };
+    });
+    expect(iconStyle.background).not.toBe('rgba(0, 0, 0, 0)');
+    expect(iconStyle.mask).not.toBe('none');
+  }
+  expect(Math.abs(watchBox.width - shareBox.width)).toBeLessThan(2);
+  expect(Math.abs(replayPlayBox.width - completedResultsBox.width)).toBeLessThan(2);
+  await page.locator('#final-moments-results').click();
+  await expect(page.locator('#run-result-panel')).toBeVisible();
+});
+
 test('Daily Run shows its rules before the first timed run', async ({ page }) => {
   await openMenu(page, { blockSupabase: true, query: '?dailyIntro=1' });
   await page.locator('.game-mode-btn[data-game-mode="daily"]').click();

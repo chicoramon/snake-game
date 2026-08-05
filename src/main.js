@@ -37,6 +37,8 @@ import {
   createTimedRunState
 } from './game/run-modes.js';
 import { createCanvasRenderer } from './rendering/canvas-renderer.js';
+import { createFinalMomentsRecorder } from './replay/final-moments.js';
+import { createFinalMomentsPlayer, createFinalMomentsPostcard } from './replay/final-moments-player.js';
 import { drawFoodSprite as drawFoodSpriteAsset } from './rendering/food-sprite.js';
 import { THEMES, FOOD_SPRITES, THEME_ICON_URLS, buildMusicArc } from './themes/catalog.js';
 import { GOLDEN_SECRET_THEME, GOLDEN_SECRET_FOOD_SPRITE } from './themes/golden-secret-theme.js';
@@ -59,14 +61,25 @@ const startBtn = document.getElementById('startBtn');
 const runResultPanel = document.getElementById('run-result-panel');
 const runResultKicker = document.getElementById('run-result-kicker');
 const runResultTitle = document.getElementById('run-result-title');
+const runResultScoreCard = document.querySelector('.run-result-score-card');
+const runResultMomentCanvas = document.getElementById('run-result-moment-canvas');
+const runResultMomentPrompt = document.getElementById('run-result-moment-prompt');
 const runResultMode = document.getElementById('run-result-mode');
 const runResultScore = document.getElementById('run-result-score');
 const runResultScoreLabel = document.getElementById('run-result-score-label');
 const runResultDetail = document.getElementById('run-result-detail');
 const runResultReplay = document.getElementById('run-result-replay');
+const runResultActions = document.querySelector('.run-result-actions');
 const runResultLeaderboard = document.getElementById('run-result-leaderboard');
 const runResultMenu = document.getElementById('run-result-menu');
-const shareBtn = document.getElementById('shareBtn');
+const shareBtn = document.getElementById('shareBtn');
+const finalMomentsOverlay = document.getElementById('final-moments-overlay');
+const finalMomentsCanvas = document.getElementById('final-moments-canvas');
+const finalMomentsStatus = document.getElementById('final-moments-status');
+const finalMomentsPlayAgain = document.getElementById('final-moments-play-again');
+const finalMomentsWatchAgain = document.getElementById('final-moments-watch-again');
+const finalMomentsShare = document.getElementById('final-moments-share');
+const finalMomentsResults = document.getElementById('final-moments-results');
 const lbBtn = document.getElementById('lbBtn');
 const liveVsButton = document.getElementById('vs-live-btn');
 const namePrompt = document.getElementById('namePrompt');
@@ -455,6 +468,13 @@ let gameplayRandom = SnakeCore.createNativeRandom();
 let runSeed = null;
 let runTick = 0;
 let runReplay = null;
+const finalMomentsRecorder = createFinalMomentsRecorder();
+let finalMomentsClip = null;
+let finalMomentsResultReason = null;
+let finalMomentsRenderState = null;
+let finalMomentsPostcardState = null;
+let finalMomentsPlayer = null;
+let finalMomentsPostcard = null;
 const careerRunTracker = createCareerRunTracker();
 let recordTargets = Object.create(null);
 let recordTargetScore = null;
@@ -847,6 +867,44 @@ const canvasRenderer = createCanvasRenderer({
       ? activeSpeedProgress(versusSpectatorState?.speed)
       : activeSpeedProgress(),
     rivalGhost: versusSpectatorActive || activeVsRoom?.rivalGhostEnabled === false ? null : rivalGhost
+  })
+});
+
+const finalMomentsRenderer = createCanvasRenderer({
+  ctx: finalMomentsCanvas.getContext('2d'),
+  cellSize: CELL,
+  cols: COLS,
+  rows: ROWS,
+  canvasWidth: canvasW,
+  canvasHeight: canvasH,
+  foodSprites: FOOD_SPRITES,
+  getGameState: () => finalMomentsRenderState || ({
+    snake: [{ x: 10, y: 16 }],
+    direction: { x: 1, y: 0 },
+    food: { x: 5, y: 20 },
+    theme: THEMES.default,
+    themeId: 'default',
+    alive: true,
+    paused: false
+  })
+});
+
+const finalMomentsPostcardRenderer = createCanvasRenderer({
+  ctx: runResultMomentCanvas.getContext('2d'),
+  cellSize: CELL,
+  cols: COLS,
+  rows: ROWS,
+  canvasWidth: canvasW,
+  canvasHeight: canvasH,
+  foodSprites: FOOD_SPRITES,
+  getGameState: () => finalMomentsPostcardState || ({
+    snake: [{ x: 10, y: 16 }],
+    direction: { x: 1, y: 0 },
+    food: { x: 5, y: 20 },
+    theme: THEMES.default,
+    themeId: 'default',
+    alive: true,
+    paused: false
   })
 });
 
@@ -1363,6 +1421,7 @@ function gameTick() {
       localStorage.setItem(bestKey, best);
     }
   }
+  finalMomentsRecorder.capture(finalMomentsSnapshot(), { event: nextState.event });
 }
 
 function renderVerifiedVersusResult(room) {
@@ -1429,10 +1488,40 @@ async function submitVersusResult() {
   }
 }
 
+function finalMomentsDrama() {
+  const summary = finalMomentsClip?.summary || {};
+  const topScore = Number(summary.topScore);
+  const finalScore = Number(summary.score) || 0;
+  if (Number.isFinite(topScore) && finalScore > topScore) return 'record';
+  if (finalMomentsClip?.snapshots?.some(snapshot => snapshot.sonicBoomed)) return 'sonic';
+  if (Number.isFinite(topScore) && topScore > 0 && topScore - finalScore <= Math.max(2, Math.ceil(topScore * 0.1))) return 'near';
+  return summary.reason === 'time' ? 'time' : 'impact';
+}
+
+function showFinalMomentsPostcard() {
+  if (!finalMomentsClip || !finalMomentsPostcard?.show(finalMomentsClip)) return;
+  runResultScoreCard.classList.add('has-final-moments');
+  runResultScoreCard.dataset.drama = finalMomentsDrama();
+  runResultScoreCard.setAttribute('role', 'button');
+  runResultScoreCard.setAttribute('tabindex', '0');
+  runResultScoreCard.setAttribute('aria-label', 'Watch a replay of your final moments');
+  runResultMomentPrompt.hidden = false;
+}
+
 function clearRunResultState() {
+  finalMomentsPostcard?.stop();
   overlay.classList.remove('run-result');
   runResultPanel.hidden = true;
   runResultPanel.removeAttribute('data-tone');
+  runResultScoreCard.classList.remove('has-final-moments');
+  runResultScoreCard.removeAttribute('data-drama');
+  runResultScoreCard.removeAttribute('role');
+  runResultScoreCard.removeAttribute('tabindex');
+  runResultScoreCard.removeAttribute('aria-label');
+  runResultMomentCanvas.hidden = true;
+  runResultMomentPrompt.hidden = true;
+  runResultActions.classList.remove('single-secondary');
+  shareBtn.textContent = 'Share Score';
   shareBtn.style.display = 'none';
   namePrompt.style.display = 'none';
 }
@@ -1458,18 +1547,21 @@ function showRunResultState({
   runResultPanel.dataset.tone = tone;
   runResultPanel.hidden = false;
   overlay.classList.add('run-result');
-  shareBtn.style.display = showShare ? 'flex' : 'none';
+  const shareVisible = showShare && !finalMomentsClip;
+  shareBtn.style.display = shareVisible ? 'flex' : 'none';
+  runResultActions.classList.toggle('single-secondary', !shareVisible && showLeaderboard);
   runResultLeaderboard.hidden = !showLeaderboard;
   if (!showSubmission) namePrompt.style.display = 'none';
   overlay.classList.remove('hidden');
   overlay.setAttribute('aria-hidden', 'false');
+  showFinalMomentsPostcard();
 }
 
 function resultThemeLabel() {
   return `${THEMES[currentTheme]?.name || 'Snake'} Theme`;
 }
 
-function showRunResult(reason) {
+function renderRunResultBody(reason) {
   MenuAudio.open();
   const isSprint = runGameMode === 'sprint';
   const isDaily = runGameMode === 'daily';
@@ -1602,6 +1694,11 @@ function showRunResult(reason) {
   hideRecordChase();
   if (!isDaily) maybeCelebrateRecordAtGameOver();
 }
+
+function showRunResult(reason) {
+  MenuAudio.open();
+  renderRunResultBody(reason);
+}
 
 function finalizeCareerRun(reason) {
   if (GOLDEN_BACKDOOR) return null;
@@ -1622,10 +1719,58 @@ function finalizeCareerRun(reason) {
   return run;
 }
 
+function finalMomentsRemainingMs() {
+  if (runGameMode === 'sprint') return sprintRemainingMs;
+  if (runGameMode === 'daily') return Math.max(0, (dailyChallenge?.durationMs || MODE_SPRINT_DURATION_MS) - dailyTickElapsedMs);
+  return null;
+}
+
+function finalMomentsSnapshot() {
+  return {
+    snake,
+    direction: dir,
+    food,
+    score,
+    speed,
+    remainingMs: finalMomentsRemainingMs(),
+    speedProgress: activeSpeedProgress(),
+    sonicBoomed: sonicBoomTriggered
+  };
+}
+
+function finalMomentsTopScore() {
+  if (runGameMode === 'daily') {
+    return dailyAttempt?.recordTargetLoaded ? Number(dailyAttempt.recordTargetScore || 0) : null;
+  }
+  const method = runControlMethod || controlMode;
+  return Number.isFinite(recordTargets[method]) ? recordTargets[method] : null;
+}
+
+function freezeFinalMoments(reason) {
+  const eligible = !GOLDEN_BACKDOOR
+    && reason !== 'interrupted'
+    && runGameMode !== 'versus';
+  if (!eligible) {
+    finalMomentsClip = null;
+    return;
+  }
+  finalMomentsRecorder.capture(finalMomentsSnapshot(), { event: reason });
+  finalMomentsResultReason = reason;
+  finalMomentsClip = finalMomentsRecorder.freeze({
+    reason,
+    score,
+    topScore: finalMomentsTopScore(),
+    mode: runGameMode,
+    themeId: currentTheme,
+    remainingMs: finalMomentsRemainingMs()
+  });
+}
+
 function finishRun(reason) {
   runLifecycle.finish({
     isActive: () => alive,
     markFinished: () => {
+      freezeFinalMoments(reason);
       alive = false;
       SnakeCore.finalizeReplay(runReplay, { tick: runTick, score, reason });
       finalizeCareerRun(reason);
@@ -1705,7 +1850,10 @@ const liveGameSession = createLiveGameSession({
     gameTick();
   },
   onFrame: ({ dt, state }) => {
-    if (state.alive && !state.paused && !state.countdownActive) careerRunTracker.addActiveTime(dt);
+    if (state.alive && !state.paused && !state.countdownActive) {
+      careerRunTracker.addActiveTime(dt);
+      finalMomentsRecorder.advance(dt);
+    }
     if (runGameMode === 'versus' && activeVsRoom?.id && alive && !countdownActive) {
       liveVsService.broadcastGhost({
         matchId: activeVsRoom.id,
@@ -1804,6 +1952,9 @@ async function startGame(options = {}) {
   runLifecycle.begin({
     prepare: () => {
       MenuAudio.close();
+      finalMomentsPlayer?.stop();
+      finalMomentsClip = null;
+      finalMomentsResultReason = null;
       stopRecordCelebration();
       recordResultVisible = false;
       clearRunResultState();
@@ -1844,6 +1995,7 @@ async function startGame(options = {}) {
       best = runGameMode === 'versus' ? 0 : bestScores[runGameMode];
       bestLabel.textContent = runGameMode === 'versus' ? 'RIVAL' : 'BEST';
       bestEl.textContent = best;
+      finalMomentsRecorder.begin({ mode: runGameMode, themeId: currentTheme });
       prepareGameplayRun(versusRoom?.seed ?? challenge?.seed ?? null);
       if (!GOLDEN_BACKDOOR) {
         careerRunTracker.begin({
@@ -1857,6 +2009,7 @@ async function startGame(options = {}) {
     reset: () => reset(true),
     afterReset: () => {
       runActivatedAt = performance.now();
+      finalMomentsRecorder.capture(finalMomentsSnapshot(), { event: 'start' });
     if (runGameMode === 'versus') {
       disableRecordChase();
       const serverNow = versusRoom.serverNow
@@ -2003,6 +2156,49 @@ const MenuAudio = createMenuAudio();
 MenuAudio.setMuted(backgroundMusicMuted);
 MenuAudio.open();
 AudioEngine.setMuted(gameMusicMuted);
+
+function exitFinalMomentsToResults() {
+  finalMomentsPlayer?.stop();
+  MenuAudio.open();
+  if (runResultPanel.hidden && finalMomentsResultReason) renderRunResultBody(finalMomentsResultReason);
+  else showFinalMomentsPostcard();
+}
+
+function playFinalMoments({ capture = true } = {}) {
+  if (!finalMomentsClip) return false;
+  finalMomentsPostcard?.stop();
+  MenuAudio.close();
+  return finalMomentsPlayer.play(finalMomentsClip, {
+    capture,
+    onComplete: exitFinalMomentsToResults
+  });
+}
+
+finalMomentsPlayer = createFinalMomentsPlayer({
+  elements: {
+    overlay: finalMomentsOverlay,
+    canvas: finalMomentsCanvas,
+    status: finalMomentsStatus,
+    playAgain: finalMomentsPlayAgain,
+    watchAgain: finalMomentsWatchAgain,
+    share: finalMomentsShare,
+    results: finalMomentsResults
+  },
+  renderer: finalMomentsRenderer,
+  setRenderState: state => { finalMomentsRenderState = state; },
+  getTheme: id => THEMES[id] || THEMES.default,
+  onEat: () => AudioEngine.sfxEat(),
+  onCollision: () => AudioEngine.sfxDie(),
+  onPlayAgain: () => startGame(),
+  onExit: exitFinalMomentsToResults
+});
+
+finalMomentsPostcard = createFinalMomentsPostcard({
+  canvas: runResultMomentCanvas,
+  renderer: finalMomentsPostcardRenderer,
+  setRenderState: state => { finalMomentsPostcardState = state; },
+  getTheme: id => THEMES[id] || THEMES.default
+});
 
 document.addEventListener('pointerdown', event => {
   if (event.target.closest('#bg-music-btn')) return;
@@ -4071,7 +4267,16 @@ startBtn.addEventListener('click', () => {
 runResultReplay.addEventListener('click', () => startGame());
 runResultLeaderboard.addEventListener('click', () => lbBtn.click());
 runResultMenu.addEventListener('click', returnRunResultToMainMenu);
-
+
+runResultScoreCard.addEventListener('click', () => {
+  if (finalMomentsClip) playFinalMoments();
+});
+runResultScoreCard.addEventListener('keydown', event => {
+  if (!finalMomentsClip || (event.key !== 'Enter' && event.key !== ' ')) return;
+  event.preventDefault();
+  playFinalMoments();
+});
+
 shareBtn.addEventListener('click', async () => {
   const modeName = runGameMode === 'daily' ? `Daily #${ensureDailyChallenge().number}` : (runGameMode === 'sprint' ? 'Sprint 60' : 'Classic');
   const timing = runGameMode === 'daily' ? ` (final food ${formatDailyFoodTime(dailyLastFoodElapsedMs)})` : '';

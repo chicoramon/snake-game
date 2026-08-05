@@ -1,4 +1,4 @@
-import { cp, mkdir, stat } from 'node:fs/promises';
+import { cp, mkdir, rm, stat } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const root = process.cwd();
@@ -19,6 +19,12 @@ for (const [source, destination] of copyTargets) {
   const sourceStat = await stat(from);
   await mkdir(resolve(to, '..'), { recursive: true });
   await cp(from, to, { recursive: sourceStat.isDirectory(), force: true });
+}
+
+// Keep full-resolution UI artwork as source references without shipping it to
+// every player. Runtime controls use the traced, lightweight SVG variants.
+for (const filename of ['replay-watch-again-reference.png', 'replay-share-reference.png']) {
+  await rm(resolve(dist, 'assets/icons/replay', filename), { force: true });
 }
 
 console.log('Packaged local game assets into dist/.');
