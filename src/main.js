@@ -52,11 +52,14 @@ if (GOLDEN_BACKDOOR) {
 }
 validateThemeCatalog(THEMES, FOOD_SPRITES);
 
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
+const canvas = document.getElementById('game');
+
+const ctx = canvas.getContext('2d');
+
 if (URL_PARAMS.has('debug')) document.body.classList.add('debug');
 if (GOLDEN_BACKDOOR) document.body.classList.add('golden-secret');
-const overlay = document.getElementById('overlay');
+const overlay = document.getElementById('overlay');
+
 const startBtn = document.getElementById('startBtn');
 const runResultPanel = document.getElementById('run-result-panel');
 const runResultKicker = document.getElementById('run-result-kicker');
@@ -82,22 +85,36 @@ const finalMomentsShare = document.getElementById('final-moments-share');
 const finalMomentsResults = document.getElementById('final-moments-results');
 const lbBtn = document.getElementById('lbBtn');
 const liveVsButton = document.getElementById('vs-live-btn');
-const namePrompt = document.getElementById('namePrompt');
-const nameInput = document.getElementById('nameInput');
-const submitScoreBtn = document.getElementById('submitScoreBtn');
+const namePrompt = document.getElementById('namePrompt');
+
+const nameInput = document.getElementById('nameInput');
+
+const submitScoreBtn = document.getElementById('submitScoreBtn');
+
 const scoreMethodLabel = document.getElementById('scoreMethodLabel');
 const dailyChallengeInfo = document.getElementById('dailyChallengeInfo');
-const leaderboardOverlay = document.getElementById('leaderboardOverlay');
-const lbGameModeFilters = document.getElementById('lbGameModeFilters');
-const lbControlFilters = document.getElementById('lbControlFilters');
-const lbThemeFilters = document.getElementById('lbThemeFilters');
-const lbBody = document.getElementById('lbBody');
-const lbLoading = document.getElementById('lbLoading');
-const lbEmpty = document.getElementById('lbEmpty');
-const lbTable = document.getElementById('lbTable');
-const lbPagination = document.getElementById('lbPagination');
-const lbPrev = document.getElementById('lbPrev');
-const lbNext = document.getElementById('lbNext');
+const leaderboardOverlay = document.getElementById('leaderboardOverlay');
+
+const lbGameModeFilters = document.getElementById('lbGameModeFilters');
+
+const lbControlFilters = document.getElementById('lbControlFilters');
+
+const lbThemeFilters = document.getElementById('lbThemeFilters');
+
+const lbBody = document.getElementById('lbBody');
+
+const lbLoading = document.getElementById('lbLoading');
+
+const lbEmpty = document.getElementById('lbEmpty');
+
+const lbTable = document.getElementById('lbTable');
+
+const lbPagination = document.getElementById('lbPagination');
+
+const lbPrev = document.getElementById('lbPrev');
+
+const lbNext = document.getElementById('lbNext');
+
 const lbPageInfo = document.getElementById('lbPageInfo');
 const lbBack = document.getElementById('lbBack');
 const playerBtn = document.getElementById('player-btn');
@@ -170,13 +187,16 @@ function renderOverlayTextTitle(content, { html = false } = {}) {
   if (html) overlayTitle.innerHTML = content;
   else overlayTitle.textContent = content;
 }
-const scoreEl = document.getElementById('score');
+const scoreEl = document.getElementById('score');
+
 const bestEl = document.getElementById('best');
 const bestLabel = document.querySelector('.hud-best .label');
 const liveVsPanel = document.getElementById('live-vs-panel');
 const hudMode = document.getElementById('hud-mode');
-const timerBlock = document.getElementById('timer-block');
-const timerEl = document.getElementById('timer');
+const timerBlock = document.getElementById('timer-block');
+
+const timerEl = document.getElementById('timer');
+
 const countdownDisplay = document.getElementById('countdownDisplay');
 const liveVsSpectatorBar = document.getElementById('live-vs-spectator-bar');
 const liveVsSpectatorName = document.getElementById('live-vs-spectator-name');
@@ -198,6 +218,34 @@ let playerIdentityController = null;
 // features, modes, controls, themes, options, and competitive experiences only.
 // Do not include bugs, fixes, caching, builds, deployments, or backend details.
 const WHATS_NEW_RELEASES = Object.freeze([
+  {
+    id: '2026-08-06-replay-controller-sonic-boom',
+    version: 'Update 2026.08.06',
+    title: 'Replay, Controllers & Sonic Boom',
+    sections: [
+      {
+        title: 'SnakeBit Is Official',
+        items: [
+          'The game now has its official name and logo: welcome to SnakeBit.',
+          'Push toward maximum speed to ignite a fighter-jet trail and punch through the sonic boom.'
+        ]
+      },
+      {
+        title: 'Final Moments',
+        items: [
+          'Relive your run’s last seconds in dramatic slow motion, carrying all the way through the fatal impact.',
+          'Watch it again or share the replay straight from your new Game Over screen.'
+        ]
+      },
+      {
+        title: 'Controller Ready',
+        items: [
+          'Connect a Bluetooth or USB controller and steer with its D-pad or left analog stick.',
+          'Controller runs compete as their own ranked input across SnakeBit’s leaderboards.'
+        ]
+      }
+    ]
+  },
   {
     id: '2026-08-02-arcade-career-vs-evolved',
     version: 'Update 2026.08.02',
@@ -384,51 +432,90 @@ whatsNewView.bind();
 if (!invitedLiveVsCode && !GOLDEN_BACKDOOR) whatsNewView.scheduleInitialOpen();
 
 // --- Responsive canvas ---
-const CELL = 20;
-const BOARD_COLS = 20;
-const BOARD_ROWS = 32;
-const COLS = BOARD_COLS;
-const ROWS = BOARD_ROWS;
-const canvasW = COLS * CELL;
-const canvasH = ROWS * CELL;
-let scale = 1;
-
-function getViewportHeight() {
-  const vp = window.visualViewport;
-  return vp ? vp.height : window.innerHeight;
-}
-
+const CELL = 20;
+
+const BOARD_COLS = 20;
+
+const BOARD_ROWS = 32;
+
+const COLS = BOARD_COLS;
+
+const ROWS = BOARD_ROWS;
+
+const canvasW = COLS * CELL;
+
+const canvasH = ROWS * CELL;
+
+let scale = 1;
+
+
+
+function getViewportHeight() {
+
+  const vp = window.visualViewport;
+
+  return vp ? vp.height : window.innerHeight;
+
+}
+
+
+
 function getViewportWidth() {
   // Safari can briefly report a shrunken visual viewport while its browser
   // chrome is animating. The layout viewport is the reliable width for a
   // fixed-size game board, so use the larger valid value.
   const vp = window.visualViewport;
   return Math.max(window.innerWidth || 0, document.documentElement.clientWidth || 0, vp?.width || 0);
-}
-
-function resize() {
-  const dpr = window.devicePixelRatio || 1;
-  const barH = document.getElementById('score-bar').offsetHeight;
-  const vpHeight = getViewportHeight();
-  const vpWidth = getViewportWidth();
-  // Account for body safe-area padding (side padding for landscape notches)
-  const cs = getComputedStyle(document.body);
-  const padTop = parseFloat(cs.paddingTop) || 0;
-  const padBot = parseFloat(cs.paddingBottom) || 0;
-  const padLeft = parseFloat(cs.paddingLeft) || 0;
-  const padRight = parseFloat(cs.paddingRight) || 0;
-  const maxW = Math.max(CELL, vpWidth - padLeft - padRight - 10);
-  const maxH = Math.max(CELL, vpHeight - barH - padTop - padBot - 6);
-
-  // Keep one logical board on every device so runs and scores are comparable.
-  scale = Math.min(maxW / canvasW, maxH / canvasH);
-  canvas.style.width = (canvasW * scale) + 'px';
-  canvas.style.height = (canvasH * scale) + 'px';
-  canvas.style.marginTop = barH + 'px';
-  canvas.width = canvasW * dpr;
-  canvas.height = canvasH * dpr;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-}
+}
+
+
+
+function resize() {
+
+  const dpr = window.devicePixelRatio || 1;
+
+  const barH = document.getElementById('score-bar').offsetHeight;
+
+  const vpHeight = getViewportHeight();
+
+  const vpWidth = getViewportWidth();
+
+  // Account for body safe-area padding (side padding for landscape notches)
+
+  const cs = getComputedStyle(document.body);
+
+  const padTop = parseFloat(cs.paddingTop) || 0;
+
+  const padBot = parseFloat(cs.paddingBottom) || 0;
+
+  const padLeft = parseFloat(cs.paddingLeft) || 0;
+
+  const padRight = parseFloat(cs.paddingRight) || 0;
+
+  const maxW = Math.max(CELL, vpWidth - padLeft - padRight - 10);
+
+  const maxH = Math.max(CELL, vpHeight - barH - padTop - padBot - 6);
+
+
+
+  // Keep one logical board on every device so runs and scores are comparable.
+
+  scale = Math.min(maxW / canvasW, maxH / canvasH);
+
+  canvas.style.width = (canvasW * scale) + 'px';
+
+  canvas.style.height = (canvasH * scale) + 'px';
+
+  canvas.style.marginTop = barH + 'px';
+
+  canvas.width = canvasW * dpr;
+
+  canvas.height = canvasH * dpr;
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+}
+
 let resizeFrameId = null;
 let resizeSettleTimer = null;
 function scheduleResize({ settle = false } = {}) {
@@ -453,8 +540,10 @@ if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', () => scheduleResize({ settle: true }));
   window.visualViewport.addEventListener('scroll', () => scheduleResize({ settle: true }));
 }
-
-// --- State ---
+
+
+// --- State ---
+
 let snake, dir, nextDir, food, score, best, speed, alive, paused;
 const HIGH_SPEED_EFFECTS_KEY = 'snake_high_speed_effects';
 let highSpeedEffectsEnabled = localStorage.getItem(HIGH_SPEED_EFFECTS_KEY) !== 'false';
@@ -489,10 +578,14 @@ const gameController = createGameController();
 const runLifecycle = createRunLifecycle({ controller: gameController });
 let gameMode = GOLDEN_BACKDOOR ? 'classic' : (localStorage.getItem('snake_game_mode') || 'classic');
 if (!['classic', 'sprint', 'daily'].includes(gameMode)) gameMode = 'classic';
-let runGameMode = gameMode;
-let countdownActive = false;
-let countdownRemainingMs = 0;
-let sprintRemainingMs = 60000;
+let runGameMode = gameMode;
+
+let countdownActive = false;
+
+let countdownRemainingMs = 0;
+
+let sprintRemainingMs = 60000;
+
 let lastTimerSecond = 60;
 let dailyChallenge = null;
 let dailyTickElapsedMs = 0;
@@ -526,7 +619,8 @@ function renderVersusLatencyHud() {
   hudMode.title = 'Round-trip latency to the Live Vs server';
   hudMode.classList.add('vs-latency-debug');
 }
-
+
+
 const BEST_KEYS = {
   classic: 'snakeBest120',
   sprint: 'snakeBest120_sprint',
@@ -536,10 +630,14 @@ const bestScores = {
   classic: parseInt(localStorage.getItem(GOLDEN_BACKDOOR ? BEST_KEYS.golden : BEST_KEYS.classic)) || 0,
   sprint: parseInt(localStorage.getItem(BEST_KEYS.sprint)) || 0,
   daily: 0
-};
-best = bestScores[gameMode];
-bestEl.textContent = best;
-
+};
+
+best = bestScores[gameMode];
+
+bestEl.textContent = best;
+
+
+
 const BASE_INTERVAL = 110;  // ms per game step
 const MIN_INTERVAL = 55;
 const GOLDEN_BASE_INTERVAL = 150;
@@ -570,12 +668,18 @@ function activeSpeedProgress(sourceSpeed = speed) {
     minInterval: activeMinInterval()
   });
 }
-const SPRINT_DURATION_MS = 60000;
-const SPRINT_COUNTDOWN_MS = 3000;
-
-// ============================================================
-// THEME SYSTEM
-// ============================================================
+const SPRINT_DURATION_MS = 60000;
+
+const SPRINT_COUNTDOWN_MS = 3000;
+
+
+
+// ============================================================
+
+// THEME SYSTEM
+
+// ============================================================
+
 
 // 8-bit dark-fantasy arrangement for the marquee dragon theme. The score
 // stays original while leaning into a low C-minor fifth ostinato, grouped
@@ -823,8 +927,6 @@ Object.assign(THEMES.streetfighter.music, {
   minStepsPerIntensity: 64,
   percussion: 'arcade-rock',
   swing: 0,
-  audioUrl: 'assets/audio/ken-stage-96.mp3',
-  audioGain: 0.82,
   midiUrl: 'audio themes/street_fighter_ii_-_ken.mid',
   midiGain: 0.72,
 });
@@ -842,8 +944,9 @@ let currentTheme = GOLDEN_BACKDOOR
       ? (THEMES[savedActiveTheme] ? savedActiveTheme : 'default')
       : themeSelection);
 let controlMode = localStorage.getItem('snake_control_mode') || 'dpad'; // 'dpad', 'turn', or 'tap'
-const TURN_ORDER = ['up','right','down','left']; // clockwise
-const CONTROL_LABELS = { dpad: 'D-PAD', turn: 'TURN', tap: 'TAP', keyboard: 'KEYBOARD', mixed: 'MIXED', legacy: 'LEGACY' };
+const TURN_ORDER = ['up','right','down','left']; // clockwise
+
+const CONTROL_LABELS = { dpad: 'D-PAD', turn: 'TURN', tap: 'TAP', keyboard: 'KEYBOARD', controller: 'CONTROLLER', mixed: 'MIXED', legacy: 'LEGACY' };
 
 const canvasRenderer = createCanvasRenderer({
   ctx,
@@ -907,7 +1010,8 @@ const finalMomentsPostcardRenderer = createCanvasRenderer({
     paused: false
   })
 });
-
+
+
 function versusRivalLabel(room = activeVsRoom) {
   const rival = room?.players?.find(player => player.playerId !== currentUser?.id);
   if (!rival) return 'RIVAL';
@@ -1001,7 +1105,8 @@ function registerControlMethod(method) {
   }
   careerRunTracker.recordControlMethod(method, { mixed: runUsesMixedControls });
 }
-
+
+
 function getCosmeticRandomUnit() {
   if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
     const value = new Uint32Array(1);
@@ -1073,28 +1178,45 @@ function applyTheme(id, { updateSelection = true } = {}) {
   }
   currentTheme = id;
   if (!GOLDEN_BACKDOOR) localStorage.setItem('snakeThemeActive', currentTheme);
-  const t = THEMES[id];
-  const r = document.documentElement.style;
-  r.setProperty('--accent', t.accent);
-  // Derive accent variations
-  const a = t.accent;
-  r.setProperty('--accent-dim', a + '99');
-  r.setProperty('--accent-glow', a + '40');
-  r.setProperty('--accent-glow-soft', a + '14');
-  r.setProperty('--accent-glow-mid', a + '26');
-  r.setProperty('--food', t.food);
-  r.setProperty('--food-glow', t.foodGlow);
-  r.setProperty('--food-accent', t.foodAccent);
-  r.setProperty('--death', t.deathFlash + 'ff)');
-  // Update theme color meta
-  document.querySelector('meta[name="theme-color"]').content = t.bg;
+  const t = THEMES[id];
+
+  const r = document.documentElement.style;
+
+  r.setProperty('--accent', t.accent);
+
+  // Derive accent variations
+
+  const a = t.accent;
+
+  r.setProperty('--accent-dim', a + '99');
+
+  r.setProperty('--accent-glow', a + '40');
+
+  r.setProperty('--accent-glow-soft', a + '14');
+
+  r.setProperty('--accent-glow-mid', a + '26');
+
+  r.setProperty('--food', t.food);
+
+  r.setProperty('--food-glow', t.foodGlow);
+
+  r.setProperty('--food-accent', t.foodAccent);
+
+  r.setProperty('--death', t.deathFlash + 'ff)');
+
+  // Update theme color meta
+
+  document.querySelector('meta[name="theme-color"]').content = t.bg;
+
   // Update selected state in the extracted picker view.
   updateThemeSelectionUI();
   renderMenuThemeMarquee(id);
   renderMenuBrandTitle();
   if (updateSelection) queuePlayerPreferenceSave();
-}
-
+}
+
+
+
 // Initialize theme
 applyTheme(currentTheme, { updateSelection: false });
 
@@ -1245,13 +1367,19 @@ function hideDailyRules({ restoreFocus = false } = {}) {
 }
 
 function updateSprintTimer(force = false) {
-  const second = Math.max(0, Math.ceil(sprintRemainingMs / 1000));
-  if (!force && second === lastTimerSecond) return;
-  lastTimerSecond = second;
+  const second = Math.max(0, Math.ceil(sprintRemainingMs / 1000));
+
+  if (!force && second === lastTimerSecond) return;
+
+  lastTimerSecond = second;
+
   timerEl.textContent = formatTimedRunTime(sprintRemainingMs);
-  timerEl.classList.toggle('urgent', second > 0 && second <= 10);
-}
-
+  timerEl.classList.toggle('urgent', second > 0 && second <= 10);
+
+}
+
+
+
 function applyGameMode(mode) {
   if (GOLDEN_BACKDOOR) mode = 'classic';
   if (!['classic', 'sprint', 'daily'].includes(mode)) mode = 'classic';
@@ -1296,10 +1424,13 @@ function reset(startingRun = false) {
   dir = {x: 1, y: 0};
   nextDir = {x: 1, y: 0};
   runTick = 0;
-  score = 0;
+  score = 0;
+
   speed = activeBaseInterval();
-  alive = startingRun;
-  paused = false;
+  alive = startingRun;
+
+  paused = false;
+
   gameController.resetClock();
   const timedRun = createTimedRunState({
     mode: runGameMode,
@@ -1315,13 +1446,17 @@ function reset(startingRun = false) {
   countdownDisplay.textContent = countdownActive ? '3' : '';
   countdownDisplay.classList.toggle('visible', countdownActive);
   timerBlock.classList.toggle('visible', startingRun && isTimedMode(runGameMode));
-  updateSprintTimer(true);
-  scoreEl.textContent = 0;
+  updateSprintTimer(true);
+
+  scoreEl.textContent = 0;
+
   // Reset pause button
   const pauseBtn = document.getElementById('pause-btn');
   const competitivePauseDisabled = runGameMode === 'daily' || runGameMode === 'versus';
-  pauseBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="2" y="1" width="2" height="8"/><rect x="6" y="1" width="2" height="8"/></svg>';
-  pauseBtn.classList.remove('paused');
+  pauseBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="2" y="1" width="2" height="8"/><rect x="6" y="1" width="2" height="8"/></svg>';
+
+  pauseBtn.classList.remove('paused');
+
   pauseBtn.hidden = competitivePauseDisabled;
   pauseBtn.disabled = competitivePauseDisabled;
   pauseBtn.setAttribute('aria-label', competitivePauseDisabled ? `${modeHudLabel(runGameMode)} cannot be paused` : 'Pause game');
@@ -1330,9 +1465,12 @@ function reset(startingRun = false) {
   renderMenuBrandTitle();
   renderMenuThemeMarquee(currentTheme);
   overlayMsg.textContent = 'Select mode • Press play';
-  placeFood();
-}
-
+  placeFood();
+
+}
+
+
+
 function placeFood() {
   const placement = runGameMode === 'daily' || runGameMode === 'versus'
     ? SnakeCore.placeFoodFromFreeCells
@@ -1344,15 +1482,24 @@ function placeFood() {
     random: gameplayRandom
   });
 }
-
-// --- Haptics ---
-function haptic(style) {
-  if (navigator.vibrate) {
-    if (style === 'eat') navigator.vibrate(10);
-    else if (style === 'die') navigator.vibrate([30, 30, 30]);
-  }
-}
-
+
+
+// --- Haptics ---
+
+function haptic(style) {
+
+  if (navigator.vibrate) {
+
+    if (style === 'eat') navigator.vibrate(10);
+
+    else if (style === 'die') navigator.vibrate([30, 30, 30]);
+
+  }
+
+}
+
+
+
 // Rendering and visual effects live in ./rendering/canvas-renderer.js.
 function gameTick() {
   if (!alive || paused) return;
@@ -1401,7 +1548,8 @@ function gameTick() {
     if (runGameMode === 'versus') versusLastFoodElapsedMs = dailyTickElapsedMs;
     scoreEl.textContent = score;
     updateRecordChase();
-    haptic('eat');
+    haptic('eat');
+
     AudioEngine.sfxEat();
     AudioEngine.updateTempo(snake.length);
     const T = THEMES[currentTheme];
@@ -1423,7 +1571,8 @@ function gameTick() {
   }
   finalMomentsRecorder.capture(finalMomentsSnapshot(), { event: nextState.event });
 }
-
+
+
 function renderVerifiedVersusResult(room) {
   if (!room || runGameMode !== 'versus' || !activeVsRoom) return false;
   activeVsRoom = room;
@@ -1662,9 +1811,12 @@ function renderRunResultBody(reason) {
   overlayMsg.textContent = isDaily
     ? `Daily Score: ${score} • Final food: ${formatDailyFoodTime(dailyLastFoodElapsedMs)}`
     : `${isSprint ? 'Sprint ' : ''}Score: ${score}`;
-  startBtn.textContent = 'Play Again';
-  shareBtn.style.display = 'block';
-  lbBtn.style.display = 'block';
+  startBtn.textContent = 'Play Again';
+
+  shareBtn.style.display = 'block';
+
+  lbBtn.style.display = 'block';
+
   const scoreMethod = runControlMethod || controlMode;
   recordTargetMethod = scoreMethod;
   scoreMethodLabel.textContent = runUsesMixedControls
@@ -1699,7 +1851,8 @@ function showRunResult(reason) {
   MenuAudio.open();
   renderRunResultBody(reason);
 }
-
+
+
 function finalizeCareerRun(reason) {
   if (GOLDEN_BACKDOOR) return null;
   const run = careerRunTracker.finish({
@@ -1813,7 +1966,8 @@ function finishRun(reason) {
     showResult: () => showRunResult(reason)
   });
 }
-
+
+
 function die() {
   finishRun('collision');
 }
@@ -2028,49 +2182,88 @@ async function startGame(options = {}) {
     },
     frame: liveGameSession.frame
   });
-}
-
-function setDir(x, y) {
-  if (countdownActive) return;
-  if (dir.x === -x && dir.y === -y) return;
-  nextDir = {x, y};
-}
-
-function turnClockwise() {
-  const dirMap = {up:[0,-1], right:[1,0], down:[0,1], left:[-1,0]};
-  let curDirName = Object.keys(dirMap).find(k => dirMap[k][0] === dir.x && dirMap[k][1] === dir.y) || 'right';
-  let idx = TURN_ORDER.indexOf(curDirName);
-  let next = TURN_ORDER[(idx + 1) % 4];
-  setDir(...dirMap[next]);
-}
-
-function turnCounterClockwise() {
-  const dirMap = {up:[0,-1], right:[1,0], down:[0,1], left:[-1,0]};
-  let curDirName = Object.keys(dirMap).find(k => dirMap[k][0] === dir.x && dirMap[k][1] === dir.y) || 'right';
-  let idx = TURN_ORDER.indexOf(curDirName);
-  let next = TURN_ORDER[(idx + 3) % 4]; // -1 mod 4 = 3
-  setDir(...dirMap[next]);
-}
-
+}
+
+
+
+function setDir(x, y) {
+
+  if (countdownActive) return;
+
+  if (dir.x === -x && dir.y === -y) return;
+
+  nextDir = {x, y};
+
+}
+
+
+
+function turnClockwise() {
+
+  const dirMap = {up:[0,-1], right:[1,0], down:[0,1], left:[-1,0]};
+
+  let curDirName = Object.keys(dirMap).find(k => dirMap[k][0] === dir.x && dirMap[k][1] === dir.y) || 'right';
+
+  let idx = TURN_ORDER.indexOf(curDirName);
+
+  let next = TURN_ORDER[(idx + 1) % 4];
+
+  setDir(...dirMap[next]);
+
+}
+
+
+
+function turnCounterClockwise() {
+
+  const dirMap = {up:[0,-1], right:[1,0], down:[0,1], left:[-1,0]};
+
+  let curDirName = Object.keys(dirMap).find(k => dirMap[k][0] === dir.x && dirMap[k][1] === dir.y) || 'right';
+
+  let idx = TURN_ORDER.indexOf(curDirName);
+
+  let next = TURN_ORDER[(idx + 3) % 4]; // -1 mod 4 = 3
+
+  setDir(...dirMap[next]);
+
+}
+
+
+
 // Frame progression is coordinated by ./game/live-game-session.js.
-// --- Pause toggle ---
+// --- Pause toggle ---
+
 function setPaused(value) {
   if (!alive || runGameMode === 'daily' || runGameMode === 'versus') return;
-  if (paused === value) return;
-  paused = value;
-  const btn = document.getElementById('pause-btn');
-  btn.innerHTML = paused
-    ? '<svg width="18" height="18" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><polygon points="2,1 8,5 2,9"/></svg>'
-    : '<svg width="18" height="18" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="2" y="1" width="2" height="8"/><rect x="6" y="1" width="2" height="8"/></svg>';
-  btn.classList.toggle('paused', paused);
-  btn.setAttribute('aria-label', paused ? 'Resume game' : 'Pause game');
-  btn.title = paused ? 'Resume (P)' : 'Pause (P)';
-  paused ? AudioEngine.pause() : AudioEngine.resume();
-  if (countdownActive) {
-    countdownDisplay.textContent = paused ? 'PAUSED' : String(Math.max(1, Math.ceil(countdownRemainingMs / 1000)));
-  }
+  if (paused === value) return;
+
+  paused = value;
+
+  const btn = document.getElementById('pause-btn');
+
+  btn.innerHTML = paused
+
+    ? '<svg width="18" height="18" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><polygon points="2,1 8,5 2,9"/></svg>'
+
+    : '<svg width="18" height="18" viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor"><rect x="2" y="1" width="2" height="8"/><rect x="6" y="1" width="2" height="8"/></svg>';
+
+  btn.classList.toggle('paused', paused);
+
+  btn.setAttribute('aria-label', paused ? 'Resume game' : 'Pause game');
+
+  btn.title = paused ? 'Resume (P)' : 'Pause (P)';
+
+  paused ? AudioEngine.pause() : AudioEngine.resume();
+
+  if (countdownActive) {
+
+    countdownDisplay.textContent = paused ? 'PAUSED' : String(Math.max(1, Math.ceil(countdownRemainingMs / 1000)));
+
+  }
+
   if (paused) canvasRenderer.draw(1);
-}
+}
+
 function togglePause() { setPaused(!paused); }
 document.getElementById('pause-btn').addEventListener('click', togglePause);
 
@@ -2134,10 +2327,13 @@ window.addEventListener('focus', () => {
   gameController.resetClock();
   scheduleResize({ settle: true });
 }, { capture: true });
-
+
+
 // ============================================================
-// 8-BIT CHIPTUNE ENGINE  —  Theme-aware, adaptive to snake length
-// ============================================================
+// 8-BIT CHIPTUNE ENGINE  —  Theme-aware, adaptive to snake length
+
+// ============================================================
+
 const AudioEngine = createAudioEngine({
   getCurrentTheme: () => THEMES[currentTheme],
   isRunActive: () => alive || versusSpectatorActive,
@@ -2255,13 +2451,15 @@ backgroundMusicBtn.addEventListener('click', () => {
   renderMusicButton(backgroundMusicBtn, 'BG', backgroundMusicMuted);
   queuePlayerPreferenceSave();
 });
-muteBtn.addEventListener('click', () => {
+muteBtn.addEventListener('click', () => {
+
   gameMusicMuted = AudioEngine.toggleMute();
   localStorage.setItem(GAME_MUSIC_MUTED_KEY, String(gameMusicMuted));
   renderMusicButton(muteBtn, 'GAME', gameMusicMuted);
   queuePlayerPreferenceSave();
 });
-
+
+
 renderMusicButton(backgroundMusicBtn, 'BG', backgroundMusicMuted);
 renderMusicButton(muteBtn, 'GAME', gameMusicMuted);
 
@@ -2303,8 +2501,10 @@ themePicker.bind();
 themePicker.syncThemeSelection(themeSelection);
 themePicker.syncModeSelection(gameMode);
 if (themeSelection === 'random') renderMenuThemeMarquee('random');
-
-// --- Controls Customization ---
+
+
+// --- Controls Customization ---
+
 // --- PWA Setup ---
 (function setupPWA() {
   // Deployable service worker: network-first pages with an offline fallback.
@@ -2329,11 +2529,16 @@ if (themeSelection === 'random') renderMenuThemeMarquee('random');
       });
     });
   }
-})();
-
-// --- Supabase Leaderboard ---
-const SB_URL = 'https://suuwudlnsapyvthjscwp.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1dXd1ZGxuc2FweXZ0aGpzY3dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MTc3ODcsImV4cCI6MjA4MDQ5Mzc4N30.eI0bkImttIQ_AeiCj59lUpjbcrSU4skFbsDIXVCHkEk';
+})();
+
+
+
+// --- Supabase Leaderboard ---
+
+const SB_URL = 'https://suuwudlnsapyvthjscwp.supabase.co';
+
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1dXd1ZGxuc2FweXZ0aGpzY3dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MTc3ODcsImV4cCI6MjA4MDQ5Mzc4N30.eI0bkImttIQ_AeiCj59lUpjbcrSU4skFbsDIXVCHkEk';
+
 let sb = null;
 if (!GOLDEN_BACKDOOR) {
   sb = createSupabaseClient({
@@ -2367,7 +2572,7 @@ const liveVsService = createLiveVsService({
 
 
 // --- Leaderboard record chase ---
-const RECORD_METHODS = ['dpad', 'turn', 'tap', 'keyboard'];
+const RECORD_METHODS = ['dpad', 'turn', 'tap', 'keyboard', 'controller'];
 const RECORD_WARNING_MIN_POINTS = 3;
 const RECORD_WARNING_PERCENT = 0.10;
 let recordCelebrationCheckStarted = false;
@@ -3285,11 +3490,16 @@ nameInput.addEventListener('input', () => {
   nameInput.value = cleanInitials(nameInput.value);
   submitScoreBtn.disabled = runUsesMixedControls || nameInput.value.length < 1;
 });
-
-nameInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !runUsesMixedControls && nameInput.value.trim().length >= 1) submitScore();
-});
-
+
+
+nameInput.addEventListener('keydown', (e) => {
+
+  if (e.key === 'Enter' && !runUsesMixedControls && nameInput.value.trim().length >= 1) submitScore();
+
+});
+
+
+
 async function submitScore() {
   if (GOLDEN_BACKDOOR) return;
   if (runGameMode === 'versus') {
@@ -3897,23 +4107,38 @@ function selectDailyLeaderboardDate(dateKey) {
   syncDailyArchiveCountdown();
   loadLeaderboard();
 }
-
-function buildFilterGroup(container, values, stateKey, labelFor) {
-  container.innerHTML = '';
-  values.forEach(value => {
-    const btn = document.createElement('button');
-    const active = value === lbState[stateKey];
-    btn.className = 'lb-filter' + (active ? ' active' : '');
-    btn.textContent = labelFor(value);
-    btn.type = 'button';
-    btn.setAttribute('aria-pressed', String(active));
+
+
+function buildFilterGroup(container, values, stateKey, labelFor) {
+
+  container.innerHTML = '';
+
+  values.forEach(value => {
+
+    const btn = document.createElement('button');
+
+    const active = value === lbState[stateKey];
+
+    btn.className = 'lb-filter' + (active ? ' active' : '');
+
+    btn.textContent = labelFor(value);
+
+    btn.type = 'button';
+
+    btn.setAttribute('aria-pressed', String(active));
+
     btn.addEventListener('click', () => {
-      if (lbState[stateKey] === value) return;
-      lbState[stateKey] = value;
-      lbState.page = 0;
+      if (lbState[stateKey] === value) return;
+
+      lbState[stateKey] = value;
+
+      lbState.page = 0;
+
       container.querySelectorAll('.lb-filter').forEach(b => {
-        const selected = b === btn;
-        b.classList.toggle('active', selected);
+        const selected = b === btn;
+
+        b.classList.toggle('active', selected);
+
         b.setAttribute('aria-pressed', String(selected));
       });
       if (stateKey === 'gameMode') buildFilters();
@@ -3922,28 +4147,43 @@ function buildFilterGroup(container, values, stateKey, labelFor) {
       } else {
         loadLeaderboard();
       }
-    });
-    container.appendChild(btn);
-  });
-}
-
-function buildFilters() {
+    });
+
+    container.appendChild(btn);
+
+  });
+
+}
+
+
+
+function buildFilters() {
+
   buildFilterGroup(
     lbGameModeFilters,
     ['classic', 'sprint', 'daily'],
     'gameMode',
     value => value === 'sprint' ? 'Sprint 60' : (value === 'daily' ? 'Daily Run' : 'Classic')
-  );
+  );
+
   buildFilterGroup(
-    lbControlFilters,
-    ['all', 'dpad', 'turn', 'tap', 'keyboard'],
-    'control',
-    value => value === 'all' ? 'All' : CONTROL_LABELS[value]
-  );
-  buildFilterGroup(
-    lbThemeFilters,
-    ['all', ...Object.keys(THEMES)],
-    'theme',
+    lbControlFilters,
+
+    ['all', 'dpad', 'turn', 'tap', 'keyboard', 'controller'],
+    'control',
+
+    value => value === 'all' ? 'All' : CONTROL_LABELS[value]
+
+  );
+
+  buildFilterGroup(
+
+    lbThemeFilters,
+
+    ['all', ...Object.keys(THEMES)],
+
+    'theme',
+
     value => value === 'all' ? 'All' : value.charAt(0).toUpperCase() + value.slice(1)
   );
   const daily = lbState.gameMode === 'daily';
@@ -3955,28 +4195,49 @@ function buildFilters() {
   if (daily) renderDailyArchive();
   syncDailyArchiveCountdown();
 }
-
-function updatePagination() {
-  const pageCount = Math.max(1, Math.ceil(lbState.total / LB_PAGE_SIZE));
-  lbPageInfo.textContent = `Page ${lbState.page + 1} of ${pageCount}`;
-  lbPrev.disabled = lbState.page === 0;
-  lbNext.disabled = lbState.page + 1 >= pageCount;
-  lbPagination.style.display = lbState.total > 0 ? 'flex' : 'none';
-}
-
+
+
+function updatePagination() {
+
+  const pageCount = Math.max(1, Math.ceil(lbState.total / LB_PAGE_SIZE));
+
+  lbPageInfo.textContent = `Page ${lbState.page + 1} of ${pageCount}`;
+
+  lbPrev.disabled = lbState.page === 0;
+
+  lbNext.disabled = lbState.page + 1 >= pageCount;
+
+  lbPagination.style.display = lbState.total > 0 ? 'flex' : 'none';
+
+}
+
+
+
 async function loadLeaderboard() {
-  if (!sb) {
-    lbLoading.style.display = 'none';
-    lbTable.style.display = 'none';
-    lbPagination.style.display = 'none';
-    lbEmpty.style.display = 'block';
-    lbEmpty.textContent = 'Leaderboard unavailable';
-    return;
-  }
-  const requestId = ++lbState.requestId;
-  lbLoading.style.display = 'block';
-  lbEmpty.style.display = 'none';
-  lbTable.style.display = 'none';
+  if (!sb) {
+
+    lbLoading.style.display = 'none';
+
+    lbTable.style.display = 'none';
+
+    lbPagination.style.display = 'none';
+
+    lbEmpty.style.display = 'block';
+
+    lbEmpty.textContent = 'Leaderboard unavailable';
+
+    return;
+
+  }
+
+  const requestId = ++lbState.requestId;
+
+  lbLoading.style.display = 'block';
+
+  lbEmpty.style.display = 'none';
+
+  lbTable.style.display = 'none';
+
   lbPagination.style.display = 'none';
   const from = lbState.page * LB_PAGE_SIZE;
   const challenge = lbState.gameMode === 'daily' ? (dailyChallenge || ensureDailyChallenge()) : null;
@@ -3989,8 +4250,10 @@ async function loadLeaderboard() {
     offset: from
   });
   const { data, error, count } = result;
-  if (requestId !== lbState.requestId) return;
-  lbLoading.style.display = 'none';
+  if (requestId !== lbState.requestId) return;
+
+  lbLoading.style.display = 'none';
+
   if (error || !data || data.length === 0) {
     lbEmpty.style.display = 'block';
     lbEmpty.textContent = error
@@ -4000,14 +4263,22 @@ async function loadLeaderboard() {
       : (lbState.gameMode === 'daily' && lbState.dailyDate !== currentUtcDateKey()
           ? 'No ranked scores for this day.'
           : 'No scores yet. Be the first!');
-    lbState.total = error ? 0 : (count || 0);
-    updatePagination();
-    return;
-  }
-  lbState.total = count ?? data.length;
-  lbTable.style.display = 'table';
-  lbBody.innerHTML = '';
-  data.forEach((row, i) => {
+    lbState.total = error ? 0 : (count || 0);
+
+    updatePagination();
+
+    return;
+
+  }
+
+  lbState.total = count ?? data.length;
+
+  lbTable.style.display = 'table';
+
+  lbBody.innerHTML = '';
+
+  data.forEach((row, i) => {
+
     const rank = Number(row.leaderboard_rank) || from + i + 1;
     const tr = document.createElement('tr');
     if (rank === 1) tr.classList.add('top1');
@@ -4025,19 +4296,32 @@ async function loadLeaderboard() {
       ? formatDailyFoodTime(row.final_food_ms == null ? null : Number(row.final_food_ms))
       : escHtml(row.theme);
     tr.innerHTML = `<td class="lb-rank">${rank}</td><td>${identity}${you}<span class="lb-method-tag">${escHtml(methodLabel)}</span></td><td class="lb-theme-col">${detail}</td><td class="lb-score">${row.score}</td>`;
-    lbBody.appendChild(tr);
-  });
-  updatePagination();
-}
-
-function escHtml(s) {
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
-}
-
-function showLeaderboard() {
-  lbState.gameMode = gameMode;
+    lbBody.appendChild(tr);
+
+  });
+
+  updatePagination();
+
+}
+
+
+
+function escHtml(s) {
+
+  const d = document.createElement('div');
+
+  d.textContent = s;
+
+  return d.innerHTML;
+
+}
+
+
+
+function showLeaderboard() {
+
+  lbState.gameMode = gameMode;
+
   lbState.control = 'all';
   lbState.theme = 'all';
   lbState.page = 0;
@@ -4046,29 +4330,45 @@ function showLeaderboard() {
   leaderboardOverlay.classList.add('visible');
   if (lbState.gameMode === 'daily') prepareDailyLeaderboard();
   else loadLeaderboard();
-}
-
-function hideLeaderboard() {
+}
+
+
+
+function hideLeaderboard() {
+
   leaderboardOverlay.classList.remove('visible');
   syncDailyArchiveCountdown();
-}
-
+}
+
+
+
 lbBtn.addEventListener('click', showLeaderboard);
 lbBack.addEventListener('click', hideLeaderboard);
 dailyDayPrev.addEventListener('click', () => selectDailyLeaderboardDate(dailyDayPrev.dataset.date));
 dailyDayNext.addEventListener('click', () => selectDailyLeaderboardDate(dailyDayNext.dataset.date));
 dailyTodayBtn.addEventListener('click', () => selectDailyLeaderboardDate(currentUtcDateKey()));
-lbPrev.addEventListener('click', () => {
-  if (lbState.page === 0) return;
-  lbState.page--;
-  loadLeaderboard();
-});
-lbNext.addEventListener('click', () => {
-  if ((lbState.page + 1) * LB_PAGE_SIZE >= lbState.total) return;
-  lbState.page++;
-  loadLeaderboard();
-});
-
+lbPrev.addEventListener('click', () => {
+
+  if (lbState.page === 0) return;
+
+  lbState.page--;
+
+  loadLeaderboard();
+
+});
+
+lbNext.addEventListener('click', () => {
+
+  if ((lbState.page + 1) * LB_PAGE_SIZE >= lbState.total) return;
+
+  lbState.page++;
+
+  loadLeaderboard();
+
+});
+
+
+
 */
 // --- Init ---
 // iOS Safari and some embedded WebKit views occasionally omit the synthetic
@@ -4281,18 +4581,29 @@ shareBtn.addEventListener('click', async () => {
   const modeName = runGameMode === 'daily' ? `Daily #${ensureDailyChallenge().number}` : (runGameMode === 'sprint' ? 'Sprint 60' : 'Classic');
   const timing = runGameMode === 'daily' ? ` (final food ${formatDailyFoodTime(dailyLastFoodElapsedMs)})` : '';
   const text = `I scored ${score}${timing} in SnakeBit ${modeName}! Can you beat me?\nhttps://chicoramon.github.io/snake-game/`;
-  if (navigator.share) {
+  if (navigator.share) {
+
     try { await navigator.share({ title: 'SnakeBit Score', text }); } catch {}
-  } else {
-    try {
-      await navigator.clipboard.writeText(text);
-      shareBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="#4ecca3" style="vertical-align:middle;margin-right:4px"><path d="M6 11L2 7l1.4-1.4L6 8.2l6.6-6.6L14 3z"/></svg>Copied!';
-      setTimeout(() => shareBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="vertical-align:middle;margin-right:4px"><path d="M8 1L5 5h2v5h2V5h2L8 1zM2 11v3h12v-3h-2v1H4v-1H2z"/></svg>Share Score', 2000);
-    } catch {}
-  }
-});
-
-reset();
+  } else {
+
+    try {
+
+      await navigator.clipboard.writeText(text);
+
+      shareBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="#4ecca3" style="vertical-align:middle;margin-right:4px"><path d="M6 11L2 7l1.4-1.4L6 8.2l6.6-6.6L14 3z"/></svg>Copied!';
+
+      setTimeout(() => shareBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="vertical-align:middle;margin-right:4px"><path d="M8 1L5 5h2v5h2V5h2L8 1zM2 11v3h12v-3h-2v1H4v-1H2z"/></svg>Share Score', 2000);
+
+    } catch {}
+
+  }
+
+});
+
+
+
+reset();
+
 canvasRenderer.draw(1);
 
 // Attach and render the core game first. Identity is an optional enhancement

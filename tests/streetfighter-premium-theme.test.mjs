@@ -36,10 +36,11 @@ test('arcade-rock percussion remains explicitly 8-bit', () => {
   assert.match(html, /m\.percussion\s*===\s*['"]arcade-rock['"]/);
 });
 
-test('the supplied Ken Stage MIDI remains a complete first fallback', () => {
+test('the supplied Ken Stage MIDI is the primary Street Fighter score', () => {
   const midiPath = new URL('../audio themes/street_fighter_ii_-_ken.mid', import.meta.url);
   const midi = fs.readFileSync(midiPath);
   assert.match(musicOverride, /midiUrl:\s*['"]audio themes\/street_fighter_ii_-_ken\.mid['"]/);
+  assert.doesNotMatch(musicOverride, /audioUrl\s*:/);
 
   const functionStart = html.indexOf('function parseMidiFile(arrayBuffer)');
   const braceStart = html.indexOf('{', functionStart);
@@ -63,22 +64,14 @@ test('the supplied Ken Stage MIDI remains a complete first fallback', () => {
   assert.match(html, /scheduleMidiPlayback\(m\)/);
 });
 
-test('the compressed recording is the native primary score', () => {
-  const audio = fs.readFileSync(new URL('../assets/audio/ken-stage-96.mp3', import.meta.url));
-  assert.match(musicOverride, /audioUrl:\s*['"]assets\/audio\/ken-stage-96\.mp3['"]/);
-  assert.ok(audio.length < 1_200_000, 'web audio should remain below 1.2 MB');
-  assert.match(html, /nativeThemeAudio\s*=\s*new Audio\(url\)/);
-  assert.match(html, /nativeThemeAudio\.loop\s*=\s*true/);
-  assert.match(html, /stopNativeThemeAudio\(false\)/);
-});
-
-test('the native audio and MIDI fallback are included in the versioned offline shell', () => {
+test('the MIDI is packaged while the legacy MP3 is excluded from production', () => {
   const packagingScript = fs.readFileSync(new URL('../scripts/package-static-assets.mjs', import.meta.url), 'utf8');
   const workerBuildScript = fs.readFileSync(new URL('../scripts/build-service-worker.mjs', import.meta.url), 'utf8');
   assert.match(serviceWorker, /CACHE_VERSION\s*=\s*['"]shell-v6['"]/);
   assert.match(serviceWorker, /PRECACHE_ASSETS\s*=\s*__VITE_PRECACHE_ASSETS__/);
   assert.match(packagingScript, /\['assets', 'assets'\]/);
   assert.match(packagingScript, /audio themes\/street_fighter_ii_-_ken\.mid/);
+  assert.match(packagingScript, /rm\(resolve\(dist, 'assets\/audio\/ken-stage-96\.mp3'\)/);
   assert.match(workerBuildScript, /__VITE_PRECACHE_ASSETS__/);
   assert.match(deployScript, /npm run build/);
 });

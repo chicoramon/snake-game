@@ -151,7 +151,7 @@ begin
     raise exception 'Invalid score';
   end if;
 
-  if p_control_method not in ('dpad', 'turn', 'tap', 'keyboard') then
+  if p_control_method not in ('dpad', 'turn', 'tap', 'keyboard', 'controller') then
     raise exception 'Invalid control method';
   end if;
 

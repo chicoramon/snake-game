@@ -45,7 +45,7 @@ create table if not exists public.daily_attempts (
   score integer check (score is null or score >= 0),
   final_food_ms integer check (final_food_ms is null or final_food_ms >= 0),
   finish_reason text check (finish_reason is null or finish_reason in ('time', 'collision')),
-  control_method text check (control_method is null or control_method in ('dpad', 'turn', 'tap', 'keyboard', 'mixed')),
+  control_method text check (control_method is null or control_method in ('dpad', 'turn', 'tap', 'keyboard', 'controller', 'mixed')),
   replay jsonb,
   rejection_reason text,
   started_at timestamptz not null default now(),

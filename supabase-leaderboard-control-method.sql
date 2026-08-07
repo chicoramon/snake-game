@@ -23,7 +23,7 @@ begin
   ) then
     alter table public.leaderboard
       add constraint leaderboard_control_method_check
-      check (control_method in ('dpad', 'turn', 'tap', 'keyboard', 'legacy'));
+      check (control_method in ('dpad', 'turn', 'tap', 'keyboard', 'controller', 'legacy'));
   end if;
 end $$;
 
@@ -34,4 +34,4 @@ create index if not exists leaderboard_control_theme_score_idx
   on public.leaderboard (control_method, theme, score desc, created_at asc);
 
 comment on column public.leaderboard.control_method is
-  'Ranked input category: dpad, turn, tap, keyboard, or legacy for pre-migration scores.';
+  'Ranked input category: dpad, turn, tap, keyboard, controller, or legacy for pre-migration scores.';

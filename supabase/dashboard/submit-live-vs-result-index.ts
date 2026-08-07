@@ -195,7 +195,7 @@ Deno.serve(async request => {
   const replay = body?.replay;
   const finalFoodMs = body?.finalFoodMs == null ? null : Number(body.finalFoodMs);
   if (!matchId || !Number.isInteger(roundNumber) || roundNumber < 1
-      || !['dpad', 'turn', 'tap', 'keyboard', 'mixed'].includes(controlMethod)) {
+      || !['dpad', 'turn', 'tap', 'keyboard', 'controller', 'mixed'].includes(controlMethod)) {
     return json({ error: 'Incomplete Live Vs submission' }, 400);
   }
 

@@ -189,7 +189,7 @@ Deno.serve(async request => {
   const controlMethod = typeof body?.controlMethod === 'string' ? body.controlMethod : '';
   const replay = body?.replay;
   const finalFoodMs = body?.finalFoodMs == null ? null : Number(body.finalFoodMs);
-  if (!attemptId || !runToken || !['dpad', 'turn', 'tap', 'keyboard', 'mixed'].includes(controlMethod)) {
+  if (!attemptId || !runToken || !['dpad', 'turn', 'tap', 'keyboard', 'controller', 'mixed'].includes(controlMethod)) {
     return json({ error: 'Incomplete Daily Run submission' }, 400);
   }
 

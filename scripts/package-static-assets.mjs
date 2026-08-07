@@ -27,4 +27,9 @@ for (const filename of ['replay-watch-again-reference.png', 'replay-share-refere
   await rm(resolve(dist, 'assets/icons/replay', filename), { force: true });
 }
 
+// Street Fighter now renders the supplied Ken Stage MIDI through Web Audio.
+// Keep the legacy recording as a source reference without shipping or caching
+// an unused 1.1 MB MP3 in every production build.
+await rm(resolve(dist, 'assets/audio/ken-stage-96.mp3'), { force: true });
+
 console.log('Packaged local game assets into dist/.');

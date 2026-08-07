@@ -177,6 +177,42 @@ test('every control mode can be selected and the game remains playable', async (
   await expect(page.locator('#game')).toBeVisible();
 });
 
+test('a connected game controller can steer and is credited as the run input', async ({ page }) => {
+  await page.addInitScript(() => {
+    const buttons = Array.from({ length: 16 }, () => ({ pressed: false, value: 0 }));
+    window.__testGamepad = {
+      id: 'SnakeBit Test Controller',
+      index: 0,
+      connected: true,
+      mapping: 'standard',
+      axes: [0, 0, 0, 0],
+      buttons,
+    };
+    Object.defineProperty(navigator, 'getGamepads', {
+      configurable: true,
+      value: () => [window.__testGamepad],
+    });
+  });
+
+  await openMenu(page, { blockSupabase: true });
+  await page.locator('#controls-btn').click();
+  await expect(page.locator('#gamepad-status')).toContainText('CONTROLLER READY');
+  await page.locator('#controls-back-btn').click();
+  await startRun(page);
+  await page.evaluate(() => {
+    window.__testGamepad.buttons[13].pressed = true;
+    window.__testGamepad.buttons[13].value = 1;
+  });
+  await page.waitForTimeout(100);
+  await page.evaluate(() => {
+    window.__testGamepad.buttons[13].pressed = false;
+    window.__testGamepad.buttons[13].value = 0;
+  });
+
+  await expect(page.locator('#run-result-panel')).toBeVisible({ timeout: 8_000 });
+  await expect(page.locator('#run-result-detail')).toContainText('CONTROLLER');
+});
+
 test('player, update, leaderboard, and public dialogs can be opened and dismissed', async ({ page }) => {
   await openMenu(page, { blockSupabase: true });
   await page.locator('#player-btn').click();

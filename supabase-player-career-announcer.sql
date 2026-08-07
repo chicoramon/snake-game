@@ -19,7 +19,7 @@ create table if not exists public.player_run_stats (
   completed_at timestamptz not null default now(),
   unique (player_id, run_id),
   constraint player_run_stats_mode_check check (mode in ('classic', 'sprint', 'daily', 'versus')),
-  constraint player_run_stats_control_check check (control_method in ('dpad', 'turn', 'tap', 'keyboard', 'mixed', 'unknown')),
+  constraint player_run_stats_control_check check (control_method in ('dpad', 'turn', 'tap', 'keyboard', 'controller', 'mixed', 'unknown')),
   constraint player_run_stats_finish_check check (finish_reason in ('collision', 'time', 'interrupted', 'unknown')),
   constraint player_run_stats_collision_check check (collision_cause is null or collision_cause in ('wall', 'self', 'unknown'))
 );
@@ -94,7 +94,7 @@ begin
 
   if v_mode not in ('classic', 'sprint', 'daily', 'versus') then raise exception 'Invalid game mode'; end if;
   if v_theme !~ '^[a-z0-9_-]{1,32}$' then raise exception 'Invalid theme'; end if;
-  if v_control not in ('dpad', 'turn', 'tap', 'keyboard', 'mixed', 'unknown') then raise exception 'Invalid control method'; end if;
+  if v_control not in ('dpad', 'turn', 'tap', 'keyboard', 'controller', 'mixed', 'unknown') then raise exception 'Invalid control method'; end if;
   if v_finish not in ('collision', 'time', 'interrupted', 'unknown') then raise exception 'Invalid finish reason'; end if;
   if v_collision is not null and v_collision not in ('wall', 'self', 'unknown') then raise exception 'Invalid collision cause'; end if;
   if v_score < 0 or v_score > 640 then raise exception 'Invalid score'; end if;

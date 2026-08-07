@@ -5,11 +5,13 @@ import { readFileSync } from 'node:fs';
 const controlsSource = readFileSync(new URL('../src/controls/control-manager.js', import.meta.url), 'utf8');
 const mainSource = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 
-test('control manager owns touch, keyboard, TAP, and layout-edit bindings', () => {
+test('control manager owns touch, keyboard, controller, TAP, and layout-edit bindings', () => {
   assert.match(controlsSource, /export function createControlManager/);
   assert.match(controlsSource, /canvas\.addEventListener\('touchstart'/);
   assert.match(controlsSource, /canvas\.addEventListener\('mousedown'/);
   assert.match(controlsSource, /document\.addEventListener\('keydown'/);
+  assert.match(controlsSource, /window\.addEventListener\('gamepadconnected'/);
+  assert.match(controlsSource, /registerControlMethod\('controller'\)/);
   assert.match(controlsSource, /if \(!\['dpad', 'turn', 'tap'\]\.includes\(mode\)\)/);
   assert.match(controlsSource, /controlsCustomizeBtn\.addEventListener\('click', startControlsEdit\)/);
 });

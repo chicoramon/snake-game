@@ -1,3 +1,10 @@
+import {
+  connectedGamepads,
+  gamepadDirection,
+  gamepadPausePressed,
+  shortGamepadName,
+} from './gamepad-input.js';
+
 export function createControlManager({
   canvas,
   dpad,
@@ -23,6 +30,66 @@ export function createControlManager({
   onLayoutChange = () => {},
 }) {
   let controlMode = initialMode;
+
+// --- Bluetooth / USB game controllers ---
+
+const gamepadStatus = document.getElementById('gamepad-status');
+const gamepadDirections = {
+  up: [0, -1],
+  down: [0, 1],
+  left: [-1, 0],
+  right: [1, 0],
+};
+let lastGamepadDirection = null;
+let lastGamepadPause = false;
+let displayedGamepadId;
+
+function updateGamepadStatus(gamepads = connectedGamepads()) {
+  if (!gamepadStatus) return;
+  const gamepad = gamepads[0];
+  const nextId = gamepad?.id || '';
+  if (displayedGamepadId === nextId) return;
+  displayedGamepadId = nextId;
+  gamepadStatus.classList.toggle('connected', Boolean(gamepad));
+  gamepadStatus.textContent = gamepad
+    ? `CONTROLLER READY • ${shortGamepadName(gamepad.id)}`
+    : 'CONTROLLER • CONNECT VIA BLUETOOTH OR USB';
+}
+
+function pollGamepads() {
+  const gamepads = connectedGamepads();
+  const gamepad = gamepads[0];
+  updateGamepadStatus(gamepads);
+
+  if (!gamepad || !isRunActive() || !isOverlayHidden()) {
+    lastGamepadDirection = null;
+    lastGamepadPause = false;
+    requestAnimationFrame(pollGamepads);
+    return;
+  }
+
+  const pausePressed = gamepadPausePressed(gamepad);
+  if (pausePressed && !lastGamepadPause) togglePause();
+  lastGamepadPause = pausePressed;
+  if (isPaused()) {
+    lastGamepadDirection = null;
+    requestAnimationFrame(pollGamepads);
+    return;
+  }
+
+  const direction = gamepadDirection(gamepad);
+  if (direction && direction !== lastGamepadDirection) {
+    registerControlMethod('controller');
+    setDir(...gamepadDirections[direction]);
+  }
+  lastGamepadDirection = direction;
+  requestAnimationFrame(pollGamepads);
+}
+
+window.addEventListener('gamepadconnected', () => updateGamepadStatus());
+window.addEventListener('gamepaddisconnected', () => updateGamepadStatus());
+updateGamepadStatus();
+requestAnimationFrame(pollGamepads);
 
 // --- Keyboard ---
 document.addEventListener('keydown', e => {

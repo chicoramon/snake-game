@@ -338,7 +338,7 @@ function buildFilters() {
   );
   buildFilterGroup(
     lbControlFilters,
-    ['all', 'dpad', 'turn', 'tap', 'keyboard'],
+    ['all', 'dpad', 'turn', 'tap', 'keyboard', 'controller'],
     'control',
     value => value === 'all' ? 'All' : controls[value]
   );

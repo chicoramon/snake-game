@@ -6,14 +6,14 @@ alter table public.leaderboard
 
 alter table public.leaderboard
   add constraint leaderboard_control_method_check
-  check (control_method in ('dpad', 'turn', 'tap', 'keyboard', 'legacy'));
+  check (control_method in ('dpad', 'turn', 'tap', 'keyboard', 'controller', 'legacy'));
 
 alter table public.daily_attempts
   drop constraint if exists daily_attempts_control_method_check;
 
 alter table public.daily_attempts
   add constraint daily_attempts_control_method_check
-  check (control_method is null or control_method in ('dpad', 'turn', 'tap', 'keyboard', 'mixed'));
+  check (control_method is null or control_method in ('dpad', 'turn', 'tap', 'keyboard', 'controller', 'mixed'));
 
 create or replace function public.submit_best_score(
   p_score integer,
@@ -46,7 +46,7 @@ begin
     raise exception 'Invalid score';
   end if;
 
-  if p_control_method not in ('dpad', 'turn', 'tap', 'keyboard') then
+  if p_control_method not in ('dpad', 'turn', 'tap', 'keyboard', 'controller') then
     raise exception 'Invalid control method';
   end if;
 
@@ -126,4 +126,4 @@ grant execute on function public.submit_best_score(integer, text, text, text, uu
   to authenticated;
 
 comment on column public.leaderboard.control_method is
-  'Ranked input category: dpad, turn, tap, keyboard, or legacy for pre-migration scores.';
+  'Ranked input category: dpad, turn, tap, keyboard, controller, or legacy for pre-migration scores.';

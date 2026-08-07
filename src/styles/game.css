@@ -1336,6 +1336,19 @@
     margin: 0 0 18px;
     width: 100%;
   }
+  #gamepad-status {
+    margin: -8px auto 14px;
+    color: var(--muted);
+    font-family: var(--pixel-font);
+    font-size: 0.56rem;
+    letter-spacing: 0.06em;
+    line-height: 1.45;
+    text-transform: uppercase;
+  }
+  #gamepad-status.connected {
+    color: var(--accent);
+    text-shadow: 0 0 10px var(--accent-glow);
+  }
   #controls-settings-panel .control-mode-btn {
     flex: 1 1 0;
     min-width: 0;
