@@ -35,7 +35,7 @@ const PRECACHE_ASSETS = [
   "./assets/icons/replay/replay-share.svg",
   "./assets/icons/replay/replay-watch-again.svg",
   "./assets/index-BiJlkiss.css",
-  "./assets/index-BmRbIkE4.js",
+  "./assets/index-eTPoNF10.js",
   "./assets/manifest-BNDcFqH-.webmanifest",
   "./assets/social/og-image.jpg",
   "./assets/vs-battle-crest-DR2j8AP6.webp",
