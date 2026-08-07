@@ -4,10 +4,14 @@ import {
   replaySourceTime,
   sampleFinalMoments
 } from './final-moments.js';
+import { createFinalMomentsAudio } from './final-moments-audio.js';
 
 const MIME_CANDIDATES = [
+  'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
   'video/mp4;codecs=h264',
   'video/mp4',
+  'video/webm;codecs=vp9,opus',
+  'video/webm;codecs=vp8,opus',
   'video/webm;codecs=vp9',
   'video/webm;codecs=vp8',
   'video/webm'
@@ -25,8 +29,11 @@ function formatClock(ms, mode) {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
-function drawHud(ctx, width, sample, summary) {
+function drawHud(ctx, width, height, sample, summary, playbackElapsed) {
   const accent = sample.theme?.accent || '#4ecca3';
+  const heartbeatProgress = Number.isFinite(sample.recordHeartbeatProgress)
+    ? Math.max(0, Math.min(1, sample.recordHeartbeatProgress))
+    : null;
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,0.82)';
   ctx.fillRect(0, 0, width, 58);
@@ -40,7 +47,12 @@ function drawHud(ctx, width, sample, summary) {
   ctx.textAlign = 'left';
   ctx.fillText('SCORE', 14, 9);
   ctx.textAlign = 'center';
-  ctx.fillText('TOP', width / 2, 9);
+  const pointsToTop = Number.isFinite(Number(summary.topScore))
+    ? Math.max(1, Number(summary.topScore) - Number(sample.score) + 1)
+    : null;
+  ctx.fillStyle = heartbeatProgress === null ? '#9aa5a1' : '#ff5a5a';
+  ctx.fillText(heartbeatProgress === null ? 'TOP' : `${pointsToTop} TO #1`, width / 2, 9);
+  ctx.fillStyle = '#9aa5a1';
   ctx.textAlign = 'right';
   ctx.fillText(summary.mode === 'classic' ? 'TIME' : 'LEFT', width - 14, 9);
   ctx.font = '800 22px ui-monospace, monospace';
@@ -51,6 +63,15 @@ function drawHud(ctx, width, sample, summary) {
   ctx.fillText(summary.topScore == null ? '—' : String(summary.topScore), width / 2, 25);
   ctx.textAlign = 'right';
   ctx.fillText(formatClock(sample.remainingMs, summary.mode), width - 14, 25);
+  if (heartbeatProgress !== null) {
+    const pulse = (Math.sin(playbackElapsed / (82 - heartbeatProgress * 28)) + 1) / 2;
+    ctx.strokeStyle = '#ff3030';
+    ctx.lineWidth = 3 + pulse * 2;
+    ctx.globalAlpha = 0.5 + pulse * 0.45;
+    ctx.shadowColor = '#ff2020';
+    ctx.shadowBlur = 8 + pulse * 16;
+    ctx.strokeRect(4, 62, width - 8, height - 66);
+  }
   ctx.restore();
 }
 
@@ -76,6 +97,7 @@ export function createFinalMomentsPlayer({
 }) {
   const { overlay, canvas, status, playAgain, watchAgain, share, results } = elements;
   const ctx = canvas.getContext('2d');
+  const replayAudio = createFinalMomentsAudio();
   let frameId = null;
   let clip = null;
   let auto = false;
@@ -89,27 +111,34 @@ export function createFinalMomentsPlayer({
   let lastFrameAt = 0;
   let impactTriggered = false;
   let completeCallback = null;
+  let playbackRequest = 0;
 
   function stopRecorder() {
     if (recorder?.state === 'recording') recorder.stop();
   }
 
   function stop({ hide = true } = {}) {
+    playbackRequest++;
     if (frameId != null) cancelAnimationFrame(frameId);
     frameId = null;
     stopRecorder();
     recorder = null;
     recording = false;
     completeCallback = null;
+    replayAudio.stop();
     if (hide) overlay.hidden = true;
   }
 
-  function beginRecording() {
+  function beginRecording(audioStream = null) {
     const type = supportedMimeType();
     if (!canvas.captureStream || !globalThis.MediaRecorder || !type) return false;
     try {
       chunks = [];
-      const activeRecorder = new MediaRecorder(canvas.captureStream(30), { mimeType: type });
+      const canvasStream = canvas.captureStream(30);
+      const combinedStream = audioStream?.getAudioTracks?.().length
+        ? new MediaStream([...canvasStream.getVideoTracks(), ...audioStream.getAudioTracks()])
+        : canvasStream;
+      const activeRecorder = new MediaRecorder(combinedStream, { mimeType: type });
       recorder = activeRecorder;
       recorder.ondataavailable = event => { if (event.data?.size) chunks.push(event.data); };
       recorder.onstop = () => {
@@ -159,14 +188,23 @@ export function createFinalMomentsPlayer({
       highSpeedEffectsEnabled: true
     };
     renderer.capturePreviousSnake(previous.snake);
+    let sonicBoom = false;
     if (sampled.index !== lastSnapshotIndex) {
+      const previousRecordedSnapshot = lastSnapshotIndex >= 0 ? clip.snapshots[lastSnapshotIndex] : null;
+      sonicBoom = Boolean(previousRecordedSnapshot && !previousRecordedSnapshot.sonicBoomed && current.sonicBoomed);
       renderer.recordMove(current.snake);
       if (lastSnapshotIndex >= 0 && current.score > clip.snapshots[lastSnapshotIndex]?.score) {
         renderer.triggerFoodEat({ food: previous.food, theme });
         onEat();
       }
+      if (sonicBoom) renderer.triggerSonicBoom({ snake: current.snake, theme });
       lastSnapshotIndex = sampled.index;
     }
+    const resolveDuration = clip.summary.reason === 'collision' ? DEATH_RESOLUTION_MS : 0;
+    replayAudio.update({
+      recordHeartbeatProgress: current.recordHeartbeatProgress,
+      sonicBoom
+    });
     setRenderState(renderState);
     const frameDt = lastFrameAt ? Math.min(50, now - lastFrameAt) : 0;
     lastFrameAt = now;
@@ -177,14 +215,14 @@ export function createFinalMomentsPlayer({
     }
     renderer.update(frameDt);
     renderer.draw(sampled.interpolation);
-    drawHud(ctx, canvas.width, renderState, clip.summary);
-    const resolveDuration = clip.summary.reason === 'collision' ? DEATH_RESOLUTION_MS : 0;
+    drawHud(ctx, canvas.width, canvas.height, renderState, clip.summary, playbackElapsed);
     if (elapsed < FINAL_MOMENTS_PLAYBACK_MS + resolveDuration) {
       frameId = requestAnimationFrame(renderFrame);
       return;
     }
     frameId = null;
     stopRecorder();
+    replayAudio.enterMenu();
     if (captureRequested && !recorder) prepareStillFallback();
     watchAgain.hidden = false;
     results.hidden = false;
@@ -202,8 +240,9 @@ export function createFinalMomentsPlayer({
     }
   }
 
-  function play(nextClip, { automatic = false, capture = false, onComplete } = {}) {
+  async function play(nextClip, { automatic = false, capture = false, onComplete } = {}) {
     stop({ hide: false });
+    const request = ++playbackRequest;
     clip = nextClip;
     if (!clip?.snapshots?.length) return false;
     auto = automatic;
@@ -221,7 +260,14 @@ export function createFinalMomentsPlayer({
     results.hidden = automatic;
     share.hidden = true;
     renderer.resetEffects();
-    if (capture && !beginRecording()) {
+    status.textContent = capture ? 'Preparing replay capture…' : 'Loading replay audio…';
+    const audioStream = await replayAudio.start();
+    if (request !== playbackRequest) {
+      replayAudio.stop();
+      return false;
+    }
+    status.textContent = capture ? 'Capturing your final moments…' : finalMomentsCaption(clip.summary);
+    if (capture && !beginRecording(audioStream)) {
       recording = false;
       status.textContent = 'Video capture is unavailable here • replay still works';
     }

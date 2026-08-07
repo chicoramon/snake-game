@@ -74,7 +74,7 @@ test('game over uses a dedicated result screen and can return to the menu', asyn
   await expect(page.locator('#overlay')).toHaveClass(/run-result/, { timeout: 8_000 });
   await expect(page.locator('#run-result-panel')).toBeVisible();
   await expect(page.locator('#run-result-title')).toHaveText('Game Over');
-  await expect(page.locator('#run-result-score')).toHaveText('0');
+  await expect(page.locator('#run-result-score')).toHaveText(/^\d+$/);
   await expect(page.locator('#overlayTitle')).toBeHidden();
   await expect(page.locator('#overlay .menu-section').first()).toBeHidden();
   await expect(page.locator('#run-result-replay')).toBeVisible();

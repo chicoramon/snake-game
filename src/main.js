@@ -571,6 +571,7 @@ let recordTargetFinalFoodMs = null;
 let recordTargetMethod = null;
 let recordTargetRequest = 0;
 let recordTargetPromise = Promise.resolve();
+let recordHeartbeatProgress = null;
 let recordBrokenThisRun = false;
 let recordResultVisible = false;
 let recordCelebrationShown = false;
@@ -1887,7 +1888,8 @@ function finalMomentsSnapshot() {
     speed,
     remainingMs: finalMomentsRemainingMs(),
     speedProgress: activeSpeedProgress(),
-    sonicBoomed: sonicBoomTriggered
+    sonicBoomed: sonicBoomTriggered,
+    recordHeartbeatProgress
   };
 }
 
@@ -2619,6 +2621,7 @@ function disableRecordChase() {
   recordTargetFinalFoodMs = null;
   recordTargetMethod = null;
   recordBrokenThisRun = false;
+  recordHeartbeatProgress = null;
   hideRecordChase();
   AudioEngine.stopRecordHeartbeat();
 }
@@ -2643,6 +2646,7 @@ function updateRecordChase() {
     : score > recordTargetScore;
   if (aheadOfTarget) {
     recordBrokenThisRun = true;
+    recordHeartbeatProgress = null;
     AudioEngine.stopRecordHeartbeat();
     const dailyTieBreakLead = runGameMode === 'daily' && score === recordTargetScore;
     showRecordChase(
@@ -2658,6 +2662,7 @@ function updateRecordChase() {
   const warningDistance = Math.max(RECORD_WARNING_MIN_POINTS, Math.ceil(recordTargetScore * RECORD_WARNING_PERCENT));
   if (pointsToBreak <= warningDistance) {
     const progress = 1 - ((pointsToBreak - 1) / Math.max(1, warningDistance));
+    recordHeartbeatProgress = progress;
     const warningText = recordTargetScore === 0
       ? '1 point to set the record'
       : `${pointsToBreak} ${pointsToBreak === 1 ? 'point' : 'points'} to new #1`;
@@ -2669,6 +2674,7 @@ function updateRecordChase() {
     );
     AudioEngine.setRecordHeartbeat(progress);
   } else {
+    recordHeartbeatProgress = null;
     hideRecordChase();
     AudioEngine.stopRecordHeartbeat();
   }
@@ -2681,6 +2687,7 @@ function beginDailyRecordChase() {
   recordTargetFinalFoodMs = null;
   recordTargetMethod = null;
   recordBrokenThisRun = false;
+  recordHeartbeatProgress = null;
   recordCelebrationShown = false;
   recordCelebrationCheckStarted = false;
   hideRecordChase();
@@ -2729,6 +2736,7 @@ function beginRecordChase() {
   recordTargetFinalFoodMs = null;
   recordTargetMethod = null;
   recordBrokenThisRun = false;
+  recordHeartbeatProgress = null;
   recordCelebrationShown = false;
   recordCelebrationCheckStarted = false;
   hideRecordChase();

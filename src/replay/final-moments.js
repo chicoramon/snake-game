@@ -17,6 +17,9 @@ function cloneSnapshot(snapshot, atMs) {
     themeId: snapshot.themeId || 'default',
     speedProgress: Math.max(0, Math.min(1, Number(snapshot.speedProgress) || 0)),
     sonicBoomed: snapshot.sonicBoomed === true,
+    recordHeartbeatProgress: Number.isFinite(snapshot.recordHeartbeatProgress)
+      ? Math.max(0, Math.min(1, Number(snapshot.recordHeartbeatProgress)))
+      : null,
     event: snapshot.event || 'move'
   });
 }

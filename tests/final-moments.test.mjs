@@ -53,3 +53,14 @@ test('replay captions recognize a record and a one-bite heartbreak', () => {
   assert.equal(finalMomentsCaption({ score: 31, topScore: 30 }), 'NEW #1');
   assert.equal(finalMomentsCaption({ score: 30, topScore: 30 }), 'ONE BITE SHORT');
 });
+
+test('replay snapshots preserve the active record-heartbeat intensity', () => {
+  const recorder = createFinalMomentsRecorder();
+  recorder.begin();
+  recorder.capture({ ...state(4), recordHeartbeatProgress: 0.73 });
+  recorder.advance(100);
+  recorder.capture({ ...state(4), recordHeartbeatProgress: null });
+  const clip = recorder.freeze({ score: 4, reason: 'collision' });
+  assert.equal(clip.snapshots[0].recordHeartbeatProgress, 0.73);
+  assert.equal(clip.snapshots[1].recordHeartbeatProgress, null);
+});
