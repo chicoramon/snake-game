@@ -14,6 +14,7 @@ const OFFLINE_PAGE = './';
 // a new build from serving an old JavaScript or CSS shell offline.
 const PRECACHE_ASSETS = [
   "./assets/apple-touch-icon-Crw-dTYJ.png",
+  "./assets/audio/final-moments-o-serpens.mp3",
   "./assets/audio/snake-arcade-intro-96.mp3",
   "./assets/branding/snakebit-logo.png",
   "./assets/favicon-16x16-rbhnWYZq.png",
@@ -34,7 +35,7 @@ const PRECACHE_ASSETS = [
   "./assets/icons/replay/replay-share.svg",
   "./assets/icons/replay/replay-watch-again.svg",
   "./assets/index-BiJlkiss.css",
-  "./assets/index-CV0cR6z3.js",
+  "./assets/index-eTPoNF10.js",
   "./assets/manifest-BNDcFqH-.webmanifest",
   "./assets/social/og-image.jpg",
   "./assets/vs-battle-crest-DR2j8AP6.webp",
