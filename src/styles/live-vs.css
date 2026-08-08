@@ -509,6 +509,7 @@
 #live-vs-panel #live-vs-player-one-score { grid-column: 1; }
 #live-vs-panel #live-vs-player-two-score { grid-column: 3; color: var(--vs-pink); }
 #live-vs-panel .live-vs-score-meta {
+  position: relative;
   display: grid;
   grid-row: 1;
   gap: 1px;
@@ -586,6 +587,102 @@
   text-shadow: 0 0 12px currentColor;
   text-wrap: balance;
   white-space: normal;
+}
+
+#live-vs-panel .live-vs-fighter-name {
+  display: grid;
+  place-items: center;
+  width: 94%;
+  min-width: 0;
+}
+
+#live-vs-panel .live-vs-fighter-name strong {
+  width: auto;
+  min-width: 0;
+}
+
+#live-vs-panel .live-vs-fighter-control {
+  position: absolute;
+  bottom: calc(100% + 3px);
+  left: 50%;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(2px, .35vw, 5px);
+  min-height: 0;
+  margin: 0;
+  padding: clamp(3px, .5vw, 6px);
+  border: 1px solid currentColor;
+  color: var(--vs-cyan);
+  background: rgba(0,8,16,.78);
+  box-shadow: 0 0 10px rgba(37,220,255,.22);
+  font-size: clamp(.3rem, .7vw, .48rem);
+  line-height: 1;
+  pointer-events: auto;
+  transform: translateX(-50%);
+}
+
+#live-vs-panel .live-vs-score-meta.player-two .live-vs-fighter-control {
+  color: var(--vs-pink);
+  box-shadow: 0 0 10px rgba(255,72,120,.22);
+}
+
+#live-vs-panel .live-vs-fighter-control svg { width: 13px; height: 13px; }
+#live-vs-panel .live-vs-fighter-control:disabled { opacity: .42; cursor: default; }
+
+#live-vs-panel .live-vs-control-picker {
+  position: fixed;
+  z-index: 113;
+  top: 50%;
+  left: 50%;
+  width: min(92vw, 520px);
+  padding: 16px;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--vs-cyan);
+  background: radial-gradient(circle at 50% 0, rgba(37,220,255,.14), transparent 58%), #02060c;
+  box-shadow: 0 0 0 100vmax rgba(0,0,0,.86), 0 0 30px rgba(37,220,255,.3);
+}
+
+#live-vs-panel .live-vs-control-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+#live-vs-panel .live-vs-control-heading > span { display: grid; gap: 4px; }
+#live-vs-panel .live-vs-control-heading strong { font-size: .82rem; }
+#live-vs-panel #live-vs-control-close { min-width: 80px; }
+#live-vs-panel .live-vs-control-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+#live-vs-panel .live-vs-control-option {
+  display: grid;
+  min-height: 88px;
+  place-items: center;
+  gap: 8px;
+  border: 1px solid rgba(255,255,255,.18);
+  color: #cce5ed;
+  background: rgba(2,9,15,.86);
+}
+
+#live-vs-panel .live-vs-control-option svg { width: 34px; height: 34px; }
+#live-vs-panel .live-vs-control-option strong { font-size: .58rem; }
+#live-vs-panel .live-vs-control-option.selected {
+  border-color: var(--vs-gold);
+  color: var(--vs-gold);
+  box-shadow: inset 0 -3px var(--vs-gold), 0 0 15px rgba(255,228,91,.18);
+}
+#live-vs-panel .live-vs-control-picker > p {
+  margin: 12px 0 0;
+  color: #7893a0;
+  font-size: .54rem;
+  text-align: center;
 }
 
 #live-vs-panel .live-vs-fighter:first-child strong {
@@ -1024,6 +1121,26 @@
   #live-vs-panel .live-vs-fighter strong { font-size: clamp(.78rem, 3.8vw, 1.08rem); }
   #live-vs-panel .live-vs-fighter.long-name strong { font-size: clamp(.64rem, 3.15vw, .9rem); }
   #live-vs-panel .live-vs-fighter.very-long-name strong { font-size: clamp(.57rem, 2.7vw, .78rem); }
+  #live-vs-panel .live-vs-fighter-control {
+    width: 28px;
+    height: 28px;
+    padding: 6px;
+    font-size: .34rem;
+  }
+  #live-vs-panel .live-vs-fighter-control svg { width: 14px; height: 14px; }
+  #live-vs-panel .live-vs-fighter-control > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  #live-vs-panel .live-vs-control-picker { width: 94vw; padding: 12px 9px; }
+  #live-vs-panel .live-vs-control-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  #live-vs-panel .live-vs-control-option { min-height: 76px; }
 
   #live-vs-panel .live-vs-score-meta {
     font-size: clamp(.34rem, 1.65vw, .44rem);

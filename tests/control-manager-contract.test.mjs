@@ -12,6 +12,8 @@ test('control manager owns touch, keyboard, controller, TAP, and layout-edit bin
   assert.match(controlsSource, /document\.addEventListener\('keydown'/);
   assert.match(controlsSource, /window\.addEventListener\('gamepadconnected'/);
   assert.match(controlsSource, /registerControlMethod\('controller'\)/);
+  assert.match(controlsSource, /createGamepadMenuNavigation/);
+  assert.match(controlsSource, /gamepadMenuNavigation\.update\(gamepad\)/);
   assert.match(controlsSource, /if \(!\['dpad', 'turn', 'tap'\]\.includes\(mode\)\)/);
   assert.match(controlsSource, /controlsCustomizeBtn\.addEventListener\('click', startControlsEdit\)/);
 });

@@ -80,10 +80,13 @@ test('Live Vs lobby and controller are present in the modular app', () => {
   assert.match(controller, /stageRevealAt/);
   assert.match(controller, /ARENA ROULETTE/);
   assert.match(controller, /\['random', \{ name: 'Random'/);
+  assert.match(controller, /localStageChoice = myPlayer\(\)\?\.themeChoice \|\| 'random'/);
+  assert.match(controller, /function returnToLobby[\s\S]*?localStageChoice = myPlayer\(\)\?\.themeChoice \|\| 'random'/);
+  assert.match(controller, /resolveCurrentStageChoice\(localStageChoice, mine\.themeChoice\) \|\| 'random'/);
+  assert.doesNotMatch(controller, /Choose an arena before locking in/);
   assert.match(controller, /cloneThemeArtwork/);
   assert.match(controller, /getElementById\(`ti-\$\{id\}`\)/);
   assert.match(controller, /theme-random-btn \.theme-icon/);
-  assert.match(controller, /player\.ready \? 'READY' : 'SELECTING STAGE'/);
   assert.match(controller, /renderPlayerScoreMeta/);
   assert.match(controller, /const GAMEPLAY_COUNTDOWN_MS = 3000/);
   assert.match(controller, /startMs - GAMEPLAY_COUNTDOWN_MS/);
@@ -113,6 +116,17 @@ test('Live Vs lobby and controller are present in the modular app', () => {
   assert.match(debugConfig, /vsdebug/);
 });
 
+test('Live Vs lets the local fighter choose a room-supported control method', () => {
+  const html = read('index.html');
+  const mainSource = read('src/main.js');
+  const controllerSource = read('src/ui/live-vs-controller.js');
+  assert.match(html, /id="live-vs-control-picker"/);
+  assert.match(controllerSource, /getAvailableControlMethods/);
+  assert.match(controllerSource, /controlButton\.className = 'live-vs-fighter-control'/);
+  assert.match(mainSource, /room\?\.allowKeyboard !== false/);
+  assert.match(mainSource, /navigator\.getGamepads/);
+});
+
 test('Live Vs uses explicit waiting and departure lifecycle states', () => {
   const main = read('src/main.js');
   const controller = read('src/ui/live-vs-controller.js');
@@ -121,7 +135,6 @@ test('Live Vs uses explicit waiting and departure lifecycle states', () => {
   assert.match(main, /onLeave:\s*\(\)\s*=>\s*returnFromVersusToMainMenu/);
   assert.match(main, /runGameMode = gameMode;[\s\S]*?reset\(false\);[\s\S]*?overlay\.classList\.remove\('hidden'\)/);
   assert.match(controller, /connectionState === 'forfeit'/);
-  assert.match(controller, /LEFT ARENA/);
   assert.match(controller, /left the battle room\. This session is closed\./);
   assert.match(controller, /await service\.leaveRoom\(room\.id\);[\s\S]*?await service\.announceRoomRefresh\(room\.id\);[\s\S]*?onLeave\?\.\(departedRoom\)/);
   assert.doesNotMatch(controller, /if \(leave && room\?\.id && !startNotified\)/);

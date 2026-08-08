@@ -30,6 +30,18 @@ test('left stick uses its dominant axis and ignores deadzone drift', () => {
   assert.equal(gamepadDirection(pad({ axes: [0.4, 0.85] })), 'down');
 });
 
+test('non-standard Bluetooth D-pads can use secondary axes', () => {
+  assert.equal(gamepadDirection(pad({ axes: [0, 0, 0, 0, 0, 0, -1, 0] })), 'left');
+  assert.equal(gamepadDirection(pad({ axes: [0, 0, 0, 0, 0, 0, 0, 1] })), 'down');
+});
+
+test('POV hat-axis D-pads support cardinal and diagonal values', () => {
+  assert.equal(gamepadDirection(pad({ axes: [0, 0, 0, 0, 3.285, 0, 0, 0, 0, -1] })), 'up');
+  assert.equal(gamepadDirection(pad({ axes: [0, 0, 0, 0, 3.285, 0, 0, 0, 0, -3 / 7] })), 'right');
+  assert.equal(gamepadDirection(pad({ axes: [0, 0, 0, 0, 3.285, 0, 0, 0, 0, 1 / 7] })), 'down');
+  assert.equal(gamepadDirection(pad({ axes: [0, 0, 0, 0, 3.285, 0, 0, 0, 0, 5 / 7] })), 'left');
+});
+
 test('Start/Menu is exposed as the controller pause action', () => {
   assert.equal(gamepadPausePressed(pad({ pressed: [9] })), true);
   assert.equal(gamepadPausePressed(pad()), false);

@@ -60,6 +60,9 @@ export function createLiveVsController({
   latencyDiagnostics = false,
   getCurrentTheme,
   getPlayerId,
+  getControlMethod,
+  getAvailableControlMethods,
+  onControlMethodChange,
   ensurePlayer,
   onMatchStart,
   onGhost,
@@ -128,7 +131,57 @@ export function createLiveVsController({
   const rouletteStage = panel.querySelector('#live-vs-roulette-stage');
   const rouletteStatus = panel.querySelector('#live-vs-roulette-status');
   const leaveButton = panel.querySelector('#live-vs-leave');
+  const controlPicker = panel.querySelector('#live-vs-control-picker');
+  const controlClose = panel.querySelector('#live-vs-control-close');
+  const controlGrid = panel.querySelector('#live-vs-control-grid');
   const themeEntries = Object.entries(themes || {});
+  let localControlChoice = getControlMethod?.() || 'dpad';
+
+  const controlLabels = {
+    dpad: 'D-PAD',
+    turn: 'TURN',
+    tap: 'TAP',
+    keyboard: 'KEYBOARD',
+    controller: 'CONTROLLER'
+  };
+
+  function controlIcon(method) {
+    const paths = {
+      dpad: '<rect x="3" y="0" width="4" height="10"/><rect x="0" y="3" width="10" height="4"/><rect x="4" y="4" width="2" height="2" fill="#02060c"/>',
+      turn: '<rect x="2" y="1" width="5" height="2"/><rect x="1" y="2" width="2" height="5"/><rect x="2" y="6" width="6" height="2"/><rect x="7" y="4" width="2" height="4"/><rect x="6" y="0" width="2" height="4"/><rect x="5" y="0" width="4" height="2"/>',
+      tap: '<rect x="0" y="1" width="4" height="8"/><rect x="6" y="1" width="4" height="8"/><rect x="1" y="4" width="2" height="2" fill="#02060c"/><rect x="7" y="4" width="2" height="2" fill="#02060c"/>',
+      keyboard: '<rect x="0" y="2" width="10" height="7"/><rect x="1" y="3" width="2" height="2" fill="#02060c"/><rect x="4" y="3" width="2" height="2" fill="#02060c"/><rect x="7" y="3" width="2" height="2" fill="#02060c"/><rect x="2" y="6" width="6" height="1" fill="#02060c"/>',
+      controller: '<rect x="1" y="3" width="8" height="5"/><rect x="0" y="5" width="3" height="4"/><rect x="7" y="5" width="3" height="4"/><rect x="2" y="4" width="1" height="3" fill="#02060c"/><rect x="1" y="5" width="3" height="1" fill="#02060c"/><rect x="7" y="4" width="1" height="1" fill="#02060c"/><rect x="8" y="6" width="1" height="1" fill="#02060c"/>'
+    };
+    return `<svg viewBox="0 0 10 10" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true">${paths[method] || paths.dpad}</svg>`;
+  }
+
+  function availableControls() {
+    const methods = getAvailableControlMethods?.(room) || ['dpad', 'turn', 'tap'];
+    return methods.filter(method => controlLabels[method]);
+  }
+
+  function renderControlGrid() {
+    if (!controlGrid) return;
+    const methods = availableControls();
+    if (!methods.includes(localControlChoice)) localControlChoice = getControlMethod?.() || methods[0] || 'dpad';
+    controlGrid.replaceChildren(...methods.map(method => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'live-vs-control-option';
+      button.dataset.control = method;
+      button.classList.toggle('selected', method === localControlChoice);
+      button.setAttribute('aria-pressed', String(method === localControlChoice));
+      button.innerHTML = `${controlIcon(method)}<strong>${controlLabels[method]}</strong>`;
+      button.addEventListener('click', () => {
+        localControlChoice = method;
+        onControlMethodChange?.(method);
+        if (controlPicker) controlPicker.hidden = true;
+        renderRoom();
+      });
+      return button;
+    }));
+  }
 
   function themeLabel(id) {
     if (id === 'random') return 'Random';
@@ -219,28 +272,34 @@ export function createLiveVsController({
     element.classList.toggle('very-long-name', label.length > 20);
     element.classList.toggle('winner', !!player && !!room?.lastRound?.winnerPlayerId
       && room.lastRound.winnerPlayerId === player.playerId);
-    element.innerHTML = `<strong>${escapeHtml(label)}</strong>`;
+    element.innerHTML = `<span class="live-vs-fighter-name"><strong>${escapeHtml(label)}</strong></span>`;
   }
 
   function renderPlayerScoreMeta(element, player) {
     if (!element) return;
-    let state = 'WAITING';
-    if (player?.connectionState === 'forfeit') state = 'LEFT ARENA';
-    else if (player) {
-      if (room?.status === 'countdown') state = 'READY';
-      else if (room?.status === 'running') state = 'RACING';
-      else if (room?.status === 'verifying') state = 'VERIFYING';
-      else state = player.ready ? 'READY' : 'SELECTING STAGE';
-    }
-    const stateLabel = document.createElement('b');
-    stateLabel.textContent = state;
     const pingLabel = document.createElement('small');
     if (!latencyDiagnostics || !player) pingLabel.hidden = true;
     else {
       const latency = latencyByPlayer.get(player.playerId);
       pingLabel.textContent = latency == null ? 'PING --' : `PING ${latency} MS`;
     }
-    element.replaceChildren(stateLabel, pingLabel);
+    const isMine = !!player && player.playerId === getPlayerId?.();
+    const canChange = isMine && ['waiting', 'complete'].includes(room?.status) && !player.ready;
+    const controlButton = isMine ? document.createElement('button') : null;
+    if (controlButton) {
+      controlButton.type = 'button';
+      controlButton.className = 'live-vs-fighter-control';
+      controlButton.disabled = !canChange;
+      controlButton.setAttribute('aria-label', `Change control method. Current: ${controlLabels[localControlChoice] || 'Controls'}`);
+      controlButton.setAttribute('aria-haspopup', 'dialog');
+      controlButton.setAttribute('aria-controls', 'live-vs-control-picker');
+      controlButton.innerHTML = `${controlIcon(localControlChoice)}<span>${escapeHtml(controlLabels[localControlChoice] || 'CONTROLS')}</span>`;
+      controlButton.addEventListener('click', () => {
+        renderControlGrid();
+        if (controlPicker) controlPicker.hidden = false;
+      });
+    }
+    element.replaceChildren(...(controlButton ? [controlButton, pingLabel] : [pingLabel]));
   }
 
   function resultHeading(lastRound) {
@@ -314,14 +373,14 @@ export function createLiveVsController({
     buildStageGrid();
     const mine = myPlayer();
     const completedRound = room?.status === 'complete';
-    const selected = completedRound ? localStageChoice : (mine?.themeChoice || localStageChoice);
+    const selected = (completedRound ? localStageChoice : (mine?.themeChoice || localStageChoice)) || 'random';
     const seriesComplete = !!room?.seriesWinnerPlayerId;
     const selectable = !!room && ['waiting', 'complete'].includes(room.status) && !mine?.ready && !seriesComplete;
     if (stageSelect) stageSelect.hidden = !['waiting', 'complete'].includes(room?.status) || seriesComplete;
     if (stageReveal) stageReveal.hidden = room?.status !== 'countdown';
     if (stageOpen) stageOpen.disabled = !selectable;
     if (!selectable && stagePicker) stagePicker.hidden = true;
-    if (currentStageName) currentStageName.textContent = selected ? themeLabel(selected) : 'Choose Stage';
+    if (currentStageName) currentStageName.textContent = themeLabel(selected);
     if (currentStageArt) {
       const art = createThemeArtwork(selected || 'random', 'live-vs-stage-art');
       currentStageArt.replaceChildren(...(art ? [art] : []));
@@ -336,7 +395,7 @@ export function createLiveVsController({
     if (stageLockStatus) {
       stageLockStatus.textContent = mine?.ready
         ? `${themeLabel(selected)} locked • waiting for rival`
-        : (selected ? `${themeLabel(selected)} selected • press Ready when set` : 'Choose an arena');
+        : `${themeLabel(selected)} selected • press Ready when set`;
     }
   }
 
@@ -521,8 +580,7 @@ export function createLiveVsController({
     const nextRound = Number(room.roundNumber || 1) + (room.status === 'complete' ? 1 : 0);
     const roomClosed = ['cancelled', 'expired'].includes(room.status) || !!departedRival();
     readyButton.disabled = waitingForResult || roomClosed || !!room.seriesWinnerPlayerId || connected < 2
-      || !['waiting', 'complete'].includes(room.status)
-      || (!mine?.ready && !localStageChoice && !mine?.themeChoice);
+      || !['waiting', 'complete'].includes(room.status);
     readyButton.textContent = room.seriesWinnerPlayerId
       ? 'Series Complete'
       : (connected < 2
@@ -582,7 +640,7 @@ export function createLiveVsController({
     room = nextRoom;
     startNotified = false;
     waitingForResult = false;
-    localStageChoice = myPlayer()?.themeChoice || null;
+    localStageChoice = myPlayer()?.themeChoice || 'random';
     if (waitingPanel) waitingPanel.hidden = true;
     latencyByPlayer.clear();
     setMessage();
@@ -624,6 +682,7 @@ export function createLiveVsController({
     lobby.hidden = true;
     if (settingsPanel) settingsPanel.hidden = true;
     if (stagePicker) stagePicker.hidden = true;
+    if (controlPicker) controlPicker.hidden = true;
     closeButton.textContent = 'Back';
     setMessage('Create a battle room or enter a rival invite code.');
     codeInput.blur();
@@ -687,11 +746,7 @@ export function createLiveVsController({
     // On a completed round, the room snapshot still contains the previous
     // round's server choice until the first Ready action creates the next
     // round. The stage highlighted in this client is authoritative here.
-    const choice = resolveCurrentStageChoice(localStageChoice, mine.themeChoice);
-    if (!mine.ready && !choice) {
-      setMessage('Choose an arena before locking in', true);
-      return;
-    }
+    const choice = resolveCurrentStageChoice(localStageChoice, mine.themeChoice) || 'random';
     readyButton.disabled = true;
     try {
       room = await service.selectStage(room.id, choice, !mine.ready);
@@ -738,7 +793,7 @@ export function createLiveVsController({
     clearStartSequence();
     startNotified = false;
     waitingForResult = false;
-    localStageChoice = null;
+    localStageChoice = myPlayer()?.themeChoice || 'random';
     if (historyWrap) historyWrap.open = false;
     panel.classList.remove('waiting-for-rival');
     if (waitingPanel) waitingPanel.hidden = true;
@@ -797,6 +852,7 @@ export function createLiveVsController({
     panel.setAttribute('aria-hidden', 'true');
     if (settingsPanel) settingsPanel.hidden = true;
     if (stagePicker) stagePicker.hidden = true;
+    if (controlPicker) controlPicker.hidden = true;
     if (leave && room?.id) {
       const departedRoom = room;
       try {
@@ -839,6 +895,11 @@ export function createLiveVsController({
   stageClose?.addEventListener('click', () => {
     if (stagePicker) stagePicker.hidden = true;
     stageOpen?.focus({ preventScroll: true });
+  });
+  controlClose?.addEventListener('click', () => {
+    if (controlPicker) controlPicker.hidden = true;
+    myPlayer()?.seat === 1 ? playerOneMeta?.querySelector('.live-vs-fighter-control')?.focus({ preventScroll: true })
+      : playerTwoMeta?.querySelector('.live-vs-fighter-control')?.focus({ preventScroll: true });
   });
   spectateButton?.addEventListener('click', () => {
     if (onSpectate?.(room) === false) return;

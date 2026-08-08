@@ -1533,10 +1533,16 @@
     mix-blend-mode: screen;
   }
   button, input { font-family: var(--pixel-font); }
-  button:focus-visible, input:focus-visible, .theme-btn:focus-visible {
+button:focus-visible, input:focus-visible, .theme-btn:focus-visible {
     outline: 2px solid #fff;
     outline-offset: 3px;
-  }
+}
+
+body.controller-navigation :is(button, a, input, select, [role="button"], [tabindex], .theme-btn):focus {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 2px #000, 0 0 14px var(--accent-glow);
+}
 
   #score-bar {
     display: grid;

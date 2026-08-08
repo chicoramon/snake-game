@@ -13,6 +13,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="./assets/icons/favicon-32x32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/apple-touch-icon.png">
 <link rel="manifest" id="app-manifest" href="./manifest.webmanifest">
+<link rel="preload" as="image" type="image/webp" href="./assets/branding/snakebit-logo.webp" fetchpriority="high">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="SnakeBit">
@@ -293,6 +294,14 @@
           <div id="live-vs-player-two" class="live-vs-fighter empty"></div>
         </div>
       </div>
+      <div id="live-vs-control-picker" class="live-vs-control-picker" role="dialog" aria-modal="true" aria-labelledby="live-vs-control-picker-title" hidden>
+        <div class="live-vs-control-heading">
+          <span><span class="live-vs-label">Fighter Setup</span><strong id="live-vs-control-picker-title">CHOOSE YOUR CONTROLS</strong></span>
+          <button id="live-vs-control-close" type="button" aria-label="Close control selection">Close</button>
+        </div>
+        <div id="live-vs-control-grid" class="live-vs-control-grid"></div>
+        <p>Only controls supported by this battle room and device are shown.</p>
+      </div>
       <div class="live-vs-lobby-status">
         <p id="live-vs-room-status">Waiting for rival…</p>
         <div id="live-vs-rule-strip" class="live-vs-rule-strip" aria-label="Battle room rules"></div>
@@ -314,7 +323,7 @@
       <section id="live-vs-stage-select" class="live-vs-stage-select">
         <button id="live-vs-stage-open" class="live-vs-stage-open" type="button" aria-haspopup="dialog" aria-controls="live-vs-stage-picker">
           <span id="live-vs-current-stage-art" class="live-vs-current-stage-art" aria-hidden="true"></span>
-          <span><small>Your Arena</small><strong id="live-vs-current-stage-name">Choose Stage</strong></span>
+          <span><small>Your Arena</small><strong id="live-vs-current-stage-name">Random</strong></span>
           <em>CHANGE</em>
         </button>
         <div id="live-vs-stage-picker" class="live-vs-stage-picker" role="dialog" aria-modal="true" aria-labelledby="live-vs-stage-picker-title" hidden>

@@ -195,9 +195,32 @@ test('a connected game controller can steer and is credited as the run input', a
   });
 
   await openMenu(page, { blockSupabase: true });
-  await page.locator('#controls-btn').click();
+  await page.locator('#startBtn').focus();
+  await page.evaluate(() => { window.__testGamepad.axes[1] = 1; });
+  await page.waitForTimeout(80);
+  await page.evaluate(() => { window.__testGamepad.axes[1] = 0; });
+  await expect.poll(() => page.evaluate(() => document.activeElement?.id)).not.toBe('startBtn');
+
+  await page.locator('#controls-btn').focus();
+  await page.evaluate(() => {
+    window.__testGamepad.buttons[0].pressed = true;
+    window.__testGamepad.buttons[0].value = 1;
+  });
+  await expect(page.locator('#controls-edit-overlay')).toHaveClass(/visible/);
+  await page.evaluate(() => {
+    window.__testGamepad.buttons[0].pressed = false;
+    window.__testGamepad.buttons[0].value = 0;
+  });
   await expect(page.locator('#gamepad-status')).toContainText('CONTROLLER READY');
-  await page.locator('#controls-back-btn').click();
+  await page.evaluate(() => {
+    window.__testGamepad.buttons[1].pressed = true;
+    window.__testGamepad.buttons[1].value = 1;
+  });
+  await expect(page.locator('#controls-edit-overlay')).not.toHaveClass(/visible/);
+  await page.evaluate(() => {
+    window.__testGamepad.buttons[1].pressed = false;
+    window.__testGamepad.buttons[1].value = 0;
+  });
   await startRun(page);
   await page.evaluate(() => {
     window.__testGamepad.buttons[13].pressed = true;

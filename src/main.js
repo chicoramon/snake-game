@@ -167,14 +167,14 @@ function renderMenuBrandTitle() {
   overlayTitle.setAttribute('aria-label', 'SnakeBit');
   const existingImage = overlayTitle.querySelector('.menu-brand-image');
   if (existingImage) {
-    if (!existingImage.getAttribute('src')?.endsWith('/assets/branding/snakebit-logo.png')) {
-      existingImage.src = './assets/branding/snakebit-logo.png';
+    if (!existingImage.getAttribute('src')?.endsWith('/assets/branding/snakebit-logo.webp')) {
+      existingImage.src = './assets/branding/snakebit-logo.webp';
     }
     return;
   }
   const image = document.createElement('img');
   image.className = 'menu-brand-image';
-  image.src = './assets/branding/snakebit-logo.png';
+  image.src = './assets/branding/snakebit-logo.webp';
   image.alt = '';
   image.width = 720;
   image.height = 530;
@@ -4451,6 +4451,19 @@ const liveVsUi = createLiveVsController({
   latencyDiagnostics: LIVE_VS_LATENCY_DEBUG,
   getCurrentTheme: () => currentTheme,
   getPlayerId: () => currentUser?.id || null,
+  getControlMethod: () => controlMode,
+  getAvailableControlMethods: room => {
+    const methods = ['dpad', 'turn', 'tap'];
+    if (room?.allowKeyboard !== false) methods.push('keyboard');
+    if (typeof navigator.getGamepads === 'function' && Array.from(navigator.getGamepads() || []).some(Boolean)) {
+      methods.push('controller');
+    }
+    return methods;
+  },
+  onControlMethodChange: method => {
+    if (['dpad', 'turn', 'tap'].includes(method)) controls.applyMode(method);
+    else if (method === 'keyboard' || method === 'controller') controls.applyMode('dpad');
+  },
   ensurePlayer: async () => {
     await waitForPlayerIdentity();
     if (playerProfile) return true;

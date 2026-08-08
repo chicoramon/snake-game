@@ -4,6 +4,7 @@ import {
   gamepadPausePressed,
   shortGamepadName,
 } from './gamepad-input.js';
+import { createGamepadMenuNavigation } from './gamepad-menu-navigation.js';
 
 export function createControlManager({
   canvas,
@@ -43,6 +44,7 @@ const gamepadDirections = {
 let lastGamepadDirection = null;
 let lastGamepadPause = false;
 let displayedGamepadId;
+const gamepadMenuNavigation = createGamepadMenuNavigation();
 
 function updateGamepadStatus(gamepads = connectedGamepads()) {
   if (!gamepadStatus) return;
@@ -61,12 +63,24 @@ function pollGamepads() {
   const gamepad = gamepads[0];
   updateGamepadStatus(gamepads);
 
-  if (!gamepad || !isRunActive() || !isOverlayHidden()) {
+  const menuActive = !isRunActive() || !isOverlayHidden();
+  if (!gamepad) {
     lastGamepadDirection = null;
     lastGamepadPause = false;
+    gamepadMenuNavigation.reset();
     requestAnimationFrame(pollGamepads);
     return;
   }
+
+  if (menuActive) {
+    lastGamepadDirection = null;
+    lastGamepadPause = false;
+    gamepadMenuNavigation.update(gamepad);
+    requestAnimationFrame(pollGamepads);
+    return;
+  }
+
+  gamepadMenuNavigation.reset();
 
   const pausePressed = gamepadPausePressed(gamepad);
   if (pausePressed && !lastGamepadPause) togglePause();
